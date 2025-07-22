@@ -1,4 +1,6 @@
-<?php namespace App\Controllers;
+<?php
+
+namespace App\Controllers;
 
 use App\Models\AreaModel;
 use CodeIgniter\HTTP\RequestInterface;
@@ -44,8 +46,8 @@ class AreasController extends BaseController
         ];
         if (! $this->validate($rules)) {
             return redirect()->back()
-                             ->with('errors', $this->validator->getErrors())
-                             ->withInput();
+                ->with('errors', $this->validator->getErrors())
+                ->withInput();
         }
         $this->areaModel->insert($this->request->getPost());
         return redirect()->to('/areas')->with('success', 'Área creada.');
@@ -65,14 +67,14 @@ class AreasController extends BaseController
     public function editAreasPost($id)
     {
         $rules = [
-            'nombre_area'      => "required|is_unique[areas.nombre_area,nombre_area,{$id},id_areas]",
+            'nombre_area'      => "required|is_unique[areas.nombre_area,id_areas,{$id}]",
             'descripcion_area' => 'permit_empty',
             'estado_area'      => 'required|in_list[0,1]'
         ];
         if (! $this->validate($rules)) {
             return redirect()->back()
-                             ->with('errors', $this->validator->getErrors())
-                             ->withInput();
+                ->with('errors', $this->validator->getErrors())
+                ->withInput();
         }
         $this->areaModel->update($id, $this->request->getPost());
         return redirect()->to('/areas')->with('success', 'Área actualizada.');
@@ -85,4 +87,3 @@ class AreasController extends BaseController
         return redirect()->to('/areas')->with('success', 'Área eliminada.');
     }
 }
-
