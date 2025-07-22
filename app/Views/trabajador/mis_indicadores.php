@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Mis Indicadores – Afilogro</title>
+    <title>Mis Indicadores – Kpi Cycloid</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap 5 CSS -->

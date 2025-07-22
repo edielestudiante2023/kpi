@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Accesos por Rol – Afilogro</title>
+    <title>Gestión de Accesos por Rol – Kpi Cycloid</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap 5 CSS -->

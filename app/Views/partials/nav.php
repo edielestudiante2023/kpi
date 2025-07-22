@@ -6,7 +6,7 @@
             <!-- Logo 1 -->
             <div class="d-flex justify-content-center">
                 <a href="#">
-                    <img src="<?= base_url('img/LOGO_AFIANCOL.png') ?>"
+                    <img src="<?= base_url('img/cycloid_sqe.jpg') ?>"
                         alt="Logo Afiancol"
                         style="max-height: 100px; width: auto;">
                 </a>
@@ -15,7 +15,7 @@
             <!-- Logo 2 -->
             <div class="d-flex justify-content-center">
                 <a href="#">
-                    <img src="<?= base_url('img/logogestionhumana2.png') ?>"
+                    <img src="<?= base_url('img/sstrojo.png') ?>"
                         alt="Logo Gestión Humana 2"
                         style="max-height: 100px; width: auto;">
                 </a>
@@ -24,7 +24,7 @@
             <!-- Logo 3 -->
             <div class="d-flex justify-content-center">
                 <a href="#">
-                    <img src="<?= base_url('img/logogestionhumanapersonas.png') ?>"
+                    <img src="<?= base_url('img/Psicloid Method5-01.png') ?>"
                         alt="Logo Gestión Humana Personas"
                         style="max-height: 100px; width: auto;">
                 </a>
@@ -33,8 +33,8 @@
             <!-- Logo 4 -->
             <div class="d-flex justify-content-center">
                 <a href="#">
-                    <img src="<?= base_url('img/logoafilogro.png') ?>"
-                        alt="Logo Afilogro"
+                    <img src="<?= base_url('img/logoenterprisesstblancoslogan.png') ?>"
+                        alt="Logo Kpi Cycloid"
                         style="max-height: 100px; width: auto;">
                 </a>
             </div>

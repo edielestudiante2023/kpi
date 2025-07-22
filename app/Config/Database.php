@@ -29,7 +29,7 @@ class Database extends Config
     'hostname' => 'db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com',
     'username' => 'cycloid_userdb',
     'password' => '',
-    'database' => 'afilogro',
+    'database' => 'Kpi Cycloid',
     'DBDriver' => 'MySQLi',
     'DBPrefix' => '',
     'port'     => 25060,

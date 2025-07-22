@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Afilogro</title>
+    <title>Login - Kpi Cycloid</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -45,7 +45,7 @@
           <div class="card shadow-lg my-5 mx-auto">
             <div class="card-body p-4 p-sm-5">
               <div class="text-center mb-4">
-                  <img src="<?= base_url('img/logoafilogro.png') ?>" alt="Logo Afilogro" class="img-fluid" style="max-height: 80px;">
+                  <img src="<?= base_url('img/logoenterprisesstblancoslogan.png') ?>" alt="Logo Kpi Cycloid" class="img-fluid" style="max-height: 80px;">
                   <h2 class="mt-3 mb-1">Iniciar Sesión</h2>
                   <p class="text-muted mb-4">Ingresa tus credenciales para continuar</p>
               </div>

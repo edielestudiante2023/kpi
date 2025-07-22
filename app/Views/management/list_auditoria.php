@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Auditoría de Indicadores – Afilogro</title>
+  <title>Auditoría de Indicadores – Kpi Cycloid</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap & DataTables CSS -->

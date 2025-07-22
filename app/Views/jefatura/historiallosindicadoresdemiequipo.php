@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Historial de Indicadores de Mi Equipo – Afilogro</title>
+  <title>Historial de Indicadores de Mi Equipo – Kpi Cycloid</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <!-- Bootstrap & DataTables CSS -->
   <link

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Historial de Resultados – Afilogro</title>
+  <title>Historial de Resultados – Kpi Cycloid</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- CSS -->

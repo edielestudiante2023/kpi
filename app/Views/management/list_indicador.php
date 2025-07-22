@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Listado de Indicadores – Afilogro</title>
+  <title>Listado de Indicadores – Kpi Cycloid</title>
 
   <!-- Bootstrap & DataTables CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
