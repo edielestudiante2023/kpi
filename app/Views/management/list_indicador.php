@@ -211,7 +211,13 @@
             titleAttr: 'Exportar a Excel',
             className: 'btn btn-success btn-sm',
             exportOptions: {
-              columns: ':not(:last-child)'  // omitir la columna "Acciones"
+              columns: ':not(:last-child)',  // omitir la columna "Acciones"
+              format: {
+                body: function(data, row, column, node) {
+                  // Solo exportar el texto visible, ignorando atributos y HTML oculto
+                  return $(node).text().trim();
+                }
+              }
             }
           }
         ],
