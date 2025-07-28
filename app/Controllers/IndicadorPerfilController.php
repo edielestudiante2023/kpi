@@ -72,7 +72,7 @@ class IndicadorPerfilController extends Controller
         return redirect()->to('/indicadores_perfil')->with('success', 'Asignación actualizada correctamente.');
     }
 
-    public function deleteIndicadorPerfil($id)
+    /* public function deleteIndicadorPerfil($id)
     {
         // 1) Consultar el registro para obtener el id_perfil_cargo
         $registro = $this->indicadorPerfilModel->find($id);
@@ -94,6 +94,21 @@ class IndicadorPerfilController extends Controller
         }
 
         // 3) Eliminar la asignación
+        $this->indicadorPerfilModel->delete($id);
+
+        return redirect()->to('/indicadores_perfil')->with('success', 'Asignación eliminada correctamente.');
+    } */
+
+    public function deleteIndicadorPerfil($id)
+    {
+        // 1) Consultar el registro para obtener el id_perfil_cargo
+        $registro = $this->indicadorPerfilModel->find($id);
+
+        if (!$registro) {
+            return redirect()->to('/indicadores_perfil')->with('error', 'No se encontró la asignación a eliminar.');
+        }
+
+        // 🔥 Bajo tu responsabilidad: eliminamos sin importar si hay usuarios vinculados
         $this->indicadorPerfilModel->delete($id);
 
         return redirect()->to('/indicadores_perfil')->with('success', 'Asignación eliminada correctamente.');
