@@ -57,7 +57,8 @@ class AuthController extends BaseController
             'correo'          => $usuario['correo'],
             'id_roles'        => $usuario['id_roles'],
             'id_perfil_cargo' => $usuario['id_perfil_cargo'],
-            'logged_in'       => true
+            'logged_in'       => true,
+            'isLoggedIn'      => true
         ];
         $session->set($sessionData);
 
@@ -212,7 +213,6 @@ class AuthController extends BaseController
         }
 
         return view('auth/resetear', ['token' => $token]);
-
     }
 
 
