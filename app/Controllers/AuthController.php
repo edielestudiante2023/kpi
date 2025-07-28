@@ -157,8 +157,8 @@ class AuthController extends BaseController
         $link = base_url('resetear/' . $token);
 
         $email = new \SendGrid\Mail\Mail();
-        $email->setFrom("notificacion.cycloidtalent@cycloidtalent.com", "Kpi Cycloid");
-        $email->setSubject("Recuperación de contraseña – Kpi Cycloid");
+        $email->setFrom("notificacion.cycloidtalent@cycloidtalent.com", "Afilogro");
+        $email->setSubject("Recuperación de contraseña – Afilogro");
         $email->addTo($usuario['correo'], $usuario['nombre_completo']);
 
         $contenidoHTML = "
@@ -172,27 +172,19 @@ class AuthController extends BaseController
         </p>
         <p>Este enlace estará activo durante 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.</p>
         <br>
-        <p style='color: #6c757d; font-size: 0.9em;'>Equipo Kpi Cycloid – Cycloid Talent SAS</p>
+        <p style='color: #6c757d; font-size: 0.9em;'>Equipo Afilogro – Cycloid Talent SAS</p>
     ";
-
 
         $email->addContent("text/html", $contenidoHTML);
 
-       try {
-    $sendgrid = new \SendGrid(env('SENDGRID_API_KEY'));
-    $response = $sendgrid->send($email);
-
-    // TEMPORAL: Muestra el contenido de la respuesta
-    log_message('debug', 'SendGrid response: ' . $response->statusCode());
-    log_message('debug', 'SendGrid body: ' . $response->body());
-    log_message('debug', 'SendGrid headers: ' . print_r($response->headers(), true));
-
-    return $response->statusCode() >= 200 && $response->statusCode() < 300;
-} catch (\Exception $e) {
-    log_message('error', 'Error al enviar correo de recuperación: ' . $e->getMessage());
-    dd($e->getMessage()); // Solo para depurar en entorno de desarrollo
-    return false;
-}
+        try {
+            $sendgrid = new \SendGrid(getenv('SENDGRID_API_KEY'));
+            $response = $sendgrid->send($email);
+            return $response->statusCode() >= 200 && $response->statusCode() < 300;
+        } catch (\Exception $e) {
+            log_message('error', 'Error al enviar correo de recuperación: ' . $e->getMessage());
+            return false;
+        }
     }
 
 
@@ -229,9 +221,15 @@ class AuthController extends BaseController
     {
         $token = $this->request->getPost('token');
         $password = $this->request->getPost('password');
+        $password_confirm = $this->request->getPost('password_confirm');
 
-        if (!$token || !$password) {
+        if (!$token || !$password || !$password_confirm) {
             return redirect()->back()->with('error', 'Todos los campos son obligatorios.');
+        }
+
+        // Validar que las contraseñas coincidan
+        if ($password !== $password_confirm) {
+            return redirect()->back()->with('error', 'Las contraseñas no coinciden.');
         }
 
         $userModel = new \App\Models\UserModel();
