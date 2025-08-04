@@ -21,7 +21,7 @@
     <?= $this->include('partials/nav') ?>
 
     <div class="container py-4">
-        <h1 class="mb-4">Dashboard Superadmin</h1>
+        <h1 class="mb-4">Dashboard Superadmin Cycloid</h1>
 
         <!-- Tabla de accesos por rol -->
         <div class="card shadow-sm">
