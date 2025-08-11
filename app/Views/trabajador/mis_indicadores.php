@@ -31,10 +31,11 @@
     <?= $this->include('partials/nav') ?>
 
     <div class="container-fluid py-4">
-        <a href="<?= base_url('trabajador/dashboard') ?>"
-            class="btn btn-primary mb-3">
-            Ir al Dashboard del Trabajador
-        </a>
+        <div class="mb-3">
+            <a href="<?= base_url('trabajador/trabajadordashboard') ?>" class="btn btn-primary">
+                <i class="bi bi-house-door me-1"></i>Dashboard
+            </a>
+        </div>
 
         <h1 class="h3 mb-4">Mis Indicadores – Periodo <?= esc($periodo) ?></h1>
 

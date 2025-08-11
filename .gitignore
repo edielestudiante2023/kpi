@@ -54,14 +54,15 @@ writable/cache/*
 writable/logs/*
 !writable/logs/index.html
 
-writable/session/*
-!writable/session/index.html
+# Ignorar completamente archivos de sesión
+writable/session/**
+
+# Ignorar completamente writable/debugbar y subcarpetas
+writable/debugbar/**
+writable/debugbar/debugbar/**
 
 writable/uploads/*
 !writable/uploads/index.html
-
-writable/debugbar/*
-!writable/debugbar/.gitkeep
 
 php_errors.log
 
@@ -124,10 +125,3 @@ _modules/*
 
 /results/
 /phpunit*.xml
-
-
-# Ignorar archivos temporales de DebugBar
-writable/debugbar/*.json
-
-# Ignorar archivos de sesión
-writable/session/*

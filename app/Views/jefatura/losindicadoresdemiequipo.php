@@ -186,7 +186,10 @@
     </form>
 
     <div class="mt-4">
-      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary">&larr; Volver</a>
+      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
+        <i class="bi bi-house-door me-1"></i>Dashboard
+      </a>
+      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary ms-2">&larr; Volver</a>
       <a href="<?= base_url('jefatura/historiallosindicadoresdemiequipo') ?>" class="btn btn-warning ms-2">Historial</a>
     </div>
   </div>

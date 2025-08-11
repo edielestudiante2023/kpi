@@ -164,6 +164,12 @@
           </tbody>
         </table>
       </div>
+
+      <div class="mt-4">
+        <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
+          <i class="bi bi-house-door me-1"></i>Dashboard
+        </a>
+      </div>
     </form>
   </div>
 

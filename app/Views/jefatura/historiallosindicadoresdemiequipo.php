@@ -270,7 +270,10 @@
     <?php endif; ?>
 
     <div class="mt-4">
-      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary">
+      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
+        <i class="bi bi-house-door me-1"></i>Dashboard
+      </a>
+      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary ms-2">
         &larr; Volver al Dashboard
       </a>
     </div>

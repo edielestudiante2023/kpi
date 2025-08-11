@@ -64,8 +64,14 @@
   <?= $this->include('partials/nav') ?>
 
   <div class="container-fluid py-4 flex-grow-1">
-    <a href="<?= base_url('trabajador/trabajadordashboard') ?>"
-      class="btn btn-secondary mb-3">&larr; Volver al Dashboard</a>
+    <div class="mb-3">
+      <a href="<?= base_url('trabajador/trabajadordashboard') ?>" class="btn btn-primary">
+        <i class="bi bi-house-door me-1"></i>Dashboard
+      </a>
+      <a href="<?= base_url('trabajador/trabajadordashboard') ?>" class="btn btn-secondary ms-2">
+        &larr; Volver al Dashboard
+      </a>
+    </div>
     <h1 class="h3 mb-4">Historial de Resultados de Indicadores</h1>
 
 
