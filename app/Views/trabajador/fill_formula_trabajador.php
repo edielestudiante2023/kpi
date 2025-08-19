@@ -10,19 +10,25 @@
       rel="stylesheet"
     >
     <style>
-      /* Inputs con ancho triplicado */
+      /* Inputs con ancho triplicado y altura duplicada */
       .formula-input {
         width: 300px;
+        height: 60px; /* Duplicar altura estándar (~30px) */
+        font-size: 1.1rem;
+        padding: 10px 12px;
       }
       /* Contenedor flex para inputs y operadores */
       .formula-container {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        margin-top: 10px;
       }
       .formula-container span {
-        line-height: 1.6;
+        line-height: 60px; /* Alinear con la altura de los inputs */
+        font-size: 1.2rem;
+        font-weight: 500;
       }
     </style>
 </head>
