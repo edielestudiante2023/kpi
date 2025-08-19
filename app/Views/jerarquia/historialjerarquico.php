@@ -105,15 +105,28 @@
                             <td>
                                 <?php
                                 $fid = $item['id_indicador'];
-                                if (isset($formulasHist[$fid])) {
-                                    echo '<span class="text-primary" title="Fórmula: ';
-                                    foreach ($formulasHist[$fid] as $p) {
-                                        echo $p['valor'] . ' ';
-                                    }
-                                    echo '">Ver fórmula</span>';
-                                } else {
-                                    echo '-';
-                                }
+                                $orig = $formulasHist[$fid] ?? [];
+                                if (!empty($orig)):
+                                    echo '<small class="text-muted">Original:</small><br>';
+                                    echo '<code class="small">' . esc(implode('', array_column($orig, 'valor'))) . '</code><br>';
+                                    
+                                    // Mostrar fórmula operacionalizada si existe
+                                    $json = json_decode($item['valores_json'] ?? '{}', true);
+                                    if (isset($json['formula_partes']) && $orig):
+                                        echo '<small class="text-muted">Operac.:</small><br>';
+                                        foreach ($orig as $p):
+                                            if ($p['tipo_parte'] === 'dato'):
+                                                echo '<span class="text-primary small">' . esc($json['formula_partes'][$p['valor']] ?? '') . '</span>';
+                                            else:
+                                                echo '<span class="small">' . esc($p['valor']) . '</span>';
+                                            endif;
+                                        endforeach;
+                                    else:
+                                        echo '<small class="text-muted">Dato directo</small>';
+                                    endif;
+                                else:
+                                    echo '<small class="text-muted">Sin fórmula</small>';
+                                endif;
                                 ?>
                             </td>
                         </tr>
