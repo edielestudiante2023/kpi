@@ -10,25 +10,23 @@
       rel="stylesheet"
     >
     <style>
-      /* Inputs con ancho triplicado y altura duplicada */
+      /* Inputs con scroll horizontal para texto largo */
       .formula-input {
         width: 300px;
-        height: 60px; /* Duplicar altura estándar (~30px) */
-        font-size: 1.1rem;
-        padding: 10px 12px;
+        height: 56px;
+        font-size: 1rem;
+        overflow-x: auto;     /* scroll si el texto es largo */
+        white-space: nowrap;  /* evita salto de línea dentro */
       }
       /* Contenedor flex para inputs y operadores */
       .formula-container {
         display: flex;
-        flex-direction: column; /* Uno debajo del otro */
-        align-items: flex-start; /* Alineados a la izquierda */
-        gap: 0.75rem;
-        margin-top: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
       }
       .formula-container span {
-        line-height: normal; 
-        font-size: 1.2rem;
-        font-weight: 500;
+        line-height: 1.6;
       }
     </style>
 </head>
