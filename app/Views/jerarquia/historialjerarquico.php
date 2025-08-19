@@ -8,6 +8,7 @@
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
@@ -47,6 +48,16 @@
     <?= $this->include('partials/nav') ?>
 
     <div class="container-fluid py-4">
+        <!-- Botones de navegación -->
+        <div class="mb-3">
+            <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
+                <i class="bi bi-house-door me-1"></i>Dashboard
+            </a>
+            <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary ms-2">
+                &larr; Volver al Dashboard
+            </a>
+        </div>
+        
         <h1 class="h4 mb-4">📊 Historial de Indicadores del Equipo</h1>
 
         <!-- Filtros -->
