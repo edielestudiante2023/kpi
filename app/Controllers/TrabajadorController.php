@@ -167,6 +167,7 @@ class TrabajadorController extends BaseController
                             ->first();
 
                         if ($anterior && is_numeric($anterior['resultado_real'])) {
+                            // Hay registro anterior válido - evaluar comparativa normalmente
                             $valorAnterior = (float) $anterior['resultado_real'];
                             log_message('debug', "📊 Comparativa IP {$ipId} | Usuario {$userId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
                             // Actualizar la meta_valor del indicador base solo si es tipo comparativa
@@ -176,12 +177,13 @@ class TrabajadorController extends BaseController
                                 ->update();
 
                             log_message('debug', "🔄 Indicador {$relacion['id_indicador']} actualizado: meta_valor = {$valorAnterior}");
+                            $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
                         } else {
+                            // Primer registro - no hay base de comparación válida
                             $valorAnterior = $valorNum;
-                            log_message('debug', "🆕 Comparativa IP {$ipId} | Usuario {$userId} | Primer registro, se toma como valor base = {$valorAnterior}");
+                            $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
+                            log_message('debug', "🆕 Comparativa IP {$ipId} | Usuario {$userId} | Primer registro, valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
                         }
-
-                        $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
                         break;
                 }
             } else {
@@ -381,6 +383,7 @@ class TrabajadorController extends BaseController
                         ->first();
 
                     if ($anterior && is_numeric($anterior['resultado_real'])) {
+                        // Hay registro anterior válido - evaluar comparativa normalmente
                         $valorAnterior = (float) $anterior['resultado_real'];
                         log_message('debug', "📊 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
 
@@ -390,12 +393,13 @@ class TrabajadorController extends BaseController
                             ->set('meta_valor', $valorAnterior)
                             ->update();
                         log_message('debug', "🔄 Indicador {$idIndicador} actualizado: meta_valor = {$valorAnterior}");
+                        $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
                     } else {
+                        // Primer registro - no hay base de comparación válida
                         $valorAnterior = $valorNum;
-                        log_message('debug', "🆕 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Primer registro, se toma como valor base = {$valorAnterior}");
+                        $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
+                        log_message('debug', "🆕 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Primer registro, valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
                     }
-
-                    $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
                     break;
             }
         } else {
