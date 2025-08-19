@@ -29,6 +29,14 @@
             font-size: 0.8rem;
         }
 
+        .tag-neutral {
+            background-color: #6c757d;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
         .small-cell {
             font-size: 0.85rem;
         }
@@ -85,7 +93,13 @@
                             </td>
                             <td><?= esc($item['unidad']) ?></td>
                             <td class="text-center">
-                                <?= $item['cumple'] == 1 ? '<span class="tag-si">Sí</span>' : '<span class="tag-no">No</span>' ?>
+                                <?php if ($item['cumple'] === '1'): ?>
+                                    <span class="tag-si">Sí</span>
+                                <?php elseif ($item['cumple'] === '0'): ?>
+                                    <span class="tag-no">No</span>
+                                <?php else: ?>
+                                    <span class="tag-neutral">—</span>
+                                <?php endif; ?>
                             </td>
                             <td><?= esc($item['comentario']) ?></td>
                             <td>
