@@ -251,10 +251,12 @@
                 <td data-bs-toggle="tooltip" title="<?= esc($r['resultado_real']) ?>">
                   <?= esc($r['resultado_real']) ?></td>
                 <td>
-                  <?php if ($r['cumple']): ?>
+                  <?php if ($r['cumple'] === '1'): ?>
                     <span class="badge bg-success" data-bs-toggle="tooltip" title="Sí">Sí</span>
-                  <?php else: ?>
+                  <?php elseif ($r['cumple'] === '0'): ?>
                     <span class="badge bg-danger" data-bs-toggle="tooltip" title="No">No</span>
+                  <?php else: ?>
+                    <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Sin evaluar">—</span>
                   <?php endif; ?>
                 </td>
                 <td data-bs-toggle="tooltip" title="<?= esc($r['comentario'] ?: '—') ?>">

@@ -238,11 +238,8 @@ class TrabajadorController extends BaseController
     {
         $session    = session();
         $userId     = $session->get('id_users');
-        $fechaDesde = $this->request->getGet('fecha_desde') ?? date('Y-m-01');
-        $fechaHasta = $this->request->getGet('fecha_hasta') ?? date('Y-m-d');
 
-        // 1) Traer el historial
-
+        // 1) Traer TODO el historial (sin filtros de fecha)
         $historial = $this->histModel
             ->select([
                 'historial_indicadores.*',
@@ -261,15 +258,11 @@ class TrabajadorController extends BaseController
                 'indicadores.created_at                 AS creado_en',
                 'indicadores.periodicidad               AS periodicidad',
                 'indicadores.ponderacion                AS ponderacion',
-
-
             ])
             ->join('indicadores_perfil', 'indicadores_perfil.id_indicador_perfil = historial_indicadores.id_indicador_perfil')
             ->join('indicadores',         'indicadores.id_indicador = indicadores_perfil.id_indicador')
             ->where('historial_indicadores.id_usuario', $userId)
-            ->where('historial_indicadores.periodo >=', $fechaDesde . ' 00:00:00')
-            ->where('historial_indicadores.periodo <=', $fechaHasta . ' 23:59:59')
-            ->orderBy('historial_indicadores.periodo', 'DESC')
+            ->orderBy('historial_indicadores.fecha_registro', 'DESC')
             ->findAll();
 
         // 2) Precargar partes de fórmula para cada indicador del historial
@@ -290,8 +283,6 @@ class TrabajadorController extends BaseController
         // 3) Enviar todo a la vista
         return view('trabajador/historial_resultados', [
             'historial'    => $historial,
-            'fecha_desde'  => $fechaDesde,
-            'fecha_hasta'  => $fechaHasta,
             'formulasHist' => $formulasHist,
         ]);
     }

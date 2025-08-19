@@ -82,24 +82,6 @@
       </div>
     <?php endif; ?>
 
-    <!-- FILTRO Desde – Hasta -->
-    <form method="get" class="row g-3 mb-4" action="<?= base_url('jefatura/historialmisindicadoresfeje') ?>">
-      <div class="col-auto">
-        <label for="fecha_desde" class="form-label">Desde:</label>
-        <input type="text" id="fecha_desde" name="fecha_desde"
-          class="datepicker form-control"
-          value="<?= esc($fecha_desde) ?>">
-      </div>
-      <div class="col-auto">
-        <label for="fecha_hasta" class="form-label">Hasta:</label>
-        <input type="text" id="fecha_hasta" name="fecha_hasta"
-          class="datepicker form-control"
-          value="<?= esc($fecha_hasta) ?>">
-      </div>
-      <div class="col-auto align-self-end">
-        <button type="submit" class="btn btn-primary">Filtrar</button>
-      </div>
-    </form>
 
 
     <?php if (empty($historial)): ?>
@@ -133,9 +115,23 @@
           </thead>
           <tfoot>
             <tr>
-              <?php for ($i = 0; $i < 16; $i++): ?>
-                <th></th>
-              <?php endfor; ?>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
+              <th><select><option value=""></option></select></th>
             </tr>
           </tfoot>
           <tbody>
@@ -244,7 +240,7 @@
       new bootstrap.Tooltip(el);
     });
 
-    // Inicializa DataTable
+    // DataTables con filtros en tfoot
     $('#historialTable').DataTable({
       scrollX: true,
       dom: 'Bfrtip',
@@ -253,24 +249,32 @@
         title: 'Historial_de_Indicadores_Jefatura'
       }],
       order: [
-        [14, 'desc']
-      ],
+        [16, 'desc']
+      ], // índice 16 = Fecha de Registro
       columnDefs: [{
-        targets: [6, 7, 8, 9, 11],
+        targets: [6, 7, 8, 9, 10],
         visible: false
-      }]
-    });
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      flatpickr('.datepicker', {
-        locale: 'es', // español
-        dateFormat: 'Y-m-d', // formato interno ISO (para el value)
-        altInput: true, // muestra otro input
-        altFormat: 'd/m/Y', // DD/MM/YYYY
-        allowInput: true, // dejar que el usuario escriba
-        monthSelectorType: 'dropdown' // selector de mes desplegable
-      });
+      }],
+      initComplete: function () {
+        // Aplicar filtros de columna
+        this.api().columns().every(function () {
+          var column = this;
+          var select = $('select', this.footer());
+          
+          if (select.length) {
+            column.data().unique().sort().each(function (d, j) {
+              if (d) {
+                select.append('<option value="' + d + '">' + d + '</option>');
+              }
+            });
+
+            select.on('change', function () {
+              var val = $.fn.dataTable.util.escapeRegex($(this).val());
+              column.search(val ? '^' + val + '$' : '', true, false).draw();
+            });
+          }
+        });
+      }
     });
   </script>
 

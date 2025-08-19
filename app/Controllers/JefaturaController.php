@@ -436,17 +436,15 @@ class JefaturaController extends BaseController
     {
         $session    = session();
         $userId     = $session->get('id_users');
-        $fechaDesde = $this->request->getGet('fecha_desde') ?? date('Y-m-01');
-        $fechaHasta = $this->request->getGet('fecha_hasta') ?? date('Y-m-d');
 
-        // 1) Traer el historial incluyendo id_indicador
+        // 1) Traer TODO el historial (sin filtros de fecha)
         $historial = $this->histModel
             ->select([
                 'historial_indicadores.*',
                 'indicadores_perfil.id_indicador         AS id_indicador',
                 'users.nombre_completo                   AS nombre_completo',
                 'indicadores.nombre                      AS nombre_indicador',
-                'indicadores.meta_valor                  AS meta_valor',         // ← FALTABA
+                'indicadores.meta_valor                  AS meta_valor',
                 'indicadores.meta_descripcion            AS meta_texto',
                 'indicadores.ponderacion                 AS ponderacion',
                 'indicadores.periodicidad                AS periodicidad',
@@ -469,16 +467,13 @@ class JefaturaController extends BaseController
             ->join(
                 'indicadores',
                 'indicadores.id_indicador = indicadores_perfil.id_indicador'
-
             )
             ->join(
                 'users',
                 'users.id_users = historial_indicadores.id_usuario'
             )
             ->where('historial_indicadores.id_usuario', $userId)
-            ->where('historial_indicadores.periodo >=', $fechaDesde)
-            ->where('historial_indicadores.periodo <=', $fechaHasta)
-            ->orderBy('historial_indicadores.periodo', 'DESC')
+            ->orderBy('historial_indicadores.fecha_registro', 'DESC')
             ->findAll();
 
         // 2) Precargar las partes de fórmula indexadas por id_indicador
@@ -496,9 +491,7 @@ class JefaturaController extends BaseController
         // 3) Pasar todo a la vista
         return view('jefatura/historialmisindicadoresfeje', [
             'historial'    => $historial,
-            'fecha_desde'  => $fechaDesde,
-            'fecha_hasta'  => $fechaHasta,
-            'formulasHist' => $formulasHist,     // ← importante
+            'formulasHist' => $formulasHist,
         ]);
     }
 
