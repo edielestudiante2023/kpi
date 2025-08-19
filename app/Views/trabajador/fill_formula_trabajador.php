@@ -10,24 +10,10 @@
       rel="stylesheet"
     >
     <style>
-      /* Inputs con scroll horizontal para texto largo */
-      .formula-input {
-        width: 300px;
-        height: 56px;
-        font-size: 1rem;
-        overflow-x: auto;     /* scroll si el texto es largo */
-        white-space: nowrap;  /* evita salto de línea dentro */
-      }
-      /* Contenedor flex para inputs y operadores */
-      .formula-container {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .formula-container span {
-        line-height: 1.6;
-      }
+      .formula-container { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; }
+      .formula-group { display:flex; align-items:center; gap:0.5rem; }
+      .formula-label { max-width:360px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:8px 10px; border:1px solid #dee2e6; border-radius:0.375rem; background:#f8f9fa; font-size:0.95rem; }
+      .formula-input { width:140px; height:56px; font-size:1rem; overflow-x:auto; white-space:nowrap; }
     </style>
 </head>
 <body class="p-4">
@@ -46,14 +32,10 @@
                 <div class="formula-container">
                   <?php foreach ($partes as $p): ?>
                       <?php if ($p['tipo_parte'] === 'dato'): ?>
-                          <input 
-                            type="number"
-                            step="any"
-                            name="dato[<?= esc($p['valor']) ?>]"
-                            placeholder="<?= esc($p['valor']) ?>"
-                            class="form-control formula-input"
-                            required
-                          >
+                          <div class="formula-group">
+                            <span class="formula-label" title="<?= esc($p['valor']) ?>"><?= esc($p['valor']) ?></span>
+                            <input type="number" step="any" name="dato[<?= esc($p['valor']) ?>]" placeholder="0" class="form-control formula-input" required>
+                          </div>
                       <?php else: ?>
                           <span><?= esc($p['valor']) ?></span>
                       <?php endif; ?>
