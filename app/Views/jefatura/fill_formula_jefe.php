@@ -20,13 +20,13 @@
       /* Contenedor flex para inputs y operadores */
       .formula-container {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
+        flex-direction: column; /* Uno debajo del otro */
+        align-items: flex-start; /* Alineados a la izquierda */
         gap: 0.75rem;
         margin-top: 10px;
       }
       .formula-container span {
-        line-height: 60px; /* Alinear con la altura de los inputs */
+        line-height: normal; 
         font-size: 1.2rem;
         font-weight: 500;
       }
