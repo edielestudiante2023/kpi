@@ -101,7 +101,25 @@
                             <tr>
                                 <td><strong><?= esc($i['nombre_indicador']) ?></strong></td>
                                 <td><?= esc($i['meta_valor']) ?></td>
-                                <td><?= esc($i['meta_descripcion']) ?></td>
+                                <td>
+                                    <?php 
+                                    $descripcion = esc($i['meta_descripcion']);
+                                    $descripcionCorta = strlen($descripcion) > 50 ? substr($descripcion, 0, 50) . '...' : $descripcion;
+                                    ?>
+                                    <div class="dropdown">
+                                        <button class="btn btn-link btn-sm text-start p-0 dropdown-toggle text-decoration-none" 
+                                                type="button" 
+                                                data-bs-toggle="dropdown" 
+                                                aria-expanded="false"
+                                                style="white-space: normal; text-align: left; width: 200px;">
+                                            <?= $descripcionCorta ?>
+                                        </button>
+                                        <div class="dropdown-menu p-3" style="max-width: 400px; white-space: normal;">
+                                            <h6 class="dropdown-header">Meta Descripción Completa:</h6>
+                                            <p class="mb-0 small"><?= $descripcion ?></p>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td><?= esc($i['tipo_meta']) ?></td>
 
                                 <!-- Fórmula estática -->
