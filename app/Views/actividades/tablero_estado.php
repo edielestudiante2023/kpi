@@ -208,6 +208,154 @@
             background: #0d6efd;
             color: white;
         }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            /* Ocultar tip de arrastrar en móvil (no funciona bien en touch) */
+            .tip-arrastrar {
+                display: none !important;
+            }
+
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-center.mb-3 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-3 > .d-flex.gap-2:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-3 > .d-flex.gap-2:last-child .btn {
+                flex: 1;
+                min-width: 100px;
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            /* Cards de resumen - 2 por fila en móvil */
+            .stat-card .card-body {
+                padding: 0.5rem !important;
+            }
+            .stat-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            .stat-number {
+                font-size: 1.2rem;
+            }
+            .stat-label {
+                font-size: 0.65rem;
+            }
+
+            /* Filtros más compactos */
+            .card-body.py-2 .row.g-2 > div[class^="col-md"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .card-body.py-2 .row.g-2 > .col-md-3:last-child {
+                margin-top: 0.5rem;
+            }
+            .card-body.py-2 .row.g-2 > .col-md-3:last-child .d-flex.gap-1 {
+                flex-wrap: wrap;
+            }
+            .card-body.py-2 .row.g-2 > .col-md-3:last-child .d-flex.gap-1 .btn {
+                flex: 1;
+                min-width: 80px;
+            }
+
+            /* Kanban: columnas apiladas verticalmente en móvil */
+            .kanban-container {
+                flex-direction: column;
+                overflow-x: visible;
+            }
+            .kanban-column {
+                min-width: 100%;
+                margin-bottom: 1rem;
+            }
+            .kanban-body {
+                min-height: 150px;
+                max-height: 300px;
+            }
+            .kanban-header {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            /* Cards del Kanban más compactas */
+            .kanban-card {
+                padding: 0.5rem;
+            }
+            .kanban-card::before {
+                display: none; /* Ocultar icono de arrastrar */
+            }
+            .card-codigo {
+                font-size: 0.65rem;
+            }
+            .card-titulo {
+                font-size: 0.85rem;
+            }
+            .card-meta {
+                font-size: 0.7rem;
+            }
+            .avatar-sm {
+                width: 20px;
+                height: 20px;
+                font-size: 0.6rem;
+            }
+
+            /* Filtros activos badges más pequeños */
+            .mb-3 > .badge {
+                font-size: 0.7rem;
+                margin-bottom: 0.25rem;
+                display: inline-block;
+            }
+
+            /* Filtros avanzados */
+            .filtros-avanzados .d-flex.gap-1.flex-wrap .btn {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
+
+            /* Responsable cards en resumen */
+            .responsable-card {
+                padding: 0.4rem 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            /* Toast en móvil */
+            .toast-container {
+                left: 1rem;
+                right: 1rem;
+                bottom: 1rem !important;
+            }
+            .toast {
+                width: 100%;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container-fluid {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            h1.h3 {
+                font-size: 1.25rem;
+            }
+            .stat-card .d-flex.align-items-center {
+                flex-direction: column;
+                text-align: center;
+            }
+            .stat-icon {
+                margin-bottom: 0.25rem;
+                margin-right: 0 !important;
+            }
+            .kanban-body {
+                max-height: 250px;
+            }
+        }
     </style>
 </head>
 <body>

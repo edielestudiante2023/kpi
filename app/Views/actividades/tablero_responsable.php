@@ -120,6 +120,100 @@
             height: 4px;
             margin-top: 0.5rem;
         }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child {
+                width: 100%;
+                display: flex;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child .btn {
+                flex: 1;
+                font-size: 0.85rem;
+            }
+
+            /* Título de página */
+            h1.h3 {
+                font-size: 1.25rem;
+            }
+
+            /* Filtros - apilados verticalmente */
+            .card-body.py-2 .row.g-2 > div[class^="col-md"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            /* Columnas de responsables - apiladas verticalmente */
+            .responsable-container {
+                flex-direction: column;
+                overflow-x: visible;
+            }
+            .responsable-column {
+                min-width: 100%;
+                max-width: 100%;
+                margin-bottom: 1rem;
+            }
+            .responsable-body {
+                min-height: 200px;
+                max-height: 350px;
+            }
+
+            /* Header de responsable más compacto */
+            .responsable-header {
+                padding: 0.5rem 0.75rem;
+            }
+            .avatar-lg {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+            .stats-mini {
+                font-size: 0.65rem;
+            }
+            .stats-mini span {
+                padding: 0.1rem 0.3rem;
+            }
+
+            /* Cards de actividad más compactas */
+            .actividad-card {
+                padding: 0.5rem;
+            }
+            .card-codigo {
+                font-size: 0.65rem;
+            }
+            .card-titulo {
+                font-size: 0.85rem;
+            }
+            .card-meta {
+                font-size: 0.7rem;
+            }
+            .badge-estado {
+                font-size: 0.6rem;
+                padding: 0.15rem 0.4rem;
+            }
+
+            /* Badge de usuario */
+            .text-end.mb-2 .badge {
+                font-size: 0.8rem !important;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container-fluid {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            .responsable-body {
+                max-height: 280px;
+            }
+        }
     </style>
 </head>
 <body>

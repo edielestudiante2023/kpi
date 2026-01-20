@@ -28,6 +28,84 @@
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
         }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            .form-card {
+                max-width: 100%;
+            }
+
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > a.btn {
+                width: 100%;
+            }
+
+            /* Título con código */
+            h1.h3 {
+                font-size: 1.1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .codigo-actividad {
+                font-size: 0.75rem;
+                margin-left: 0 !important;
+            }
+
+            /* Formulario: campos de 2 columnas pasan a 1 columna */
+            .card-body .row .col-md-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            /* Botones del formulario */
+            .d-flex.justify-content-between > a.btn,
+            .d-flex.justify-content-between .d-flex.gap-2 {
+                width: 100%;
+            }
+            .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .d-flex.justify-content-between .d-flex.gap-2 {
+                flex-direction: column;
+            }
+            .d-flex.justify-content-between .d-flex.gap-2 .btn {
+                width: 100%;
+            }
+
+            /* Badge de usuario */
+            .text-end.mb-2 .badge {
+                font-size: 0.8rem !important;
+            }
+
+            /* Select2 ajustes */
+            .select2-container {
+                width: 100% !important;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            .card-body {
+                padding: 1rem;
+            }
+            .form-label {
+                font-size: 0.9rem;
+            }
+            .form-control, .form-select {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>

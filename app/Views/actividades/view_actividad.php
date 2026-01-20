@@ -110,6 +110,159 @@
         .min-width-0 {
             min-width: 0;
         }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            .detail-card {
+                max-width: 100%;
+            }
+
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-start.mb-4 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-start.mb-4 > .d-flex.gap-2:last-child {
+                width: 100%;
+                display: flex;
+            }
+            .d-flex.justify-content-between.align-items-start.mb-4 > .d-flex.gap-2:last-child .btn {
+                flex: 1;
+            }
+
+            /* Título y badges */
+            h1.h3 {
+                font-size: 1.15rem;
+            }
+            .codigo-actividad {
+                font-size: 0.7rem;
+            }
+            .badge-estado, .badge-prioridad {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.7rem;
+            }
+
+            /* Layout de columnas: sidebar pasa abajo */
+            .row > .col-lg-8 {
+                order: 2;
+            }
+            .row > .col-lg-4 {
+                order: 1;
+                margin-bottom: 1rem;
+            }
+
+            /* Botones de cambio de estado */
+            .card.border-primary .btn-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            .card.border-primary .btn-group .btn {
+                border-radius: 0.25rem !important;
+                margin-bottom: 0.25rem;
+            }
+            .card.border-primary .d-flex.align-items-center.justify-content-between {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            /* Avatar */
+            .avatar-md {
+                width: 32px;
+                height: 32px;
+                font-size: 0.7rem;
+            }
+
+            /* Comentarios */
+            .comentario-item {
+                padding-left: 0.75rem;
+            }
+            .comentario-meta {
+                font-size: 0.75rem;
+            }
+            .comentario-meta .float-end {
+                float: none !important;
+                display: block;
+                margin-top: 0.25rem;
+            }
+
+            /* Formulario de comentarios */
+            #form-comentario .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            #form-comentario .d-flex.justify-content-between .form-check {
+                order: 1;
+            }
+            #form-comentario .d-flex.justify-content-between button {
+                order: 2;
+                width: 100%;
+            }
+
+            /* Historial */
+            .historial-item {
+                font-size: 0.8rem;
+            }
+            .historial-item .d-flex.justify-content-between {
+                flex-direction: column;
+            }
+            .historial-item .d-flex.justify-content-between small {
+                margin-top: 0.25rem;
+            }
+
+            /* Archivos */
+            .archivo-item {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.5rem;
+            }
+            .archivo-item .btn {
+                align-self: flex-end;
+            }
+            .archivo-item a {
+                max-width: 100%;
+            }
+
+            /* Badge de usuario */
+            .text-end.mb-2 .badge {
+                font-size: 0.8rem !important;
+            }
+
+            /* Toast */
+            .toast-container {
+                left: 1rem;
+                right: 1rem;
+                top: auto !important;
+                bottom: 1rem !important;
+            }
+            .toast {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            .card-body {
+                padding: 0.75rem;
+            }
+            .card-header {
+                padding: 0.5rem 0.75rem;
+            }
+            .card-header h6 {
+                font-size: 0.9rem;
+            }
+            .info-label {
+                font-size: 0.7rem;
+            }
+            .info-value {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>

@@ -37,6 +37,91 @@
             border-radius: 8px;
             background: #f8f9fa;
         }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child {
+                width: 100%;
+                display: flex;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child .btn {
+                flex: 1;
+                font-size: 0.85rem;
+            }
+
+            /* Título de página */
+            h1.h3 {
+                font-size: 1.25rem;
+            }
+
+            /* Cards de estadísticas - 3 por fila */
+            .stat-card .card-body {
+                padding: 0.75rem;
+            }
+            .stat-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2rem;
+            }
+            .stat-number {
+                font-size: 1.5rem;
+            }
+
+            /* Layout columnas */
+            .row.g-4 > .col-lg-8,
+            .row.g-4 > .col-lg-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            /* Tabla de responsables - ocultar columnas */
+            .table th:nth-child(3),
+            .table td:nth-child(3),
+            .table th:nth-child(5),
+            .table td:nth-child(5) {
+                display: none;
+            }
+            .table th, .table td {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            /* Accesos rápidos */
+            .d-grid.gap-2 .btn {
+                font-size: 0.85rem;
+            }
+
+            /* Badge de usuario */
+            .text-end.mb-2 .badge {
+                font-size: 0.8rem !important;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            /* Cards de estadísticas más pequeños */
+            .stat-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            .stat-number {
+                font-size: 1.25rem;
+            }
+            .card-body.text-center .text-muted.small {
+                font-size: 0.7rem;
+            }
+        }
     </style>
 </head>
 <body>

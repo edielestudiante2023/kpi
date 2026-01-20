@@ -36,6 +36,81 @@
         .prioridad-dot.alta { background: #fd7e14; }
         .prioridad-dot.media { background: #ffc107; }
         .prioridad-dot.baja { background: #198754; }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            .form-card {
+                max-width: 100%;
+            }
+
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child .btn {
+                flex: 1;
+                min-width: 120px;
+                font-size: 0.85rem;
+            }
+
+            /* Título de página más pequeño */
+            h1.h3 {
+                font-size: 1.25rem;
+            }
+
+            /* Formulario: campos de 2 columnas pasan a 1 columna */
+            .card-body .row .col-md-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            /* Botones del formulario */
+            .d-flex.justify-content-end.gap-2 {
+                flex-direction: column;
+            }
+            .d-flex.justify-content-end.gap-2 .btn {
+                width: 100%;
+            }
+
+            /* Badge de usuario */
+            .text-end.mb-2 .badge {
+                font-size: 0.8rem !important;
+            }
+
+            /* Textarea más pequeño */
+            textarea.form-control {
+                min-height: 80px;
+            }
+
+            /* Select2 ajustes */
+            .select2-container {
+                width: 100% !important;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            .card-body {
+                padding: 1rem;
+            }
+            .form-label {
+                font-size: 0.9rem;
+            }
+            .form-control, .form-select {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>

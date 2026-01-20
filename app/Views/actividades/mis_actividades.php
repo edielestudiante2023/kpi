@@ -25,6 +25,83 @@
         .prioridad-baja { color: #198754; }
 
         .fecha-vencida { color: #dc3545; font-weight: 600; }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            /* Header más compacto */
+            .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child {
+                width: 100%;
+                display: flex;
+            }
+            .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2:last-child .btn {
+                flex: 1;
+                font-size: 0.85rem;
+            }
+
+            /* Título de página */
+            h1.h3 {
+                font-size: 1.25rem;
+            }
+
+            /* Tabs más compactos */
+            .nav-tabs .nav-link {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+            }
+            .nav-tabs .nav-link .badge {
+                font-size: 0.7rem;
+            }
+
+            /* Tabla responsive - ocultar algunas columnas */
+            #tablaAsignadas th:nth-child(5),
+            #tablaAsignadas td:nth-child(5),
+            #tablaAsignadas th:nth-child(6),
+            #tablaAsignadas td:nth-child(6),
+            #tablaCreadas th:nth-child(5),
+            #tablaCreadas td:nth-child(5),
+            #tablaCreadas th:nth-child(6),
+            #tablaCreadas td:nth-child(6) {
+                display: none;
+            }
+
+            /* Celdas de tabla más compactas */
+            .table td, .table th {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+            .table code {
+                font-size: 0.75rem;
+            }
+            .badge-estado {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+            }
+
+            /* Badge de usuario */
+            .text-end.mb-2 .badge {
+                font-size: 0.8rem !important;
+            }
+        }
+
+        /* Pantallas muy pequeñas (< 480px) */
+        @media (max-width: 480px) {
+            .container {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            /* Ocultar más columnas en móvil muy pequeño */
+            #tablaAsignadas th:nth-child(4),
+            #tablaAsignadas td:nth-child(4),
+            #tablaCreadas th:nth-child(4),
+            #tablaCreadas td:nth-child(4) {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
