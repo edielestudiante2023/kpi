@@ -254,6 +254,46 @@ class ActividadModel extends Model
             }
         }
 
+        // Ajustar porcentaje de avance automáticamente según estado
+        $porcentajeActual = (int) ($actividad['porcentaje_avance'] ?? 0);
+
+        switch ($nuevoEstado) {
+            case 'pendiente':
+                // Si viene de completada o tiene 100%, resetear a 0
+                if ($estadoAnterior === 'completada' || $porcentajeActual === 100) {
+                    $dataUpdate['porcentaje_avance'] = 0;
+                }
+                // Limpiar fecha de cierre si se regresa a pendiente
+                $dataUpdate['fecha_cierre'] = null;
+                break;
+
+            case 'en_progreso':
+                // Si viene de completada o pendiente con 0/100%, poner en 25%
+                if ($porcentajeActual === 0 || $porcentajeActual === 100) {
+                    $dataUpdate['porcentaje_avance'] = 25;
+                }
+                // Limpiar fecha de cierre si se regresa a en_progreso
+                $dataUpdate['fecha_cierre'] = null;
+                break;
+
+            case 'en_revision':
+                // En revisión debería estar entre 75-90%, nunca 100%
+                if ($porcentajeActual < 75 || $porcentajeActual === 100) {
+                    $dataUpdate['porcentaje_avance'] = 90;
+                }
+                // Limpiar fecha de cierre si se regresa a en_revision
+                $dataUpdate['fecha_cierre'] = null;
+                break;
+
+            case 'completada':
+                // Ya manejado arriba: porcentaje = 100
+                break;
+
+            case 'cancelada':
+                // Mantener el porcentaje actual (ya manejado arriba con fecha_cierre)
+                break;
+        }
+
         $this->update($idActividad, $dataUpdate);
 
         // Registrar en historial
