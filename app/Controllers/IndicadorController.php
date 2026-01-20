@@ -27,10 +27,13 @@ class IndicadorController extends BaseController
     {
         $indicadores = $this->indicadorModel->orderBy('created_at', 'DESC')->findAll();
 
-        // Cargar la fórmula desglosada
+        // Cargar todas las fórmulas de una sola vez (evita N+1)
         $formulaModel = new PartesFormulaModel();
+        $indicadorIds = array_column($indicadores, 'id_indicador');
+        $formulasTexto = $formulaModel->getFormulasComoTextoPorIndicadores($indicadorIds);
+
         foreach ($indicadores as &$i) {
-            $i['formula_renderizada'] = $formulaModel->getFormulaComoTexto($i['id_indicador']);
+            $i['formula_renderizada'] = $formulasTexto[$i['id_indicador']] ?? '';
         }
 
         return view('management/list_indicador', ['indicadores' => $indicadores]);
@@ -45,12 +48,12 @@ class IndicadorController extends BaseController
     {
         $rules = [
             'nombre'             => 'required',
-            'periodicidad'       => 'required',
-            'ponderacion'        => 'required|numeric',
-            'meta_valor'         => 'required',
+            'periodicidad'       => 'required|in_list[Mensual,Bimensual,Trimestral,Semestral,Anual]',
+            'ponderacion'        => 'required|numeric|greater_than[0]|less_than_equal_to[100]',
+            'meta_valor'         => 'required|numeric',
             'meta_descripcion'   => 'required',
-            'tipo_meta'          => 'required',
-            'metodo_calculo'     => 'required',
+            'tipo_meta'          => 'required|in_list[mayor_igual,menor_igual,igual,comparativa]',
+            'metodo_calculo'     => 'required|in_list[formula,manual,semiautomatico]',
             'unidad'             => 'required',
             'objetivo_proceso'   => 'required',
             'objetivo_calidad'   => 'required',
@@ -89,17 +92,17 @@ class IndicadorController extends BaseController
     public function editIndicadorPost($id)
     {
         $rules = [
-            'nombre'          => 'required',
-            'periodicidad'    => 'required',
-            'ponderacion'     => 'required',
-            'meta_valor'      => 'required',
-            'meta_descripcion' => 'required',
-            'tipo_meta' => 'required|in_list[mayor_igual,menor_igual,igual,comparativa]',
-            'metodo_calculo'  => 'required|in_list[formula,manual,semiautomatico]',
-            'unidad'          => 'required',
-            'objetivo_proceso' => 'required',
-            'objetivo_calidad' => 'required',
-            'tipo_aplicacion' => 'required|in_list[cargo,area]'
+            'nombre'             => 'required',
+            'periodicidad'       => 'required|in_list[Mensual,Bimensual,Trimestral,Semestral,Anual]',
+            'ponderacion'        => 'required|numeric|greater_than[0]|less_than_equal_to[100]',
+            'meta_valor'         => 'required|numeric',
+            'meta_descripcion'   => 'required',
+            'tipo_meta'          => 'required|in_list[mayor_igual,menor_igual,igual,comparativa]',
+            'metodo_calculo'     => 'required|in_list[formula,manual,semiautomatico]',
+            'unidad'             => 'required',
+            'objetivo_proceso'   => 'required',
+            'objetivo_calidad'   => 'required',
+            'tipo_aplicacion'    => 'required|in_list[cargo,area]'
         ];
 
         if (! $this->validate($rules)) {

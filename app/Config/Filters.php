@@ -35,6 +35,7 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'auth' => \App\Filters\Auth::class,
+        'sesiontracking' => \App\Filters\SesionTrackingFilter::class,
     ];
 
     /**
@@ -52,7 +53,7 @@ class Filters extends BaseFilters
      */
     public array $required = [
         'before' => [
-            'forcehttps', // Force Global Secure Requests
+            // 'forcehttps', // Force Global Secure Requests - Comentado para desarrollo local
             'pagecache',  // Web Page Caching
         ],
         'after' => [
@@ -81,6 +82,21 @@ class Filters extends BaseFilters
                 'resetear/*',
                 'cambiarclave',
                 'cambiarclave/*',
+            ]],
+            'sesiontracking' => ['except' => [
+                '/',
+                'login',
+                'login/*',
+                'logout',
+                'auth',
+                'auth/*',
+                'recuperar',
+                'recuperar/*',
+                'resetear',
+                'resetear/*',
+                'cambiarclave',
+                'cambiarclave/*',
+                'sesion/heartbeat',
             ]],
             // 'honeypot',
             // 'csrf',

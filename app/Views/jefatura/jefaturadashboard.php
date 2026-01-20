@@ -83,10 +83,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- MODULO DE ACTIVIDADES -->
+            <div class="col-12">
+                <hr class="my-2">
+                <h5 class="text-muted mb-3"><i class="bi bi-kanban me-2"></i>Gestion de Actividades</h5>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100 border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Tablero de Actividades</h5>
+                        <p class="card-text">Vista Kanban para gestionar actividades por estado.</p>
+                        <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-primary">
+                            <i class="bi bi-kanban me-1"></i> Ver Tablero
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Por Responsable</h5>
+                        <p class="card-text">Ver actividades agrupadas por persona asignada.</p>
+                        <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-outline-primary">
+                            <i class="bi bi-people me-1"></i> Ver por Responsable
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Nueva Actividad</h5>
+                        <p class="card-text">Crea y asigna nuevas actividades a tu equipo.</p>
+                        <a href="<?= base_url('actividades/nueva') ?>" class="btn btn-success">
+                            <i class="bi bi-plus-lg me-1"></i> Crear Actividad
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <?= $this->include('partials/logout') ?>
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

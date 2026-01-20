@@ -33,13 +33,15 @@
     </div>
 
     <?php if (session()->getFlashdata('errors')): ?>
-      <div class="alert alert-danger">
-        <ul class="mb-0">
-          <?php foreach (session()->getFlashdata('errors') as $error): ?>
-            <li><?= esc($error) ?></li>
-          <?php endforeach ?>
-        </ul>
-      </div>
+      <?= view('components/alert', [
+          'type' => 'danger',
+          'message' => '<ul class="mb-0">' . implode('', array_map(fn($e) => '<li>' . esc($e) . '</li>', session()->getFlashdata('errors'))) . '</ul>',
+          'dismissible' => true,
+          'icon' => 'bi-exclamation-triangle'
+      ]) ?>
+    <?php endif; ?>
+    <?php if (session()->getFlashdata('success')): ?>
+      <?= view('components/alert', ['type' => 'success', 'message' => session()->getFlashdata('success')]) ?>
     <?php endif; ?>
 
     <div class="card shadow-sm">
@@ -67,9 +69,10 @@
           </div>
 
           <div class="mb-3">
-            <label for="cargo" class="form-label">Cargo</label>
+            <label for="cargo" class="form-label">Cargo <small class="text-muted">(se asignará automáticamente al seleccionar perfil)</small></label>
             <input type="text" id="cargo" name="cargo"
-                   class="form-control" value="<?= old('cargo') ?>" required>
+                   class="form-control bg-light" value="<?= old('cargo') ?>"
+                   placeholder="Se completará en el siguiente paso" readonly>
           </div>
 
           <div class="mb-3">
@@ -130,9 +133,13 @@
           </div>
 
           <div class="d-flex justify-content-end mt-4">
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-arrow-right-circle me-1"></i> Guardar y continuar
-            </button>
+            <?= view('components/form_submit_button', [
+                'text' => 'Guardar y continuar',
+                'loadingText' => 'Guardando',
+                'icon' => 'bi-arrow-right-circle',
+                'class' => 'btn-primary',
+                'formId' => 'form-add-user'
+            ]) ?>
           </div>
         </form>
       </div>

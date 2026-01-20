@@ -17,7 +17,10 @@
 
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3">Auditoría de Indicadores</h1>
+      <div class="d-flex align-items-center gap-2">
+          <?= view('components/back_to_dashboard') ?>
+          <h1 class="h3 mb-0">Auditoría de Indicadores</h1>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -68,8 +71,6 @@
       </table>
     </div>
   </div>
-
-  <?= $this->include('partials/logout') ?>
 
   <!-- JS: jQuery, Bootstrap, DataTables -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

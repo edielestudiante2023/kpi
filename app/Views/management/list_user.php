@@ -57,7 +57,10 @@
         <!-- Encabezado y métricas fijos -->
         <div class="sticky-header">
             <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-white">
-                <h1 class="h3 m-0">Listado de Usuarios</h1>
+                <div class="d-flex align-items-center gap-2">
+                    <?= view('components/back_to_dashboard') ?>
+                    <h1 class="h3 mb-0">Listado de Usuarios</h1>
+                </div>
                 <a href="<?= base_url('users/add') ?>" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i> Nuevo Usuario
                 </a>
@@ -156,8 +159,6 @@
             </table>
         </div>
     </div>
-
-    <?= $this->include('partials/logout') ?>
 
     <!-- JS Dependencies -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

@@ -42,4 +42,56 @@ class PartesFormulaModel extends Model
 
         return trim($formula);
     }
+
+    /**
+     * Obtener fórmulas para múltiples indicadores de una sola vez (evita N+1).
+     * Retorna array indexado por id_indicador.
+     *
+     * @param array $indicadorIds Array de IDs de indicadores
+     * @return array [id_indicador => [partes...], ...]
+     */
+    public function getFormulasPorIndicadores(array $indicadorIds): array
+    {
+        if (empty($indicadorIds)) {
+            return [];
+        }
+
+        $partes = $this->whereIn('id_indicador', $indicadorIds)
+                       ->orderBy('id_indicador', 'ASC')
+                       ->orderBy('orden', 'ASC')
+                       ->findAll();
+
+        $resultado = [];
+        foreach ($partes as $p) {
+            $idInd = $p['id_indicador'];
+            if (!isset($resultado[$idInd])) {
+                $resultado[$idInd] = [];
+            }
+            $resultado[$idInd][] = $p;
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Obtener fórmulas como texto para múltiples indicadores (evita N+1).
+     *
+     * @param array $indicadorIds
+     * @return array [id_indicador => 'formula texto', ...]
+     */
+    public function getFormulasComoTextoPorIndicadores(array $indicadorIds): array
+    {
+        $formulas = $this->getFormulasPorIndicadores($indicadorIds);
+
+        $resultado = [];
+        foreach ($formulas as $idInd => $partes) {
+            $texto = '';
+            foreach ($partes as $p) {
+                $texto .= ' ' . $p['valor'];
+            }
+            $resultado[$idInd] = trim($texto);
+        }
+
+        return $resultado;
+    }
 }

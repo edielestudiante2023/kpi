@@ -9,6 +9,7 @@
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link
     href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"
     rel="stylesheet">
@@ -88,8 +89,12 @@
   <?= $this->include('partials/nav') ?>
 
   <div class="container-fluid py-4 flex-grow-1">
-
-
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center gap-2">
+          <?= view('components/back_to_dashboard') ?>
+          <h1 class="h3 mb-0">Historial de Indicadores de Mi Equipo</h1>
+      </div>
+    </div>
 
     <form method="get" class="row g-3 mb-4" action="<?= base_url('jefatura/historiallosindicadoresdemiequipo') ?>">
       <div class="col-auto">
@@ -271,17 +276,7 @@
 
     <?php endif; ?>
 
-    <div class="mt-4">
-      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
-        <i class="bi bi-house-door me-1"></i>Dashboard
-      </a>
-      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary ms-2">
-        &larr; Volver al Dashboard
-      </a>
-    </div>
   </div>
-
-  <?= $this->include('partials/logout') ?>
 
   <!-- JS: jQuery, Bootstrap Bundle (incluye Popper) y DataTables + Buttons -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

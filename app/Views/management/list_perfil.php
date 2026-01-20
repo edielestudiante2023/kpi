@@ -8,6 +8,7 @@
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <!-- DataTables Buttons -->
@@ -19,13 +20,18 @@
 
     <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3">Listado de Perfiles</h1>
-            <button id="excelExportBtn" class="btn btn-success">
-                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-            </button>
-            <a href="<?= base_url('perfiles/add') ?>" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Nuevo Perfil
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                <?= view('components/back_to_dashboard') ?>
+                <h1 class="h3 mb-0">Listado de Perfiles</h1>
+            </div>
+            <div class="d-flex gap-2">
+                <button id="excelExportBtn" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+                </button>
+                <a href="<?= base_url('perfiles/add') ?>" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Nuevo Perfil
+                </a>
+            </div>
         </div>
 
         <?php if (session()->getFlashdata('success')): ?>
@@ -76,8 +82,6 @@
             </table>
         </div>
     </div>
-
-    <?= $this->include('partials/logout') ?>
 
     <!-- JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

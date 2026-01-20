@@ -76,9 +76,54 @@
             </div>
         </div>
 
-    </div>
+        <!-- MODULO DE ACTIVIDADES -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-kanban me-2"></i>Gestion de Actividades</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-primary w-100">
+                            <i class="bi bi-kanban me-1"></i> Tablero Kanban
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-people me-1"></i> Por Responsable
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="<?= base_url('actividades/dashboard') ?>" class="btn btn-outline-info w-100">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="<?= base_url('actividades/nueva') ?>" class="btn btn-success w-100">
+                            <i class="bi bi-plus-lg me-1"></i> Nueva Actividad
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <?= $this->include('partials/logout') ?>
+        <!-- CONFIGURACION -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Configuracion</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="<?= base_url('preferencias/notificaciones') ?>" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-bell me-1"></i> Preferencias de Notificacion
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 
     <!-- Scripts: jQuery, Bootstrap, DataTables, Responsive -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

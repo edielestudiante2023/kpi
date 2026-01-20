@@ -7,9 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap 5 CSS -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         /* Opcional: para que la dropdown no expanda celdas */
         td .dropdown-toggle {
@@ -31,23 +30,34 @@
     <?= $this->include('partials/nav') ?>
 
     <div class="container-fluid py-4">
-        <div class="mb-3">
-            <a href="<?= base_url('trabajador/trabajadordashboard') ?>" class="btn btn-primary">
-                <i class="bi bi-house-door me-1"></i>Dashboard
-            </a>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-2">
+                <?= view('components/back_to_dashboard') ?>
+                <h1 class="h3 mb-0">Mis Indicadores – Periodo <?= esc($periodo) ?></h1>
+            </div>
         </div>
 
-        <h1 class="h3 mb-4">Mis Indicadores – Periodo <?= esc($periodo) ?></h1>
-
         <?php if (session()->getFlashdata('success')): ?>
-            <div class="alert alert-success">
-                <?= session()->getFlashdata('success') ?>
-            </div>
+            <?= view('components/alert', ['type' => 'success', 'message' => session()->getFlashdata('success')]) ?>
         <?php elseif (session()->getFlashdata('error')): ?>
-            <div class="alert alert-danger">
-                <?= session()->getFlashdata('error') ?>
-            </div>
+            <?= view('components/alert', ['type' => 'danger', 'message' => session()->getFlashdata('error')]) ?>
         <?php endif; ?>
+
+        <?php if (empty($items)): ?>
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <?= view('components/empty_state', [
+                        'icon' => 'bi-bar-chart-line',
+                        'title' => 'Sin indicadores asignados',
+                        'message' => 'No tienes indicadores asignados a tu perfil de cargo actual.',
+                        'actionUrl' => base_url('trabajador/trabajadordashboard'),
+                        'actionText' => 'Volver al Dashboard',
+                        'actionIcon' => 'bi-house-door',
+                        'actionClass' => 'btn-secondary'
+                    ]) ?>
+                </div>
+            </div>
+        <?php else: ?>
 
         <form method="post"
             action="<?= base_url('trabajador/saveIndicadores') ?>">
@@ -193,9 +203,8 @@
                 </table>
             </div>
         </form>
+        <?php endif; ?>
     </div>
-
-    <?= $this->include('partials/logout') ?>
 
     <!-- Bootstrap 5 JS Bundle y jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

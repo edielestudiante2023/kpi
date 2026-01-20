@@ -30,13 +30,27 @@ class AuthController extends BaseController
     public function login()
     {
         $session = session();
-        $correo  = $this->request->getVar('correo');
-        $password = $this->request->getVar('password');
+        $correo  = trim($this->request->getVar('correo') ?? '');
+        $password = $this->request->getVar('password') ?? '';
+
+        // Validación básica de entrada
+        if (empty($correo) || empty($password)) {
+            return redirect()->to('/login')->with('error', 'Credenciales incorrectas.');
+        }
 
         $usuario = $this->userModel->where('correo', $correo)->first();
+
+        // Mensaje genérico para evitar enumeración de usuarios
         if (!$usuario || $usuario['activo'] == 0 || !password_verify($password, $usuario['password'])) {
-            $msg = !$usuario ? 'Correo no registrado.' : ($usuario['activo'] == 0 ? 'Cuenta inactiva.' : 'Contraseña incorrecta.');
-            return redirect()->to('/login')->with('error', $msg);
+            // Log interno para auditoría (no exponer al usuario)
+            if (!$usuario) {
+                log_message('info', "Intento de login fallido: correo no existe - {$correo}");
+            } elseif ($usuario['activo'] == 0) {
+                log_message('info', "Intento de login fallido: cuenta inactiva - {$correo}");
+            } else {
+                log_message('info', "Intento de login fallido: contraseña incorrecta - {$correo}");
+            }
+            return redirect()->to('/login')->with('error', 'Credenciales incorrectas.');
         }
 
         // Si es primer login, lo enviamos a cambiar clave
@@ -80,6 +94,13 @@ class AuthController extends BaseController
     // Logout
     public function logout()
     {
+        // Cerrar sesion de tracking antes de destruir la sesion
+        $tokenSesion = session()->get('sesion_token');
+        if ($tokenSesion) {
+            $sesionModel = new \App\Models\SesionUsuarioModel();
+            $sesionModel->cerrarSesion($tokenSesion);
+        }
+
         session()->destroy();
         return redirect()->to('login')->with('success', 'Has cerrado sesión correctamente.');
     }

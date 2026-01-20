@@ -8,6 +8,7 @@
 
   <!-- CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -65,16 +66,12 @@
   <?= $this->include('partials/nav') ?>
 
   <div class="container-fluid py-4 flex-grow-1">
-    <div class="mb-3">
-      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
-        <i class="bi bi-house-door me-1"></i>Dashboard
-      </a>
-      <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary ms-2">
-        &larr; Volver al Dashboard
-      </a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center gap-2">
+          <?= view('components/back_to_dashboard') ?>
+          <h1 class="h3 mb-0">Historial de Mis Indicadores</h1>
+      </div>
     </div>
-
-    <h1 class="h3 mb-4">Historial de Mis Indicadores</h1>
 
     <?php if (session()->getFlashdata('success')): ?>
       <div class="alert alert-success">
@@ -219,8 +216,6 @@
     <?php endif; ?>
 
   </div>
-
-  <?= $this->include('partials/logout') ?>
 
   <!-- JS: jQuery, Bootstrap, DataTables, Buttons, JSZip -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

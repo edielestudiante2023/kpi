@@ -9,6 +9,7 @@ $session = session();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard – Trabajador</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 
 <body>
@@ -18,27 +19,64 @@ $session = session();
         <h1 class="h3 mb-4">Bienvenido, <?= esc($session->get('nombre_completo')) ?></h1>
         <div class="row gy-4">
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Mis Indicadores</h5>
-                        <p class="card-text">Consulta y reporta tus indicadores del periodo actual.</p>
-                        <a href="<?= base_url('trabajador/mis_indicadores') ?>" class="btn btn-primary">Ver Indicadores</a>
-                    </div>
-                </div>
+                <?= view('components/dashboard_card', [
+                    'title' => 'Mis Indicadores',
+                    'description' => 'Consulta y reporta tus indicadores del periodo actual.',
+                    'url' => base_url('trabajador/mis_indicadores'),
+                    'icon' => 'bi-bar-chart-line',
+                    'btnText' => 'Ver Indicadores',
+                    'btnClass' => 'btn-primary',
+                ]) ?>
             </div>
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Historial de Resultados</h5>
-                        <p class="card-text">Revisa los resultados que has registrado en periodos anteriores.</p>
-                        <a href="<?= base_url('trabajador/historial_resultados') ?>" class="btn btn-secondary">Ver Historial</a>
-                    </div>
-                </div>
+                <?= view('components/dashboard_card', [
+                    'title' => 'Historial de Resultados',
+                    'description' => 'Revisa los resultados que has registrado en periodos anteriores.',
+                    'url' => base_url('trabajador/historial_resultados'),
+                    'icon' => 'bi-clock-history',
+                    'btnText' => 'Ver Historial',
+                    'btnClass' => 'btn-secondary',
+                ]) ?>
+            </div>
+
+            <!-- MODULO DE ACTIVIDADES -->
+            <div class="col-12">
+                <hr class="my-2">
+                <h5 class="text-muted mb-3"><i class="bi bi-kanban me-2"></i>Gestion de Actividades</h5>
+            </div>
+            <div class="col-md-4">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Mis Actividades',
+                    'description' => 'Gestiona las actividades y tareas asignadas a ti.',
+                    'url' => base_url('actividades/mis-actividades'),
+                    'icon' => 'bi-person-check',
+                    'btnText' => 'Ver Mis Actividades',
+                    'btnClass' => 'btn-primary',
+                    'cardClass' => 'border-primary',
+                ]) ?>
+            </div>
+            <div class="col-md-4">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Tablero de Actividades',
+                    'description' => 'Vista Kanban de todas las actividades por estado.',
+                    'url' => base_url('actividades/tablero'),
+                    'icon' => 'bi-kanban',
+                    'btnText' => 'Ver Tablero',
+                    'btnClass' => 'btn-outline-primary',
+                ]) ?>
+            </div>
+            <div class="col-md-4">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Nueva Actividad',
+                    'description' => 'Crea una nueva actividad o solicitud.',
+                    'url' => base_url('actividades/nueva'),
+                    'icon' => 'bi-plus-lg',
+                    'btnText' => 'Crear Actividad',
+                    'btnClass' => 'btn-success',
+                ]) ?>
             </div>
         </div>
     </div>
-
-    <?= $this->include('partials/logout') ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

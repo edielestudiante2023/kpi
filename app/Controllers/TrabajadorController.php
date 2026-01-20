@@ -7,6 +7,7 @@ use App\Models\IndicadorPerfilModel;
 use App\Models\HistorialIndicadorModel;
 use App\Models\PartesFormulaModel;
 use App\Models\IndicadorModel;
+use App\Libraries\EvaluadorIndicadores;
 
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -19,6 +20,7 @@ class TrabajadorController extends BaseController
     protected $histModel;
     protected $partesModel;
     protected $indicadorModel;
+    protected $evaluador;
 
 
     public function initController(
@@ -33,6 +35,7 @@ class TrabajadorController extends BaseController
         $this->histModel = new HistorialIndicadorModel();
         $this->partesModel = new PartesFormulaModel();
         $this->indicadorModel = new IndicadorModel();
+        $this->evaluador = new EvaluadorIndicadores();
     }
 
     /**
@@ -72,14 +75,9 @@ class TrabajadorController extends BaseController
             $histMap[$h['id_indicador_perfil']] = $h;
         }
 
-        // 3) Cargar las partes de fórmula para cada indicador
-        $formulas = [];
-        foreach ($items as $item) {
-            $formulas[$item['id_indicador']] = $this->partesModel
-                ->where('id_indicador', $item['id_indicador'])
-                ->orderBy('orden', 'ASC')
-                ->findAll();
-        }
+        // 3) Cargar las partes de fórmula para todos los indicadores de una vez (evita N+1)
+        $indicadorIds = array_column($items, 'id_indicador');
+        $formulas = $this->partesModel->getFormulasPorIndicadores($indicadorIds);
 
         // 4) Enviar todo a la vista
         return view('trabajador/mis_indicadores', [
@@ -136,59 +134,11 @@ class TrabajadorController extends BaseController
             $metaEsperada   = (float) $relacion['meta_valor'];
             $tipoMeta       = $relacion['tipo_meta'];
             $idIndicador    = $relacion['id_indicador'];
-            $cumple         = null;
-            $valorAnterior  = null;
 
-            log_message('debug', "🟡 Evaluando IP {$ipId} | Indicador {$idIndicador} | Usuario {$userId} | Tipo meta: {$tipoMeta} | Meta esperada: {$metaEsperada}");
-
-            // 2) Evaluar cumplimiento
-            if (is_numeric($valor)) {
-                $valorNum = (float) $valor;
-
-                switch ($tipoMeta) {
-                    case 'mayor_igual':
-                        $cumple = ($valorNum >= $metaEsperada) ? 1 : 0;
-                        break;
-
-                    case 'menor_igual':
-                        $cumple = ($valorNum <= $metaEsperada) ? 1 : 0;
-                        break;
-
-                    case 'igual':
-                        $cumple = ($valorNum == $metaEsperada) ? 1 : 0;
-                        break;
-
-                    case 'comparativa':
-                        // Buscar último resultado anterior del mismo usuario e indicador/perfil
-                        $anterior = $this->histModel
-                            ->where('id_usuario', $userId)
-                            ->where('id_indicador_perfil', $ipId)
-                            ->orderBy('fecha_registro', 'DESC')
-                            ->first();
-
-                        if ($anterior && is_numeric($anterior['resultado_real'])) {
-                            // Hay registro anterior válido - evaluar comparativa normalmente
-                            $valorAnterior = (float) $anterior['resultado_real'];
-                            log_message('debug', "📊 Comparativa IP {$ipId} | Usuario {$userId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
-                            // Actualizar la meta_valor del indicador base solo si es tipo comparativa
-                            $this->indicadorModel
-                                ->where('id_indicador', $relacion['id_indicador'])
-                                ->set('meta_valor', $valorAnterior)
-                                ->update();
-
-                            log_message('debug', "🔄 Indicador {$relacion['id_indicador']} actualizado: meta_valor = {$valorAnterior}");
-                            $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
-                        } else {
-                            // Primer registro - no hay base de comparación válida
-                            $valorAnterior = $valorNum;
-                            $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
-                            log_message('debug', "🆕 Comparativa IP {$ipId} | Usuario {$userId} | Primer registro, valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
-                        }
-                        break;
-                }
-            } else {
-                log_message('debug', "⚠️ Valor no numérico para IP {$ipId}: " . print_r($valor, true));
-            }
+            // 2) Evaluar cumplimiento usando el servicio centralizado
+            $evaluacion = $this->evaluador->evaluar($valor, $tipoMeta, $metaEsperada, $userId, $ipId);
+            $cumple = $evaluacion['cumple'];
+            $valorAnterior = $evaluacion['valor_anterior'];
 
             // 3) JSON con partes de fórmula y valor anterior si aplica
             $json = ['valor' => $valor];
@@ -341,61 +291,11 @@ class TrabajadorController extends BaseController
 
         $metaEsperada   = (float) $rel['meta_valor'];
         $tipoMeta       = $rel['tipo_meta'];
-        $idIndicador    = $rel['id_indicador'];
-        $cumple         = null;
-        $valorAnterior  = null;
 
-        log_message('debug', 'ℹ️ Tipo meta: ' . $tipoMeta);
-        log_message('debug', 'ℹ️ Meta esperada: ' . $metaEsperada);
-
-        if (is_numeric($resultado)) {
-            $valorNum = (float) $resultado;
-
-            switch ($tipoMeta) {
-                case 'mayor_igual':
-                case 'fija':
-                    $cumple = ($valorNum >= $metaEsperada) ? 1 : 0;
-                    break;
-
-                case 'menor_igual':
-                    $cumple = ($valorNum <= $metaEsperada) ? 1 : 0;
-                    break;
-
-                case 'igual':
-                    $cumple = ($valorNum == $metaEsperada) ? 1 : 0;
-                    break;
-
-                case 'comparativa':
-                    // Buscar último resultado anterior (sin filtrar por periodo)
-                    $anterior = $this->histModel
-                        ->where('id_usuario', $userId)
-                        ->where('id_indicador_perfil', $rel['id_indicador_perfil'])
-                        ->orderBy('fecha_registro', 'DESC')
-                        ->first();
-
-                    if ($anterior && is_numeric($anterior['resultado_real'])) {
-                        // Hay registro anterior válido - evaluar comparativa normalmente
-                        $valorAnterior = (float) $anterior['resultado_real'];
-                        log_message('debug', "📊 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
-
-                        // Actualizar meta_valor en la tabla indicadores
-                        $this->indicadorModel
-                            ->where('id_indicador', $idIndicador)
-                            ->set('meta_valor', $valorAnterior)
-                            ->update();
-                        log_message('debug', "🔄 Indicador {$idIndicador} actualizado: meta_valor = {$valorAnterior}");
-                        $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
-                    } else {
-                        // Primer registro - no hay base de comparación válida
-                        $valorAnterior = $valorNum;
-                        $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
-                        log_message('debug', "🆕 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Primer registro, valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
-                    }
-                    break;
-            }
-        } else {
-            log_message('debug', '⚠️ Resultado no numérico: ' . print_r($resultado, true));
-        }
+        // Evaluar cumplimiento usando el servicio centralizado
+        $evaluacion = $this->evaluador->evaluar($resultado, $tipoMeta, $metaEsperada, $userId, $rel['id_indicador_perfil']);
+        $cumple = $evaluacion['cumple'];
+        $valorAnterior = $evaluacion['valor_anterior'];
 
         // 3) JSON con valor anterior si aplica
         $json = [

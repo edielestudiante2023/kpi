@@ -8,6 +8,8 @@
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- DataTables Bootstrap5 CSS -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <!-- DataTables Buttons CSS -->
@@ -31,7 +33,10 @@
 
     <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h4">Listado de Indicadores por Perfil</h1>
+            <div class="d-flex align-items-center gap-2">
+                <?= view('components/back_to_dashboard') ?>
+                <h1 class="h4 mb-0">Listado de Indicadores por Perfil</h1>
+            </div>
             <div>
                 <a href="<?= base_url('indicadores_perfil/add') ?>" class="btn btn-primary me-2">+ Asignar Indicador</a>
                 <!-- Botón de exportar a Excel -->
@@ -90,8 +95,6 @@
             </tbody>
         </table>
     </div>
-
-    <?= $this->include('partials/logout') ?>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

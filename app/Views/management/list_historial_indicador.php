@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historial Indicadores – Kpi Cycloid</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
 </head>
@@ -14,7 +15,10 @@
 
   <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3">Historial Indicadores</h1>
+      <div class="d-flex align-items-center gap-2">
+          <?= view('components/back_to_dashboard') ?>
+          <h1 class="h3 mb-0">Historial Indicadores</h1>
+      </div>
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
@@ -73,8 +77,6 @@
       </table>
     </div>
   </div>
-
-  <?= $this->include('partials/logout') ?>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -83,11 +83,11 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="cargo" class="form-label">Cargo</label>
+                        <label for="cargo" class="form-label">Cargo <small class="text-muted">(se asigna automáticamente del perfil)</small></label>
                         <input type="text" id="cargo" name="cargo"
-                            class="form-control"
+                            class="form-control bg-light"
                             value="<?= old('cargo', esc($user['cargo'])) ?>"
-                            required>
+                            readonly>
                     </div>
 
                     <div class="mb-3">
@@ -232,6 +232,14 @@
                 if (!valid) {
                     e.preventDefault();
                     alert('Por favor completa todos los campos obligatorios.');
+                }
+            });
+
+            // Sincronizar cargo con perfil seleccionado
+            $('#id_perfil_cargo').on('change', function() {
+                var selectedText = $(this).find('option:selected').text().trim();
+                if (selectedText && selectedText !== '') {
+                    $('#cargo').val(selectedText);
                 }
             });
         });

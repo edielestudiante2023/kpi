@@ -8,6 +8,7 @@
 
   <!-- CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -64,15 +65,12 @@
   <?= $this->include('partials/nav') ?>
 
   <div class="container-fluid py-4 flex-grow-1">
-    <div class="mb-3">
-      <a href="<?= base_url('trabajador/trabajadordashboard') ?>" class="btn btn-primary">
-        <i class="bi bi-house-door me-1"></i>Dashboard
-      </a>
-      <a href="<?= base_url('trabajador/trabajadordashboard') ?>" class="btn btn-secondary ms-2">
-        &larr; Volver al Dashboard
-      </a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center gap-2">
+          <?= view('components/back_to_dashboard') ?>
+          <h1 class="h3 mb-0">Historial de Resultados de Indicadores</h1>
+      </div>
     </div>
-    <h1 class="h3 mb-4">Historial de Resultados de Indicadores</h1>
 
 
 
@@ -80,7 +78,18 @@
 
 
     <?php if (empty($historial)): ?>
-      <div class="alert alert-warning">No hay historial disponible.</div>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <?= view('components/empty_state', [
+              'icon' => 'bi-clock-history',
+              'title' => 'Sin historial de resultados',
+              'message' => 'Aun no has registrado ningun resultado de indicadores.',
+              'actionUrl' => base_url('trabajador/mis_indicadores'),
+              'actionText' => 'Registrar Resultados',
+              'actionIcon' => 'bi-bar-chart-line'
+          ]) ?>
+        </div>
+      </div>
     <?php else: ?>
       <div class="table-responsive flex-grow-1">
         <table id="historialTable"
@@ -204,8 +213,6 @@
       </div>
     <?php endif; ?>
   </div>
-
-  <?= $this->include('partials/logout') ?>
 
   <!-- JS: jQuery, Bootstrap, DataTables, Buttons, JSZip -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

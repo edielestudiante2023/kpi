@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listado de Roles – Kpi Cycloid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 </head>
 <body>
@@ -12,7 +13,10 @@
 
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Listado de Roles</h1>
+        <div class="d-flex align-items-center gap-2">
+            <?= view('components/back_to_dashboard') ?>
+            <h1 class="h3 mb-0">Listado de Roles</h1>
+        </div>
         <a href="<?= base_url('roles/add') ?>" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Nuevo Rol
         </a>
@@ -41,7 +45,6 @@
     </table>
 </div>
 
-<?= $this->include('partials/logout') ?>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>

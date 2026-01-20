@@ -6,29 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crear Indicador – Kpi Cycloid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 
 <body>
     <?= $this->include('partials/nav') ?>
 
     <div class="container py-4">
-        <h1 class="h3 mb-4">Crear Nuevo Indicador</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Crear Nuevo Indicador</h1>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#aiIndicadorModal">
+                <i class="bi bi-stars me-1"></i>Crear con IA
+            </button>
+        </div>
 
         <?php if (session()->getFlashdata('errors')): ?>
-            <div class="alert alert-danger">
-                <?php foreach (session()->getFlashdata('errors') as $e): ?>
-                    <p><?= esc($e) ?></p>
-                <?php endforeach; ?>
-            </div>
+            <?= view('components/alert', [
+                'type' => 'danger',
+                'message' => '<ul class="mb-0">' . implode('', array_map(fn($e) => '<li>' . esc($e) . '</li>', session()->getFlashdata('errors'))) . '</ul>',
+                'dismissible' => true,
+                'icon' => 'bi-exclamation-triangle'
+            ]) ?>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('success')): ?>
+            <?= view('components/alert', ['type' => 'success', 'message' => session()->getFlashdata('success')]) ?>
         <?php endif; ?>
 
-        <form action="<?= base_url('indicadores/add') ?>" method="post">
+        <form id="form-add-indicador" action="<?= base_url('indicadores/add') ?>" method="post">
             <?= csrf_field() ?>
 
             <!-- Nombre -->
             <div class="mb-3">
                 <label class="form-label">Nombre</label>
-                <input type="text" name="nombre" class="form-control" value="<?= old('nombre') ?>" required>
+                <input type="text" name="nombre" id="nombre_indicador" class="form-control" value="<?= old('nombre') ?>" required>
             </div>
 
             <!-- Periodicidad -->
@@ -73,7 +83,7 @@
                     type="number"
                     step="any"
                     name="meta_valor"
-                    id="metaValorInput"
+                    id="meta"
                     class="form-control"
                     value="<?= old('meta_valor') ?>"
                     required
@@ -83,7 +93,7 @@
             <!-- Meta Descripción -->
             <div class="mb-3">
                 <label class="form-label">Meta Descripción</label>
-                <textarea name="meta_descripcion" class="form-control" rows="2" required><?= old('meta_descripcion') ?></textarea>
+                <textarea name="meta_descripcion" id="descripcion" class="form-control" rows="2" required><?= old('meta_descripcion') ?></textarea>
             </div>
 
             <!-- Método de Cálculo -->
@@ -100,7 +110,7 @@
             <!-- Unidad -->
             <div class="mb-3">
                 <label class="form-label">Unidad</label>
-                <input type="text" name="unidad" class="form-control" value="<?= old('unidad') ?>" required>
+                <input type="text" name="unidad" id="unidad_medida" class="form-control" value="<?= old('unidad') ?>" required>
             </div>
 
             <!-- Objetivo de Proceso -->
@@ -131,10 +141,27 @@
                 <label class="form-check-label" for="activoSwitch">Activo</label>
             </div>
 
-            <!-- Botón Guardar y Diseñar -->
-            <button type="submit" name="accion" value="guardar_disenar" class="btn btn-success">
-                <i class="bi bi-gear me-1"></i> Guardar y Diseñar Fórmula
-            </button>
+            <!-- Botones de accion -->
+            <div class="d-flex gap-2">
+                <?= view('components/form_submit_button', [
+                    'text' => 'Guardar y Disenar Formula',
+                    'loadingText' => 'Guardando',
+                    'icon' => 'bi-gear',
+                    'class' => 'btn-success',
+                    'formId' => 'form-add-indicador',
+                    'name' => 'accion',
+                    'value' => 'guardar_disenar'
+                ]) ?>
+                <?= view('components/form_submit_button', [
+                    'text' => 'Solo Guardar',
+                    'loadingText' => 'Guardando',
+                    'icon' => 'bi-check-lg',
+                    'class' => 'btn-primary',
+                    'formId' => 'form-add-indicador',
+                    'name' => 'accion',
+                    'value' => 'guardar'
+                ]) ?>
+            </div>
         </form>
     </div>
 
@@ -162,6 +189,9 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Modal IA para Indicadores -->
+    <?= view('components/ai_generator_modal', ['id' => 'aiIndicadorModal', 'tipo' => 'indicador']) ?>
 </body>
 
 </html>

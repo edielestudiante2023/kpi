@@ -114,6 +114,14 @@ class UserController extends BaseController
             $post['password'] = password_hash($post['password'], PASSWORD_DEFAULT);
         }
 
+        // Sincronizar cargo con el nombre del perfil seleccionado
+        if (!empty($post['id_perfil_cargo'])) {
+            $perfil = $this->perfilModel->find($post['id_perfil_cargo']);
+            if ($perfil) {
+                $post['cargo'] = $perfil['nombre_cargo'];
+            }
+        }
+
         if (! $this->userModel->update($id, $post)) {
             return redirect()->back()
                 ->with('errors', $this->userModel->errors())
@@ -156,10 +164,14 @@ class UserController extends BaseController
                 ->with('errors', ['Debes seleccionar un perfil de cargo.']);
         }
 
+        // Obtener nombre del perfil para sincronizar cargo
+        $perfil = $this->perfilModel->find($post['id_perfil_cargo']);
+
         // Construimos el arreglo de actualización
         $datos = [
             'id_perfil_cargo' => $post['id_perfil_cargo'],
-            'id_jefe'         => $post['id_jefe'] ?? null  // opcional
+            'id_jefe'         => $post['id_jefe'] ?? null,
+            'cargo'           => $perfil ? $perfil['nombre_cargo'] : null
         ];
 
         // Ejecutamos el update

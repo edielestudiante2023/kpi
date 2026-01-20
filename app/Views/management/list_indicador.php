@@ -11,6 +11,7 @@
 
   <!-- Bootstrap & DataTables CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <!-- DataTables Buttons CSS -->
   <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
@@ -88,8 +89,26 @@
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
-      <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
+      <?= view('components/alert', ['type' => 'success', 'message' => session()->getFlashdata('success')]) ?>
     <?php endif; ?>
+    <?php if (session()->getFlashdata('error')): ?>
+      <?= view('components/alert', ['type' => 'danger', 'message' => session()->getFlashdata('error')]) ?>
+    <?php endif; ?>
+
+    <?php if (empty($indicadores)): ?>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <?= view('components/empty_state', [
+              'icon' => 'bi-bar-chart',
+              'title' => 'Sin indicadores',
+              'message' => 'No hay indicadores creados en el sistema.',
+              'actionUrl' => base_url('indicadores/add'),
+              'actionText' => 'Crear Indicador',
+              'actionIcon' => 'bi-plus-lg'
+          ]) ?>
+        </div>
+      </div>
+    <?php else: ?>
 
     <table id="indicadorTable" class="table table-striped table-bordered nowrap w-100">
       <thead class="table-dark align-middle">
@@ -175,9 +194,8 @@
         <?php endforeach; ?>
       </tbody>
     </table>
+    <?php endif; ?>
   </div>
-
-  <?= $this->include('partials/logout') ?>
 
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

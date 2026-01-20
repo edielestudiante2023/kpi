@@ -7,7 +7,8 @@ use App\Models\HistorialIndicadorModel;
 use App\Models\IndicadorAuditoriaModel;
 use App\Models\IndicadorPerfilModel;
 use App\Models\PartesFormulaModel;
-use App\Models\IndicadorModel;                  // ← Añadir
+use App\Models\IndicadorModel;
+use App\Libraries\EvaluadorIndicadores;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -20,7 +21,8 @@ class JefaturaController extends BaseController
     protected $auditModel;
     protected $ipModel;
     protected $partesModel;
-    protected $indicadorModel;                    // ← Añadir
+    protected $indicadorModel;
+    protected $evaluador;
 
     public function initController(
         RequestInterface $request,
@@ -35,7 +37,8 @@ class JefaturaController extends BaseController
         $this->auditModel     = new IndicadorAuditoriaModel();
         $this->ipModel        = new IndicadorPerfilModel();
         $this->partesModel    = new PartesFormulaModel();
-        $this->indicadorModel = new IndicadorModel();   // ← Instanciar
+        $this->indicadorModel = new IndicadorModel();
+        $this->evaluador      = new EvaluadorIndicadores();
     }
 
 
@@ -151,49 +154,11 @@ class JefaturaController extends BaseController
 
                 $metaEsperada  = (float) $relacion['meta_valor'];
                 $tipoMeta      = $relacion['tipo_meta'];
-                $idIndicador   = $relacion['id_indicador'];
-                $cumple        = null;
-                $valorAnterior = null;
 
-                if (is_numeric($valor)) {
-                    $valorNum = (float) $valor;
-
-                    switch ($tipoMeta) {
-                        case 'mayor_igual':
-                            $cumple = ($valorNum >= $metaEsperada) ? 1 : 0;
-                            break;
-                        case 'menor_igual':
-                            $cumple = ($valorNum <= $metaEsperada) ? 1 : 0;
-                            break;
-                        case 'igual':
-                            $cumple = ($valorNum == $metaEsperada) ? 1 : 0;
-                            break;
-                        case 'comparativa':
-                            $anterior = $this->histModel
-                                ->where('id_usuario', $jefeId)
-                                ->where('id_indicador_perfil', $single)
-                                ->orderBy('fecha_registro', 'DESC')
-                                ->first();
-
-                            if ($anterior && is_numeric($anterior['resultado_real'])) {
-                                // Hay registro anterior válido - evaluar comparativa normalmente
-                                $valorAnterior = (float) $anterior['resultado_real'];
-                                log_message('debug', "📊 Jefe IP {$single} | Usuario {$jefeId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
-
-                                $this->indicadorModel
-                                    ->where('id_indicador', $idIndicador)
-                                    ->set('meta_valor', $valorAnterior)
-                                    ->update();
-                                $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
-                            } else {
-                                // Primer registro - no hay base de comparación válida
-                                $valorAnterior = $valorNum;
-                                $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
-                                log_message('debug', "🆕 Primer comparativo jefe IP {$single} | Usuario {$jefeId} | Valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
-                            }
-                            break;
-                    }
-                }
+                // Evaluar cumplimiento usando el servicio centralizado
+                $evaluacion = $this->evaluador->evaluar($valor, $tipoMeta, $metaEsperada, $jefeId, $single);
+                $cumple = $evaluacion['cumple'];
+                $valorAnterior = $evaluacion['valor_anterior'];
 
                 $json = ['valor' => $valor];
                 if (isset($formulasDigitadas[$single])) {
@@ -252,49 +217,11 @@ class JefaturaController extends BaseController
 
             $metaEsperada  = (float) $relacion['meta_valor'];
             $tipoMeta      = $relacion['tipo_meta'];
-            $idIndicador   = $relacion['id_indicador'];
-            $cumple        = null;
-            $valorAnterior = null;
 
-            if (is_numeric($valor)) {
-                $valorNum = (float) $valor;
-
-                switch ($tipoMeta) {
-                    case 'mayor_igual':
-                        $cumple = ($valorNum >= $metaEsperada) ? 1 : 0;
-                        break;
-                    case 'menor_igual':
-                        $cumple = ($valorNum <= $metaEsperada) ? 1 : 0;
-                        break;
-                    case 'igual':
-                        $cumple = ($valorNum == $metaEsperada) ? 1 : 0;
-                        break;
-                    case 'comparativa':
-                        $anterior = $this->histModel
-                            ->where('id_usuario', $jefeId)
-                            ->where('id_indicador_perfil', $ipId)
-                            ->orderBy('fecha_registro', 'DESC')
-                            ->first();
-
-                        if ($anterior && is_numeric($anterior['resultado_real'])) {
-                            // Hay registro anterior válido - evaluar comparativa normalmente
-                            $valorAnterior = (float) $anterior['resultado_real'];
-                            log_message('debug', "📊 Jefe IP {$ipId} | Usuario {$jefeId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
-
-                            $this->indicadorModel
-                                ->where('id_indicador', $idIndicador)
-                                ->set('meta_valor', $valorAnterior)
-                                ->update();
-                            $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
-                        } else {
-                            // Primer registro - no hay base de comparación válida
-                            $valorAnterior = $valorNum;
-                            $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
-                            log_message('debug', "🆕 Primer comparativo jefe IP {$ipId} | Usuario {$jefeId} | Valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
-                        }
-                        break;
-                }
-            }
+            // Evaluar cumplimiento usando el servicio centralizado
+            $evaluacion = $this->evaluador->evaluar($valor, $tipoMeta, $metaEsperada, $jefeId, $ipId);
+            $cumple = $evaluacion['cumple'];
+            $valorAnterior = $evaluacion['valor_anterior'];
 
             $json = ['valor' => $valor];
             if (isset($formulasDigitadas[$ipId])) {
@@ -628,61 +555,11 @@ class JefaturaController extends BaseController
 
         $metaEsperada   = (float) $rel['meta_valor'];
         $tipoMeta       = $rel['tipo_meta'];
-        $idIndicador    = $rel['id_indicador'];
-        $cumple         = null;
-        $valorAnterior  = null;
 
-        log_message('debug', 'ℹ️ Tipo meta: ' . $tipoMeta);
-        log_message('debug', 'ℹ️ Meta esperada: ' . $metaEsperada);
-
-        if (is_numeric($resultado)) {
-            $valorNum = (float) $resultado;
-
-            switch ($tipoMeta) {
-                case 'mayor_igual':
-                case 'fija':
-                    $cumple = ($valorNum >= $metaEsperada) ? 1 : 0;
-                    break;
-
-                case 'menor_igual':
-                    $cumple = ($valorNum <= $metaEsperada) ? 1 : 0;
-                    break;
-
-                case 'igual':
-                    $cumple = ($valorNum == $metaEsperada) ? 1 : 0;
-                    break;
-
-                case 'comparativa':
-                    // Buscar último resultado anterior (sin filtrar por periodo)
-                    $anterior = $this->histModel
-                        ->where('id_usuario', $userId)
-                        ->where('id_indicador_perfil', $rel['id_indicador_perfil'])
-                        ->orderBy('fecha_registro', 'DESC')
-                        ->first();
-
-                    if ($anterior && is_numeric($anterior['resultado_real'])) {
-                        // Hay registro anterior válido - evaluar comparativa normalmente
-                        $valorAnterior = (float) $anterior['resultado_real'];
-                        log_message('debug', "📊 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Valor anterior = {$valorAnterior} | Valor actual = {$valorNum}");
-
-                        // Actualizar meta_valor en la tabla indicadores
-                        $this->indicadorModel
-                            ->where('id_indicador', $idIndicador)
-                            ->set('meta_valor', $valorAnterior)
-                            ->update();
-                        log_message('debug', "🔄 Indicador {$idIndicador} actualizado: meta_valor = {$valorAnterior}");
-                        $cumple = ($valorNum > $valorAnterior) ? 1 : 0;
-                    } else {
-                        // Primer registro - no hay base de comparación válida
-                        $valorAnterior = $valorNum;
-                        $cumple = null; // Marcar como "sin evaluar" en lugar de "no cumple"
-                        log_message('debug', "🆕 Comparativa IP {$rel['id_indicador_perfil']} | Usuario {$userId} | Primer registro, valor base = {$valorAnterior} | Cumple = null (sin evaluar)");
-                    }
-                    break;
-            }
-        } else {
-            log_message('debug', '⚠️ Resultado no numérico: ' . print_r($resultado, true));
-        }
+        // Evaluar cumplimiento usando el servicio centralizado
+        $evaluacion = $this->evaluador->evaluar($resultado, $tipoMeta, $metaEsperada, $userId, $rel['id_indicador_perfil']);
+        $cumple = $evaluacion['cumple'];
+        $valorAnterior = $evaluacion['valor_anterior'];
 
         // 3) JSON con valor anterior si aplica
         $json = [

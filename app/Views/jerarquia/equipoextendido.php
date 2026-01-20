@@ -7,7 +7,7 @@
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- DataTables Bootstrap 5 -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
@@ -31,18 +31,11 @@
     <?= $this->include('partials/nav') ?>
 
     <div class="container-fluid py-4">
-        <!-- Botones de navegación -->
-        <div class="mb-3">
-            <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-primary">
-                <i class="bi bi-house-door me-1"></i>Dashboard
-            </a>
-            <a href="<?= base_url('jefatura/jefaturadashboard') ?>" class="btn btn-secondary ms-2">
-                &larr; Volver al Dashboard
-            </a>
-        </div>
-        
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 page-title">👥 Equipo Extendido</h1>
+            <div class="d-flex align-items-center gap-2">
+                <?= view('components/back_to_dashboard') ?>
+                <h1 class="h3 mb-0 page-title"><i class="bi bi-people me-2"></i>Equipo Extendido</h1>
+            </div>
             <span class="badge bg-primary fs-6">
                 Total subordinados: <?= count($equipo) ?>
             </span>
