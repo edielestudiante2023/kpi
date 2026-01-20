@@ -92,6 +92,8 @@
             transition: transform 0.2s, box-shadow 0.2s;
             border-left: 4px solid #dee2e6;
             position: relative;
+            z-index: 1;
+            isolation: isolate;
         }
         .kanban-card::before {
             content: '\F3FE';
@@ -170,6 +172,14 @@
         }
         .fecha-vencida { color: #dc3545; font-weight: 600; }
         .fecha-proxima { color: #fd7e14; }
+
+        /* Fix stretched-link para que no se sobreponga entre tarjetas */
+        .kanban-card .stretched-link {
+            z-index: 2;
+        }
+        .kanban-card .stretched-link::after {
+            z-index: 2;
+        }
 
         /* Colores de columnas */
         .col-pendiente .kanban-header { background: #6c757d; }
