@@ -115,12 +115,21 @@
     </form>
 
     <?php if (session()->getFlashdata('error')): ?>
-      <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
+        <?= view('components/alert', ['type' => 'danger', 'message' => session()->getFlashdata('error')]) ?>
     <?php endif; ?>
 
     <?php if (empty($equipo)): ?>
-      <div class="alert alert-warning">
-        No hay indicadores reportados por tu equipo en este rango de fechas.
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <?= view('components/empty_state', [
+              'icon' => 'bi-people',
+              'title' => 'Sin resultados del equipo',
+              'message' => 'No hay indicadores reportados por tu equipo en este rango de fechas.',
+              'actionUrl' => base_url('jefatura/losindicadoresdemiequipo'),
+              'actionText' => 'Ver Indicadores del Equipo',
+              'actionIcon' => 'bi-list-task'
+          ]) ?>
+        </div>
       </div>
     <?php else: ?>
 

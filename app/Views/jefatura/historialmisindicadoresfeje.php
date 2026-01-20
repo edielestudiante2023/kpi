@@ -74,16 +74,21 @@
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
-      <div class="alert alert-success">
-        <?= session()->getFlashdata('success') ?>
-      </div>
+        <?= view('components/alert', ['type' => 'success', 'message' => session()->getFlashdata('success')]) ?>
     <?php endif; ?>
 
-
-
     <?php if (empty($historial)): ?>
-      <div class="alert alert-warning">
-        No hay registros en tu historial.
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <?= view('components/empty_state', [
+              'icon' => 'bi-clock-history',
+              'title' => 'Sin historial de resultados',
+              'message' => 'Aun no has registrado ningun resultado de indicadores como jefatura.',
+              'actionUrl' => base_url('jefatura/misindicadorescomojefe'),
+              'actionText' => 'Registrar Resultados',
+              'actionIcon' => 'bi-bar-chart-line'
+          ]) ?>
+        </div>
       </div>
     <?php else: ?>
       <div class="table-responsive flex-grow-1">

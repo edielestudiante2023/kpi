@@ -2,213 +2,278 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8">
-  <title>Mis Indicadores como Jefatura – Kpi Cycloid</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- Bootstrap 5 CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet">
-  <!-- Bootstrap Icons CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <style>
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <title>Mis Indicadores como Jefatura – Kpi Cycloid</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    .container-fluid {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .table-responsive {
-      flex-grow: 1;
-    }
-
-    /* Restringir ancho columna Fórmula */
-    .col-formula {
-      max-width: 20ch;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  </style>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .indicador-card {
+            transition: all 0.2s ease;
+            border-left: 4px solid #6f42c1;
+        }
+        .indicador-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .indicador-header {
+            cursor: pointer;
+        }
+        .indicador-header:hover {
+            background-color: #f8f9fa;
+        }
+        .meta-badge {
+            font-size: 0.85rem;
+        }
+        .formula-display {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .formula-display .variable {
+            color: #6f42c1;
+            font-weight: 600;
+        }
+        .info-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-weight: 500;
+        }
+        .collapse-icon {
+            transition: transform 0.2s ease;
+        }
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+        .detail-section {
+            background: #fafbfc;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+    </style>
 </head>
 
 <body>
-  <?= $this->include('partials/nav') ?>
+    <?= $this->include('partials/nav') ?>
 
-  <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div class="d-flex align-items-center gap-2">
-          <?= view('components/back_to_dashboard') ?>
-          <h1 class="h3 mb-0">Mis Indicadores como Jefatura – Periodo <?= esc($periodo) ?></h1>
-      </div>
-    </div>
-
-    <?php if (session()->getFlashdata('success')): ?>
-      <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
-    <?php elseif (session()->getFlashdata('error')): ?>
-      <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
-    <?php endif; ?>
-
-    <form method="post" action="<?= base_url('jefatura/saveIndicadoresComoJefe') ?>">
-      <?= csrf_field() ?>
-
-      <div class="row mb-3">
-        <div class="col-md-4">
-          <label for="periodo" class="form-label">Fecha de corte:</label>
-          <input
-            type="date"
-            name="periodo"
-            id="periodo"
-            class="form-control"
-            value="<?= esc($periodo) ?>"
-            required>
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-2">
+                <?= view('components/back_to_dashboard') ?>
+                <h1 class="h3 mb-0">Mis Indicadores como Jefatura</h1>
+            </div>
         </div>
-        <div class="col-md-8 d-flex align-items-end">
-          <h3 style="color: #6f42c1;">
-            📅 Selecciona la fecha real de corte a la que corresponde el resultado que vas a registrar.
-          </h3>
-        </div>
-      </div>
 
-      <div class="table-responsive">
-        <table class="table table-bordered align-middle w-100">
-          <thead class="table-dark">
-            <tr>
-              <th>Indicador</th>
-              <th>Meta Valor</th>
-              <th>Meta Descripción</th>
-              <th>Tipo Meta</th>
-              <th class="col-formula">Fórmula</th>
-              <th>Calcular</th>
-              <th>Unidad</th>
-              <th>Objetivo Proceso</th>
-              <th>Objetivo Calidad</th>
-              <th>Tipo Aplicación</th>
-              <th>Periodicidad</th>
+        <?php if (session()->getFlashdata('success')): ?>
+            <?= view('components/alert', ['type' => 'success', 'message' => session()->getFlashdata('success')]) ?>
+        <?php elseif (session()->getFlashdata('error')): ?>
+            <?= view('components/alert', ['type' => 'danger', 'message' => session()->getFlashdata('error')]) ?>
+        <?php endif; ?>
 
-              <th>Ponderación (%)</th>
-              <th>Resultado</th>
-              <th>Comentario</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($items as $i):
-              $ip = $i['id_indicador_perfil'];
-            ?>
-              <tr>
-                <td><?= esc($i['nombre_indicador']) ?></td>
-                <td><?= esc($i['meta_valor']) ?></td>
-                <td>
-                    <?php 
-                    $descripcion = esc($i['meta_descripcion']);
-                    $descripcionCorta = strlen($descripcion) > 50 ? substr($descripcion, 0, 50) . '...' : $descripcion;
-                    ?>
-                    <div class="dropdown">
-                        <button class="btn btn-link btn-sm text-start p-0 dropdown-toggle text-decoration-none" 
-                                type="button" 
-                                data-bs-toggle="dropdown" 
-                                aria-expanded="false"
-                                style="white-space: normal; text-align: left; width: 200px;">
-                            <?= $descripcionCorta ?>
-                        </button>
-                        <div class="dropdown-menu p-3" style="max-width: 400px; white-space: normal;">
-                            <h6 class="dropdown-header">Meta Descripción Completa:</h6>
-                            <p class="mb-0 small"><?= $descripcion ?></p>
+        <?php if (empty($items)): ?>
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <?= view('components/empty_state', [
+                        'icon' => 'bi-bar-chart-line',
+                        'title' => 'Sin indicadores asignados',
+                        'message' => 'No tienes indicadores asignados a tu perfil de jefatura actual.',
+                        'actionUrl' => base_url('jefatura/jefaturadashboard'),
+                        'actionText' => 'Volver al Dashboard',
+                        'actionIcon' => 'bi-house-door',
+                        'actionClass' => 'btn-secondary'
+                    ]) ?>
+                </div>
+            </div>
+        <?php else: ?>
+
+        <!-- Fecha de corte -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label for="periodo" class="form-label fw-semibold">
+                            <i class="bi bi-calendar-event me-1"></i>Fecha de corte
+                        </label>
+                        <input type="date" name="periodo_global" id="periodo" class="form-control"
+                               value="<?= esc($periodo) ?>">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="alert alert-info mb-0 py-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Selecciona la fecha real de corte a la que corresponde el resultado que vas a registrar.
                         </div>
                     </div>
-                </td>
-                <td><?= esc($i['tipo_meta']) ?></td>
+                </div>
+            </div>
+        </div>
 
-                <td class="col-formula">
-                  <?php if (isset($formulas[$i['id_indicador']])): ?>
-                    <?php foreach ($formulas[$i['id_indicador']] as $parte): ?>
-                      <?php if ($parte['tipo_parte'] === 'dato'): ?>
-                        <span class="text-primary"><?= esc($parte['valor']) ?></span>
-                      <?php else: ?>
-                        <span><?= esc($parte['valor']) ?></span>
-                      <?php endif; ?>
-                    <?php endforeach; ?>
-                  <?php else: ?>
-                    <code><?= esc($i['metodo_calculo']) ?></code>
-                  <?php endif; ?>
-                </td>
+        <!-- Lista de indicadores -->
+        <div class="accordion" id="indicadoresAccordion">
+            <?php foreach ($items as $index => $i):
+                $ip = $i['id_indicador_perfil'];
+            ?>
+            <div class="card indicador-card shadow-sm mb-3">
+                <!-- Header del indicador -->
+                <div class="card-header bg-white indicador-header p-0" id="heading<?= $index ?>">
+                    <div class="d-flex align-items-center justify-content-between p-3"
+                         data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>"
+                         aria-expanded="false" aria-controls="collapse<?= $index ?>">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <i class="bi bi-chevron-down collapse-icon text-muted"></i>
+                            <div>
+                                <h6 class="mb-1 fw-bold"><?= esc($i['nombre_indicador']) ?></h6>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge meta-badge" style="background-color: #6f42c1;">
+                                        Meta: <?= esc($i['meta_valor']) ?> <?= esc($i['unidad']) ?>
+                                    </span>
+                                    <span class="badge bg-secondary meta-badge">
+                                        <?= esc($i['periodicidad']) ?>
+                                    </span>
+                                    <span class="badge bg-info meta-badge">
+                                        <?= esc($i['ponderacion']) ?>%
+                                    </span>
+                                    <span class="badge bg-outline-dark border meta-badge text-dark">
+                                        <?= ucfirst(str_replace('_', ' ', $i['tipo_meta'])) ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="<?= base_url('jefatura/formula/' . $i['id_indicador']) ?>"
+                               class="btn btn-outline-secondary btn-sm" onclick="event.stopPropagation();">
+                                <i class="bi bi-calculator me-1"></i>Calcular
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
-                <td class="text-center">
-                  <a href="<?= base_url('jefatura/formula/' . $i['id_indicador']) ?>"
-                    class="btn btn-outline-secondary btn-sm">
-                    Diligenciar
-                  </a>
-                </td>
+                <!-- Contenido expandible -->
+                <div id="collapse<?= $index ?>" class="collapse" aria-labelledby="heading<?= $index ?>"
+                     data-bs-parent="#indicadoresAccordion">
+                    <div class="card-body border-top">
+                        <div class="row">
+                            <!-- Columna izquierda: Detalles -->
+                            <div class="col-lg-7">
+                                <div class="detail-section mb-3">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="info-label">Meta Descripcion</div>
+                                            <div class="info-value"><?= esc($i['meta_descripcion']) ?></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-label">Objetivo de Proceso</div>
+                                            <div class="info-value"><?= esc($i['objetivo_proceso']) ?></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-label">Objetivo de Calidad</div>
+                                            <div class="info-value"><?= esc($i['objetivo_calidad']) ?></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-label">Tipo de Aplicacion</div>
+                                            <div class="info-value"><?= ucfirst($i['tipo_aplicacion']) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <td><?= esc($i['unidad']) ?></td>
-                <td class="small"><?= esc($i['objetivo_proceso']) ?></td>
-                <td class="small"><?= esc($i['objetivo_calidad']) ?></td>
-                <td><?= esc($i['tipo_aplicacion']) ?></td>
-                <td><?= esc($i['periodicidad']) ?></td>
+                                <!-- Formula -->
+                                <?php if (isset($formulas[$i['id_indicador']]) && !empty($formulas[$i['id_indicador']])): ?>
+                                <div class="mb-3">
+                                    <div class="info-label mb-1">Formula</div>
+                                    <div class="formula-display">
+                                        <?php foreach ($formulas[$i['id_indicador']] as $parte): ?>
+                                            <?php if ($parte['tipo_parte'] === 'dato'): ?>
+                                                <span class="variable"><?= esc($parte['valor']) ?></span>
+                                            <?php else: ?>
+                                                <span><?= esc($parte['valor']) ?></span>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php else: ?>
+                                <div class="mb-3">
+                                    <div class="info-label mb-1">Metodo de Calculo</div>
+                                    <div class="formula-display">
+                                        <code><?= esc($i['metodo_calculo']) ?></code>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
 
-                <td><?= esc($i['ponderacion']) ?>%</td>
+                            <!-- Columna derecha: Formulario de registro -->
+                            <div class="col-lg-5">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">
+                                            <i class="bi bi-pencil-square me-1"></i>Registrar Resultado
+                                        </h6>
+                                        <form method="post" action="<?= base_url('jefatura/saveIndicadoresComoJefe') ?>">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="periodo" class="periodo-input" value="<?= esc($periodo) ?>">
+                                            <input type="hidden" name="single" value="<?= $ip ?>">
 
-                <td>
-                  <input
-                    type="text"
-                    name="resultado_real[<?= $ip ?>]"
-                    class="form-control resultado-input"
-                    data-ip="<?= $ip ?>"
-                    placeholder="Ingresa resultado">
-                </td>
-                <td>
-                  <textarea
-                    name="comentario[<?= $ip ?>]"
-                    class="form-control comentario-input"
-                    rows="1"
-                    placeholder="Comentario (opcional)"></textarea>
-                </td>
-                <td class="text-center">
-                  <button
-                    type="submit"
-                    name="single"
-                    value="<?= $ip ?>"
-                    class="btn btn-success btn-sm save-btn"
-                    style="display:none;"
-                    data-ip="<?= $ip ?>">
-                    Guardar
-                  </button>
-                </td>
-              </tr>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold">Resultado</label>
+                                                <div class="input-group">
+                                                    <input type="text"
+                                                           name="resultado_real[<?= $ip ?>]"
+                                                           class="form-control"
+                                                           placeholder="Ingresa el valor">
+                                                    <span class="input-group-text"><?= esc($i['unidad']) ?></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold">Comentario (opcional)</label>
+                                                <textarea name="comentario[<?= $ip ?>]"
+                                                          class="form-control" rows="2"
+                                                          placeholder="Observaciones..."></textarea>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-success w-100">
+                                                <i class="bi bi-check-lg me-1"></i>Guardar Resultado
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
+        </div>
 
-    </form>
-  </div>
+        <?php endif; ?>
+    </div>
 
-  <!-- JS -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    $(function() {
-      $('.resultado-input').on('input', function() {
-        const ip = $(this).data('ip');
-        const val = $(this).val().trim();
-        const btn = $('.save-btn[data-ip="' + ip + '"]');
-        if (val !== '' && val !== '0') {
-          btn.show();
-        } else {
-          btn.hide();
-        }
-      });
-    });
-  </script>
+    <!-- Bootstrap 5 JS Bundle y jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Sincronizar fecha de corte global con todos los formularios
+            $('#periodo').on('change', function() {
+                var fecha = $(this).val();
+                $('.periodo-input').val(fecha);
+            });
+
+            // Rotar icono al expandir/colapsar
+            $('.indicador-header').on('click', function() {
+                $(this).toggleClass('collapsed');
+            });
+
+            // Inicializar estado de iconos
+            $('.indicador-header').addClass('collapsed');
+        });
+    </script>
 </body>
 
 </html>
