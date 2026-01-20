@@ -10,18 +10,55 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-        /* Opcional: para que la dropdown no expanda celdas */
-        td .dropdown-toggle {
-            display: block;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 200px;
+        .indicador-card {
+            transition: all 0.2s ease;
+            border-left: 4px solid #0d6efd;
         }
-
-        td .dropdown-menu {
-            max-width: 400px;
-            white-space: normal;
+        .indicador-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .indicador-header {
+            cursor: pointer;
+        }
+        .indicador-header:hover {
+            background-color: #f8f9fa;
+        }
+        .meta-badge {
+            font-size: 0.85rem;
+        }
+        .formula-display {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .formula-display .variable {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+        .info-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-weight: 500;
+        }
+        .collapse-icon {
+            transition: transform 0.2s ease;
+        }
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+        .input-result {
+            max-width: 150px;
+        }
+        .detail-section {
+            background: #fafbfc;
+            border-radius: 8px;
+            padding: 1rem;
         }
     </style>
 </head>
@@ -33,7 +70,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center gap-2">
                 <?= view('components/back_to_dashboard') ?>
-                <h1 class="h3 mb-0">Mis Indicadores – Periodo <?= esc($periodo) ?></h1>
+                <h1 class="h3 mb-0">Mis Indicadores</h1>
             </div>
         </div>
 
@@ -59,172 +96,182 @@
             </div>
         <?php else: ?>
 
-        <form method="post"
-            action="<?= base_url('trabajador/saveIndicadores') ?>">
-            <?= csrf_field() ?>
-
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label for="periodo" class="form-label">Fecha de corte:</label>
-                    <input
-                        type="date"
-                        name="periodo"
-                        id="periodo"
-                        class="form-control"
-                        value="<?= esc($periodo) ?>"
-                        required>
-                </div>
-                <div class="col-md-8 d-flex align-items-end">
-                    <h3 style="color: #6f42c1;">
-                        📅 Selecciona la fecha real de corte a la que corresponde el resultado que vas a registrar.
-                    </h3>
+        <!-- Fecha de corte -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label for="periodo" class="form-label fw-semibold">
+                            <i class="bi bi-calendar-event me-1"></i>Fecha de corte
+                        </label>
+                        <input type="date" name="periodo_global" id="periodo" class="form-control"
+                               value="<?= esc($periodo) ?>">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="alert alert-info mb-0 py-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Selecciona la fecha real de corte a la que corresponde el resultado que vas a registrar.
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
+        <!-- Lista de indicadores -->
+        <div class="accordion" id="indicadoresAccordion">
+            <?php foreach ($items as $index => $i): ?>
+            <div class="card indicador-card shadow-sm mb-3">
+                <!-- Header del indicador -->
+                <div class="card-header bg-white indicador-header p-0" id="heading<?= $index ?>">
+                    <div class="d-flex align-items-center justify-content-between p-3"
+                         data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>"
+                         aria-expanded="false" aria-controls="collapse<?= $index ?>">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <i class="bi bi-chevron-down collapse-icon text-muted"></i>
+                            <div>
+                                <h6 class="mb-1 fw-bold"><?= esc($i['nombre_indicador']) ?></h6>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge bg-primary meta-badge">
+                                        Meta: <?= esc($i['meta_valor']) ?> <?= esc($i['unidad']) ?>
+                                    </span>
+                                    <span class="badge bg-secondary meta-badge">
+                                        <?= esc($i['periodicidad']) ?>
+                                    </span>
+                                    <span class="badge bg-info meta-badge">
+                                        <?= esc($i['ponderacion']) ?>%
+                                    </span>
+                                    <span class="badge bg-outline-dark border meta-badge text-dark">
+                                        <?= ucfirst(str_replace('_', ' ', $i['tipo_meta'])) ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="<?= base_url('trabajador/formula/' . $i['id_indicador']) ?>"
+                               class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation();">
+                                <i class="bi bi-calculator me-1"></i>Calcular
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
-
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped align-middle w-100">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Indicador</th>
-                            <th>Meta Valor</th>
-                            <th>Meta Descripción</th>
-                            <th>Tipo de Meta</th>
-                            <th>Fórmula</th>
-                            <th>Calcular</th>
-                            <th>Unidad</th>
-                            <th>Objetivo Proceso</th>
-                            <th>Objetivo Calidad</th>
-                            <th>Tipo Aplicación</th>
-                            <th>Creado en</th>
-                            <th>Periodicidad</th>
-                            <th>Ponderación (%)</th>
-                            <th>Resultado</th>
-                            <th>Comentario</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($items as $i): ?>
-                            <tr>
-                                <td><strong><?= esc($i['nombre_indicador']) ?></strong></td>
-                                <td><?= esc($i['meta_valor']) ?></td>
-                                <td>
-                                    <?php 
-                                    $descripcion = esc($i['meta_descripcion']);
-                                    $descripcionCorta = strlen($descripcion) > 50 ? substr($descripcion, 0, 50) . '...' : $descripcion;
-                                    ?>
-                                    <div class="dropdown">
-                                        <button class="btn btn-link btn-sm text-start p-0 dropdown-toggle text-decoration-none" 
-                                                type="button" 
-                                                data-bs-toggle="dropdown" 
-                                                aria-expanded="false"
-                                                style="white-space: normal; text-align: left; width: 200px;">
-                                            <?= $descripcionCorta ?>
-                                        </button>
-                                        <div class="dropdown-menu p-3" style="max-width: 400px; white-space: normal;">
-                                            <h6 class="dropdown-header">Meta Descripción Completa:</h6>
-                                            <p class="mb-0 small"><?= $descripcion ?></p>
+                <!-- Contenido expandible -->
+                <div id="collapse<?= $index ?>" class="collapse" aria-labelledby="heading<?= $index ?>"
+                     data-bs-parent="#indicadoresAccordion">
+                    <div class="card-body border-top">
+                        <div class="row">
+                            <!-- Columna izquierda: Detalles -->
+                            <div class="col-lg-7">
+                                <div class="detail-section mb-3">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="info-label">Meta Descripcion</div>
+                                            <div class="info-value"><?= esc($i['meta_descripcion']) ?></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-label">Objetivo de Proceso</div>
+                                            <div class="info-value"><?= esc($i['objetivo_proceso']) ?></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-label">Objetivo de Calidad</div>
+                                            <div class="info-value"><?= esc($i['objetivo_calidad']) ?></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-label">Tipo de Aplicacion</div>
+                                            <div class="info-value"><?= ucfirst($i['tipo_aplicacion']) ?></div>
                                         </div>
                                     </div>
-                                </td>
-                                <td><?= esc($i['tipo_meta']) ?></td>
+                                </div>
 
-                                <!-- Fórmula estática -->
-                                <td>
-                                    <?php if (isset($formulas[$i['id_indicador']])): ?>
+                                <!-- Formula -->
+                                <?php if (isset($formulas[$i['id_indicador']]) && !empty($formulas[$i['id_indicador']])): ?>
+                                <div class="mb-3">
+                                    <div class="info-label mb-1">Formula</div>
+                                    <div class="formula-display">
                                         <?php foreach ($formulas[$i['id_indicador']] as $parte): ?>
                                             <?php if ($parte['tipo_parte'] === 'dato'): ?>
-                                                <span class="text-primary"><?= esc($parte['valor']) ?></span>
+                                                <span class="variable"><?= esc($parte['valor']) ?></span>
                                             <?php else: ?>
                                                 <span><?= esc($parte['valor']) ?></span>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
-                                    <?php else: ?>
+                                    </div>
+                                </div>
+                                <?php else: ?>
+                                <div class="mb-3">
+                                    <div class="info-label mb-1">Metodo de Calculo</div>
+                                    <div class="formula-display">
                                         <code><?= esc($i['metodo_calculo']) ?></code>
-                                    <?php endif; ?>
-                                </td>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
 
+                            <!-- Columna derecha: Formulario de registro -->
+                            <div class="col-lg-5">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">
+                                            <i class="bi bi-pencil-square me-1"></i>Registrar Resultado
+                                        </h6>
+                                        <form method="post" action="<?= base_url('trabajador/saveIndicadores') ?>">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="periodo" class="periodo-input" value="<?= esc($periodo) ?>">
 
-                                <!-- Botón para diligenciar fórmula -->
-                                <td class="text-center">
-                                    <a href="<?= base_url('trabajador/formula/' . $i['id_indicador']) ?>"
-                                        class="btn btn-outline-secondary btn-sm">
-                                        Diligenciar
-                                    </a>
-                                </td>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold">Resultado</label>
+                                                <div class="input-group">
+                                                    <input type="text"
+                                                           name="resultado_real[<?= $i['id_indicador_perfil'] ?>]"
+                                                           class="form-control"
+                                                           placeholder="Ingresa el valor">
+                                                    <span class="input-group-text"><?= esc($i['unidad']) ?></span>
+                                                </div>
+                                            </div>
 
-                                <td><?= esc($i['unidad']) ?></td>
-                                <td class="small text-muted">
-                                    <?= esc($i['objetivo_proceso']) ?>
-                                </td>
-                                <td class="small text-muted">
-                                    <?= esc($i['objetivo_calidad']) ?>
-                                </td>
-                                <td><?= esc($i['tipo_aplicacion']) ?></td>
-                                <td><?= esc($i['created_at']) ?></td>
-                                <td><?= esc($i['periodicidad']) ?></td>
-                                <td><?= esc($i['ponderacion']) ?>%</td>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold">Comentario (opcional)</label>
+                                                <textarea name="comentario[<?= $i['id_indicador_perfil'] ?>]"
+                                                          class="form-control" rows="2"
+                                                          placeholder="Observaciones..."></textarea>
+                                            </div>
 
-                                <!-- 1) Campo Resultado: vacío -->
-                                <td>
-                                    <input
-                                        type="text"
-                                        name="resultado_real[<?= $i['id_indicador_perfil'] ?>]"
-                                        class="form-control resultado-input"
-                                        data-ip="<?= $i['id_indicador_perfil'] ?>"
-                                        placeholder="Ingresa valor" />
-                                </td>
-
-                                <!-- 2) Campo Comentario -->
-                                <td>
-                                    <textarea
-                                        name="comentario[<?= $i['id_indicador_perfil'] ?>]"
-                                        class="form-control comentario-input"
-                                        rows="1"
-                                        placeholder="Opcional..."></textarea>
-                                </td>
-
-                                <!-- 3) Botón de Guardar, oculto inicialmente -->
-                                <td class="text-center">
-                                    <button
-                                        type="submit"
-                                        class="btn btn-success btn-sm save-btn"
-                                        data-ip="<?= $i['id_indicador_perfil'] ?>"
-                                        style="display:none;">
-                                        Guardar
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                            <button type="submit" class="btn btn-success w-100">
+                                                <i class="bi bi-check-lg me-1"></i>Guardar Resultado
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </form>
+            <?php endforeach; ?>
+        </div>
+
         <?php endif; ?>
     </div>
 
     <!-- Bootstrap 5 JS Bundle y jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            // Mostrar el botón Guardar solo si el trabajador escribe un resultado
-            $('.resultado-input').on('input', function() {
-                var val = $(this).val().trim();
-                var ip = $(this).data('ip');
-                var btn = $('.save-btn[data-ip="' + ip + '"]');
-
-                if (val !== '' && val !== '0') {
-                    btn.show();
-                } else {
-                    btn.hide();
-                }
+            // Sincronizar fecha de corte global con todos los formularios
+            $('#periodo').on('change', function() {
+                var fecha = $(this).val();
+                $('.periodo-input').val(fecha);
             });
+
+            // Rotar icono al expandir/colapsar
+            $('.indicador-header').on('click', function() {
+                $(this).toggleClass('collapsed');
+            });
+
+            // Inicializar estado de iconos
+            $('.indicador-header').addClass('collapsed');
         });
     </script>
 </body>
