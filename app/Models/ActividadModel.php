@@ -303,7 +303,8 @@ class ActividadModel extends Model
             'id_usuario'     => $idUsuario,
             'campo'          => 'estado',
             'valor_anterior' => $estadoAnterior,
-            'valor_nuevo'    => $nuevoEstado
+            'valor_nuevo'    => $nuevoEstado,
+            'created_at'     => date('Y-m-d H:i:s')
         ]);
 
         return true;

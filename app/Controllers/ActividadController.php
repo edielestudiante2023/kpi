@@ -211,7 +211,8 @@ class ActividadController extends BaseController
             'id_usuario'     => session()->get('id_users'),
             'campo'          => 'creacion',
             'valor_anterior' => null,
-            'valor_nuevo'    => 'Actividad creada'
+            'valor_nuevo'    => 'Actividad creada',
+            'created_at'     => date('Y-m-d H:i:s')
         ]);
 
         // Notificar al usuario asignado
@@ -333,7 +334,8 @@ class ActividadController extends BaseController
                     'id_usuario'     => session()->get('id_users'),
                     'campo'          => $campo,
                     'valor_anterior' => $valorAnterior,
-                    'valor_nuevo'    => $valor
+                    'valor_nuevo'    => $valor,
+                    'created_at'     => date('Y-m-d H:i:s')
                 ]);
             }
         }
