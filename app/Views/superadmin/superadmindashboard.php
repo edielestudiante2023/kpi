@@ -5,7 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Superadmin – Kpi Cycloid</title>
+    <title>Dashboard Superadmin | KPI Cycloid</title>
+    <?= $this->include('partials/pwa_head') ?>
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -176,6 +177,7 @@
             });
         });
     </script>
+    <?= $this->include('partials/pwa_scripts') ?>
 </body>
 
 </html>
