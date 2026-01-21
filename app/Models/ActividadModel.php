@@ -59,6 +59,9 @@ class ActividadModel extends Model
     {
         $builder = $this->db->table('vw_tablero_actividades');
 
+        if (!empty($filtros['id_actividad'])) {
+            $builder->where('id_actividad', $filtros['id_actividad']);
+        }
         if (!empty($filtros['estado'])) {
             $builder->where('estado', $filtros['estado']);
         }
