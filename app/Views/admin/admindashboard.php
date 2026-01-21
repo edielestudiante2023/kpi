@@ -13,6 +13,37 @@
 
     <h1 class="mb-4">Dashboard Admin</h1>
 
+    <!-- MODULO DE ACTIVIDADES - PRIMERO -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-kanban me-2"></i>Gestion de Actividades
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="<?= base_url('actividades/nueva') ?>" class="btn btn-success w-100">
+                        <i class="bi bi-plus-lg me-1"></i> Nueva Actividad
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-primary w-100">
+                        <i class="bi bi-kanban me-1"></i> Tablero Kanban
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-people me-1"></i> Por Responsable
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="<?= base_url('actividades/dashboard') ?>" class="btn btn-outline-info w-100">
+                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-header">
             Accesos habilitados para Admin
@@ -44,37 +75,6 @@
                 <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
-    </div>
-
-    <!-- MODULO DE ACTIVIDADES -->
-    <div class="card mt-4">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-kanban me-2"></i>Gestion de Actividades
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-primary w-100">
-                        <i class="bi bi-kanban me-1"></i> Tablero Kanban
-                    </a>
-                </div>
-                <div class="col-md-3">
-                    <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-outline-primary w-100">
-                        <i class="bi bi-people me-1"></i> Por Responsable
-                    </a>
-                </div>
-                <div class="col-md-3">
-                    <a href="<?= base_url('actividades/dashboard') ?>" class="btn btn-outline-info w-100">
-                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                    </a>
-                </div>
-                <div class="col-md-3">
-                    <a href="<?= base_url('actividades/nueva') ?>" class="btn btn-success w-100">
-                        <i class="bi bi-plus-lg me-1"></i> Nueva Actividad
-                    </a>
-                </div>
-            </div>
         </div>
     </div>
 </div>

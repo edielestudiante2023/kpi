@@ -18,31 +18,20 @@ $session = session();
     <div class="container py-4">
         <h1 class="h3 mb-4">Bienvenido, <?= esc($session->get('nombre_completo')) ?></h1>
         <div class="row gy-4">
-            <div class="col-md-6">
-                <?= view('components/dashboard_card', [
-                    'title' => 'Mis Indicadores',
-                    'description' => 'Consulta y reporta tus indicadores del periodo actual.',
-                    'url' => base_url('trabajador/mis_indicadores'),
-                    'icon' => 'bi-bar-chart-line',
-                    'btnText' => 'Ver Indicadores',
-                    'btnClass' => 'btn-primary',
-                ]) ?>
-            </div>
-            <div class="col-md-6">
-                <?= view('components/dashboard_card', [
-                    'title' => 'Historial de Resultados',
-                    'description' => 'Revisa los resultados que has registrado en periodos anteriores.',
-                    'url' => base_url('trabajador/historial_resultados'),
-                    'icon' => 'bi-clock-history',
-                    'btnText' => 'Ver Historial',
-                    'btnClass' => 'btn-secondary',
-                ]) ?>
-            </div>
-
-            <!-- MODULO DE ACTIVIDADES -->
+            <!-- MODULO DE ACTIVIDADES - PRIMERO -->
             <div class="col-12">
-                <hr class="my-2">
                 <h5 class="text-muted mb-3"><i class="bi bi-kanban me-2"></i>Gestion de Actividades</h5>
+            </div>
+            <div class="col-md-4">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Nueva Actividad',
+                    'description' => 'Crea una nueva actividad o solicitud.',
+                    'url' => base_url('actividades/nueva'),
+                    'icon' => 'bi-plus-lg',
+                    'btnText' => 'Crear Actividad',
+                    'btnClass' => 'btn-success',
+                    'cardClass' => 'border-success',
+                ]) ?>
             </div>
             <div class="col-md-4">
                 <?= view('components/dashboard_card', [
@@ -65,14 +54,30 @@ $session = session();
                     'btnClass' => 'btn-outline-primary',
                 ]) ?>
             </div>
-            <div class="col-md-4">
+
+            <!-- INDICADORES -->
+            <div class="col-12">
+                <hr class="my-2">
+                <h5 class="text-muted mb-3"><i class="bi bi-bar-chart-line me-2"></i>Indicadores</h5>
+            </div>
+            <div class="col-md-6">
                 <?= view('components/dashboard_card', [
-                    'title' => 'Nueva Actividad',
-                    'description' => 'Crea una nueva actividad o solicitud.',
-                    'url' => base_url('actividades/nueva'),
-                    'icon' => 'bi-plus-lg',
-                    'btnText' => 'Crear Actividad',
-                    'btnClass' => 'btn-success',
+                    'title' => 'Mis Indicadores',
+                    'description' => 'Consulta y reporta tus indicadores del periodo actual.',
+                    'url' => base_url('trabajador/mis_indicadores'),
+                    'icon' => 'bi-bar-chart-line',
+                    'btnText' => 'Ver Indicadores',
+                    'btnClass' => 'btn-primary',
+                ]) ?>
+            </div>
+            <div class="col-md-6">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Historial de Resultados',
+                    'description' => 'Revisa los resultados que has registrado en periodos anteriores.',
+                    'url' => base_url('trabajador/historial_resultados'),
+                    'icon' => 'bi-clock-history',
+                    'btnText' => 'Ver Historial',
+                    'btnClass' => 'btn-secondary',
                 ]) ?>
             </div>
         </div>
