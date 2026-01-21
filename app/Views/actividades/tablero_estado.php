@@ -88,12 +88,10 @@
             padding: 0.75rem;
             margin-bottom: 0.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: grab;
+            cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             border-left: 4px solid #dee2e6;
             position: relative;
-            z-index: 1;
-            isolation: isolate;
         }
         .kanban-card::before {
             content: '\F3FE';
@@ -172,14 +170,6 @@
         }
         .fecha-vencida { color: #dc3545; font-weight: 600; }
         .fecha-proxima { color: #fd7e14; }
-
-        /* Fix stretched-link para que no se sobreponga entre tarjetas */
-        .kanban-card .stretched-link {
-            z-index: 2;
-        }
-        .kanban-card .stretched-link::after {
-            z-index: 2;
-        }
 
         /* Colores de columnas */
         .col-pendiente .kanban-header { background: #6c757d; }
@@ -756,8 +746,6 @@
                                     </div>
                                 </div>
 
-                                <a href="<?= base_url('actividades/ver/' . $act['id_actividad']) ?>"
-                                   class="stretched-link"></a>
                             </div>
                         <?php endforeach; ?>
 
@@ -878,6 +866,17 @@
         };
 
         cards.forEach(card => {
+            // Click para abrir actividad - usando el data-id de ESTA tarjeta específica
+            card.addEventListener('click', function(e) {
+                // Solo navegar si no estamos arrastrando
+                if (!this.classList.contains('dragging')) {
+                    const idActividad = this.dataset.id;
+                    if (idActividad) {
+                        window.location.href = '<?= base_url('actividades/ver/') ?>' + idActividad;
+                    }
+                }
+            });
+
             card.addEventListener('dragstart', () => {
                 card.classList.add('dragging');
             });
