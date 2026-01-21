@@ -868,9 +868,12 @@
         cards.forEach(card => {
             // Click para abrir actividad - usando el data-id de ESTA tarjeta específica
             card.addEventListener('click', function(e) {
+                e.stopPropagation(); // Evitar propagación del evento
                 // Solo navegar si no estamos arrastrando
                 if (!this.classList.contains('dragging')) {
                     const idActividad = this.dataset.id;
+                    const titulo = this.querySelector('.card-titulo')?.textContent;
+                    console.log('Click en tarjeta:', idActividad, titulo);
                     if (idActividad) {
                         window.location.href = '<?= base_url('actividades/ver/') ?>' + idActividad;
                     }
