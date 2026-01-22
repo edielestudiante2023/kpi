@@ -198,7 +198,8 @@ class ActividadController extends BaseController
             'prioridad'          => $this->request->getPost('prioridad'),
             'estado'             => 'pendiente',
             'fecha_limite'       => $this->request->getPost('fecha_limite') ?: null,
-            'observaciones'      => $this->request->getPost('observaciones')
+            'observaciones'      => $this->request->getPost('observaciones'),
+            'requiere_revision'  => $this->request->getPost('requiere_revision') ? 1 : 0
         ];
 
         $this->actividadModel->insert($data);
@@ -314,6 +315,21 @@ class ActividadController extends BaseController
                 ->withInput();
         }
 
+        // Validar restriccion de revision al editar
+        $nuevoEstado = $this->request->getPost('estado');
+        if ($nuevoEstado === 'completada' && !empty($actividad['requiere_revision'])) {
+            $idUsuario = session()->get('id_users');
+            $rolId = session()->get('rol_id');
+            $esCreador = ($idUsuario == $actividad['id_usuario_creador']);
+            $esSuperAdmin = ($rolId == 1);
+
+            if (!$esCreador && !$esSuperAdmin) {
+                return redirect()->back()
+                    ->with('error', 'Esta actividad requiere revision. Solo el creador puede marcarla como completada.')
+                    ->withInput();
+            }
+        }
+
         $camposActualizar = [
             'titulo', 'descripcion', 'id_categoria', 'id_usuario_asignado',
             'id_area', 'prioridad', 'estado', 'fecha_limite',
@@ -335,6 +351,25 @@ class ActividadController extends BaseController
                     'campo'          => $campo,
                     'valor_anterior' => $valorAnterior,
                     'valor_nuevo'    => $valor,
+                    'created_at'     => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
+
+        // Manejar checkbox requiere_revision (solo si el usuario puede editarlo)
+        $idUsuario = session()->get('id_users');
+        $rolId = session()->get('rol_id');
+        if ($idUsuario == $actividad['id_usuario_creador'] || $rolId == 1) {
+            $nuevoRequiereRevision = $this->request->getPost('requiere_revision') ? 1 : 0;
+            $valorAnteriorRevision = (int)($actividad['requiere_revision'] ?? 0);
+            if ($nuevoRequiereRevision !== $valorAnteriorRevision) {
+                $dataUpdate['requiere_revision'] = $nuevoRequiereRevision;
+                $this->historialModel->insert([
+                    'id_actividad'   => $id,
+                    'id_usuario'     => $idUsuario,
+                    'campo'          => 'requiere_revision',
+                    'valor_anterior' => $valorAnteriorRevision ? 'Si' : 'No',
+                    'valor_nuevo'    => $nuevoRequiereRevision ? 'Si' : 'No',
                     'created_at'     => date('Y-m-d H:i:s')
                 ]);
             }
@@ -421,6 +456,21 @@ class ActividadController extends BaseController
         }
 
         $estadoAnterior = $actividad['estado'] ?? '';
+
+        // Validar restriccion de revision: si requiere_revision y el usuario no es el creador, no puede completar
+        if ($nuevoEstado === 'completada' && !empty($actividad['requiere_revision'])) {
+            $idUsuario = session()->get('id_users');
+            $rolId = session()->get('rol_id');
+            $esCreador = ($idUsuario == $actividad['id_usuario_creador']);
+            $esSuperAdmin = ($rolId == 1);
+
+            if (!$esCreador && !$esSuperAdmin) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Esta actividad requiere revision. Solo el creador puede marcarla como completada.'
+                ]);
+            }
+        }
 
         // Cambiar estado
         $resultado = $this->actividadModel->cambiarEstado(

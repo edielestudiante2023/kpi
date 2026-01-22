@@ -291,6 +291,11 @@
                             <span class="badge badge-prioridad prioridad-<?= $actividad['prioridad'] ?> ms-1">
                                 <?= ucfirst($actividad['prioridad']) ?>
                             </span>
+                            <?php if (!empty($actividad['requiere_revision'])): ?>
+                            <span class="badge bg-info ms-1" title="Solo el creador puede marcar como completada">
+                                <i class="bi bi-shield-check"></i> Requiere revision
+                            </span>
+                            <?php endif; ?>
                         </div>
                         <h1 class="h3 mb-0"><?= esc($actividad['titulo']) ?></h1>
                     </div>

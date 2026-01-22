@@ -252,6 +252,22 @@
                                        value="<?= old('fecha_limite', $actividad['fecha_limite']) ?>">
                             </div>
 
+                            <!-- Requiere revision (solo visible para el creador) -->
+                            <?php if (session()->get('id_users') == $actividad['id_usuario_creador'] || session()->get('rol_id') == 1): ?>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" name="requiere_revision" id="requiere_revision" value="1"
+                                           <?= old('requiere_revision', $actividad['requiere_revision'] ?? 0) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="requiere_revision">
+                                        <i class="bi bi-shield-check me-1"></i>Requiere revision para cerrar
+                                    </label>
+                                    <div class="form-text">
+                                        Si esta marcado, solo tu (creador) podras marcarla como completada
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+
                             <!-- Observaciones -->
                             <div class="col-12 mb-3">
                                 <label class="form-label">Observaciones</label>

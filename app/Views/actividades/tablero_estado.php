@@ -711,6 +711,11 @@
                                         <?= esc($act['nombre_categoria']) ?>
                                     </span>
                                 <?php endif; ?>
+                                <?php if (!empty($act['requiere_revision'])): ?>
+                                    <span class="badge bg-info" style="font-size: 0.65rem;" title="Solo el creador puede completar">
+                                        <i class="bi bi-shield-check"></i>
+                                    </span>
+                                <?php endif; ?>
 
                                 <div class="card-footer-custom">
                                     <div>

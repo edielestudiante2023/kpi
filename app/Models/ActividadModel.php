@@ -25,7 +25,8 @@ class ActividadModel extends Model
         'fecha_cierre',
         'porcentaje_avance',
         'observaciones',
-        'notificado_vencimiento'
+        'notificado_vencimiento',
+        'requiere_revision'
     ];
     protected $returnType       = 'array';
     protected $useTimestamps    = false;

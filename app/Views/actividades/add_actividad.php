@@ -247,6 +247,20 @@
                                        placeholder="Selecciona una fecha">
                             </div>
 
+                            <!-- Requiere revision -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" name="requiere_revision" id="requiere_revision" value="1"
+                                           <?= old('requiere_revision') ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="requiere_revision">
+                                        <i class="bi bi-shield-check me-1"></i>Requiere revision para cerrar
+                                    </label>
+                                    <div class="form-text">
+                                        Si esta marcado, solo tu (creador) podras marcarla como completada
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Observaciones -->
                             <div class="col-12 mb-3">
                                 <label class="form-label">Observaciones</label>
