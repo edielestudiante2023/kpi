@@ -113,7 +113,7 @@ class ActividadController extends BaseController
 
         $data = [
             'tablero'     => $this->actividadModel->getActividadesPorEstado($filtros),
-            'resumen'     => $this->actividadModel->getResumenTablero(),
+            'resumen'     => $this->actividadModel->getResumenTablero($filtros),
             'usuarios'    => $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll(),
             'categorias'  => $this->categoriaModel->getActivas(),
             'filtros'     => $filtros

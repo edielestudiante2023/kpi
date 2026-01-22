@@ -117,9 +117,9 @@ class ActividadModel extends Model
     /**
      * Obtiene conteos para el resumen del tablero
      */
-    public function getResumenTablero()
+    public function getResumenTablero($filtros = [])
     {
-        $todas = $this->db->table('vw_tablero_actividades')->get()->getResultArray();
+        $todas = $this->getActividadesCompletas($filtros);
 
         $resumen = [
             'total' => count($todas),
