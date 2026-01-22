@@ -367,6 +367,195 @@ class NotificadorActividades
     }
 
     /**
+     * Envia resumen diario de actividades a cada usuario
+     */
+    public function enviarResumenDiario(): array
+    {
+        $actividadModel = new ActividadModel();
+        $usuarios = $this->userModel->where('activo', 1)->findAll();
+
+        $resultados = [
+            'enviados' => 0,
+            'errores' => 0,
+            'sin_actividades' => 0
+        ];
+
+        foreach ($usuarios as $usuario) {
+            if (empty($usuario['correo'])) {
+                continue;
+            }
+
+            // Obtener actividades asignadas al usuario (no completadas/canceladas)
+            $actividadesAsignadas = $actividadModel->getActividadesCompletas([
+                'id_asignado' => $usuario['id_users']
+            ]);
+
+            // Filtrar solo activas
+            $actividadesActivas = array_filter($actividadesAsignadas, function($act) {
+                return !in_array($act['estado'], ['completada', 'cancelada']);
+            });
+
+            if (empty($actividadesActivas)) {
+                $resultados['sin_actividades']++;
+                continue;
+            }
+
+            // Clasificar actividades
+            $vencidas = [];
+            $hoy = [];
+            $proximasVencer = [];
+            $enProgreso = [];
+            $pendientes = [];
+
+            foreach ($actividadesActivas as $act) {
+                $diasRestantes = $act['dias_restantes'] ?? null;
+
+                if ($diasRestantes !== null && $diasRestantes < 0) {
+                    $vencidas[] = $act;
+                } elseif ($diasRestantes === 0) {
+                    $hoy[] = $act;
+                } elseif ($diasRestantes !== null && $diasRestantes <= 3) {
+                    $proximasVencer[] = $act;
+                } elseif ($act['estado'] === 'en_progreso') {
+                    $enProgreso[] = $act;
+                } else {
+                    $pendientes[] = $act;
+                }
+            }
+
+            // Generar HTML del resumen
+            $contenidoHTML = $this->generarHTMLResumenDiario(
+                $usuario,
+                $vencidas,
+                $hoy,
+                $proximasVencer,
+                $enProgreso,
+                $pendientes
+            );
+
+            $asunto = "Resumen diario de actividades - " . date('d/m/Y');
+
+            if ($this->enviarEmail($usuario['correo'], $usuario['nombre_completo'], $asunto, $contenidoHTML)) {
+                $resultados['enviados']++;
+            } else {
+                $resultados['errores']++;
+            }
+        }
+
+        return $resultados;
+    }
+
+    /**
+     * Genera el HTML del resumen diario
+     */
+    protected function generarHTMLResumenDiario(
+        array $usuario,
+        array $vencidas,
+        array $hoy,
+        array $proximasVencer,
+        array $enProgreso,
+        array $pendientes
+    ): string {
+        $urlTablero = base_url('actividades/tablero');
+        $totalActivas = count($vencidas) + count($hoy) + count($proximasVencer) + count($enProgreso) + count($pendientes);
+
+        $html = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;'>
+                <h1 style='color: white; margin: 0; font-size: 24px;'>Resumen Diario</h1>
+                <p style='color: rgba(255,255,255,0.8); margin: 5px 0 0 0;'>" . date('d/m/Y') . "</p>
+            </div>
+
+            <div style='padding: 30px; background: #f8f9fa;'>
+                <p style='font-size: 16px; color: #333;'>Hola <strong>{$usuario['nombre_completo']}</strong>,</p>
+                <p style='font-size: 16px; color: #333;'>Tienes <strong>{$totalActivas}</strong> actividades pendientes:</p>
+
+                <div style='display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;'>
+                    <div style='flex: 1; min-width: 80px; background: #dc3545; color: white; padding: 15px; border-radius: 8px; text-align: center;'>
+                        <div style='font-size: 24px; font-weight: bold;'>" . count($vencidas) . "</div>
+                        <div style='font-size: 11px;'>VENCIDAS</div>
+                    </div>
+                    <div style='flex: 1; min-width: 80px; background: #fd7e14; color: white; padding: 15px; border-radius: 8px; text-align: center;'>
+                        <div style='font-size: 24px; font-weight: bold;'>" . count($hoy) . "</div>
+                        <div style='font-size: 11px;'>VENCEN HOY</div>
+                    </div>
+                    <div style='flex: 1; min-width: 80px; background: #ffc107; color: #333; padding: 15px; border-radius: 8px; text-align: center;'>
+                        <div style='font-size: 24px; font-weight: bold;'>" . count($proximasVencer) . "</div>
+                        <div style='font-size: 11px;'>PROXIMAS</div>
+                    </div>
+                    <div style='flex: 1; min-width: 80px; background: #0d6efd; color: white; padding: 15px; border-radius: 8px; text-align: center;'>
+                        <div style='font-size: 24px; font-weight: bold;'>" . count($enProgreso) . "</div>
+                        <div style='font-size: 11px;'>EN PROGRESO</div>
+                    </div>
+                </div>";
+
+        // Sección de vencidas (urgente)
+        if (!empty($vencidas)) {
+            $html .= $this->generarSeccionActividades('VENCIDAS - Requieren atencion inmediata', $vencidas, '#dc3545');
+        }
+
+        // Sección de hoy
+        if (!empty($hoy)) {
+            $html .= $this->generarSeccionActividades('Vencen HOY', $hoy, '#fd7e14');
+        }
+
+        // Sección próximas a vencer
+        if (!empty($proximasVencer)) {
+            $html .= $this->generarSeccionActividades('Proximas a vencer (3 dias)', $proximasVencer, '#ffc107');
+        }
+
+        // Sección en progreso (máximo 5)
+        if (!empty($enProgreso)) {
+            $html .= $this->generarSeccionActividades('En progreso', array_slice($enProgreso, 0, 5), '#0d6efd');
+        }
+
+        $html .= "
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{$urlTablero}' style='display: inline-block; padding: 14px 28px; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                        Ver Tablero Completo
+                    </a>
+                </div>
+            </div>
+
+            <div style='padding: 20px; background: #e9ecef; text-align: center; font-size: 12px; color: #6c757d;'>
+                <p style='margin: 0;'>Este es un mensaje automatico del sistema Kpi Cycloid.</p>
+                <p style='margin: 5px 0 0 0;'>Enviado cada dia a las 7:00 AM.</p>
+            </div>
+        </div>
+        ";
+
+        return $html;
+    }
+
+    /**
+     * Genera una seccion de actividades para el resumen
+     */
+    protected function generarSeccionActividades(string $titulo, array $actividades, string $color): string
+    {
+        $html = "
+        <div style='margin: 20px 0;'>
+            <h3 style='color: {$color}; font-size: 14px; margin: 0 0 10px 0; border-bottom: 2px solid {$color}; padding-bottom: 5px;'>
+                {$titulo}
+            </h3>";
+
+        foreach ($actividades as $act) {
+            $urlActividad = base_url('actividades/ver/' . $act['id_actividad']);
+            $fechaLimite = $act['fecha_limite'] ? date('d/m', strtotime($act['fecha_limite'])) : '-';
+
+            $html .= "
+            <div style='background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; border-left: 3px solid {$color};'>
+                <a href='{$urlActividad}' style='color: #333; text-decoration: none; font-weight: 500;'>{$act['titulo']}</a>
+                <div style='font-size: 11px; color: #6c757d; margin-top: 3px;'>
+                    {$act['codigo']} | Vence: {$fechaLimite}
+                </div>
+            </div>";
+        }
+
+        $html .= "</div>";
+        return $html;
+    }
+
+    /**
      * Obtiene el color según la prioridad
      */
     protected function getColorPrioridad(string $prioridad): string
