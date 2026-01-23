@@ -408,15 +408,16 @@ class NotificadorActividades
             $pendientes = [];
 
             foreach ($actividadesActivas as $act) {
-                $diasRestantes = $act['dias_restantes'] ?? null;
+                $diasRestantes = $act['dias_restantes'];
 
-                if ($diasRestantes !== null && $diasRestantes < 0) {
+                // Clasificar por urgencia
+                if ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes < 0) {
                     $vencidas[] = $act;
-                } elseif ($diasRestantes === 0) {
+                } elseif ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes == 0) {
                     $hoy[] = $act;
-                } elseif ($diasRestantes !== null && $diasRestantes <= 3) {
+                } elseif ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes <= 3) {
                     $proximasVencer[] = $act;
-                } elseif ($act['estado'] === 'en_progreso') {
+                } elseif ($act['estado'] === 'en_progreso' || $act['estado'] === 'en_revision') {
                     $enProgreso[] = $act;
                 } else {
                     $pendientes[] = $act;
@@ -487,6 +488,10 @@ class NotificadorActividades
                         <div style='font-size: 24px; font-weight: bold;'>" . count($enProgreso) . "</div>
                         <div style='font-size: 11px;'>EN PROGRESO</div>
                     </div>
+                    <div style='flex: 1; min-width: 80px; background: #6c757d; color: white; padding: 15px; border-radius: 8px; text-align: center;'>
+                        <div style='font-size: 24px; font-weight: bold;'>" . count($pendientes) . "</div>
+                        <div style='font-size: 11px;'>PENDIENTES</div>
+                    </div>
                 </div>";
 
         // Sección de vencidas (urgente)
@@ -507,6 +512,11 @@ class NotificadorActividades
         // Sección en progreso (máximo 5)
         if (!empty($enProgreso)) {
             $html .= $this->generarSeccionActividades('En progreso', array_slice($enProgreso, 0, 5), '#0d6efd');
+        }
+
+        // Sección pendientes (máximo 5)
+        if (!empty($pendientes)) {
+            $html .= $this->generarSeccionActividades('Pendientes', array_slice($pendientes, 0, 5), '#6c757d');
         }
 
         $html .= "
