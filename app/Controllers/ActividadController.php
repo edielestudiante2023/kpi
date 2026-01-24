@@ -82,7 +82,10 @@ class ActividadController extends BaseController
         $actividadesVencidas = $this->actividadModel
             ->where('fecha_limite <', $hoy)
             ->whereNotIn('estado', ['completada', 'cancelada'])
-            ->where('notificado_vencimiento IS NULL OR notificado_vencimiento = 0')
+            ->groupStart()
+                ->where('notificado_vencimiento', null)
+                ->orWhere('notificado_vencimiento', 0)
+            ->groupEnd()
             ->findAll();
 
         foreach ($actividadesVencidas as $act) {
