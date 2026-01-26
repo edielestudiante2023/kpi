@@ -316,18 +316,7 @@ class NotificadorActividades
         </div>
         ";
 
-        $exito = $this->enviarEmail($usuario['correo'], $usuario['nombre_completo'], $asunto, $contenidoHTML);
-
-        // Si está vencida, también notificar al jefe
-        if ($esVencida && !empty($usuario['id_jefe'])) {
-            $jefe = $this->userModel->find($usuario['id_jefe']);
-            if ($jefe && !empty($jefe['correo'])) {
-                $asuntoJefe = "Actividad vencida de {$usuario['nombre_completo']} - {$actividad['codigo']}";
-                $this->enviarEmail($jefe['correo'], $jefe['nombre_completo'], $asuntoJefe, $contenidoHTML);
-            }
-        }
-
-        return $exito;
+        return $this->enviarEmail($usuario['correo'], $usuario['nombre_completo'], $asunto, $contenidoHTML);
     }
 
     /**
