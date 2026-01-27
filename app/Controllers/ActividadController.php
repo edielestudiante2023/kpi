@@ -318,8 +318,19 @@ class ActividadController extends BaseController
                 ->withInput();
         }
 
-        // Validar restriccion de revision al editar
+        // Validar restriccion: solo el creador puede cancelar
         $nuevoEstado = $this->request->getPost('estado');
+        if ($nuevoEstado === 'cancelada') {
+            $idUsuario = session()->get('id_users');
+            $rolId = session()->get('rol_id');
+            if ($idUsuario != $actividad['id_usuario_creador'] && $rolId != 1) {
+                return redirect()->back()
+                    ->with('error', 'Solo el creador de la actividad puede cancelarla.')
+                    ->withInput();
+            }
+        }
+
+        // Validar restriccion de revision al editar
         if ($nuevoEstado === 'completada' && !empty($actividad['requiere_revision'])) {
             $idUsuario = session()->get('id_users');
             $rolId = session()->get('rol_id');
@@ -459,6 +470,18 @@ class ActividadController extends BaseController
         }
 
         $estadoAnterior = $actividad['estado'] ?? '';
+
+        // Validar restriccion: solo el creador puede cancelar
+        if ($nuevoEstado === 'cancelada') {
+            $idUsuario = session()->get('id_users');
+            $rolId = session()->get('rol_id');
+            if ($idUsuario != $actividad['id_usuario_creador'] && $rolId != 1) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Solo el creador de la actividad puede cancelarla.'
+                ]);
+            }
+        }
 
         // Validar restriccion de revision: si requiere_revision y el usuario no es el creador, no puede completar
         if ($nuevoEstado === 'completada' && !empty($actividad['requiere_revision'])) {
