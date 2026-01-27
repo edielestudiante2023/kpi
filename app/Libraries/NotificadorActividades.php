@@ -119,52 +119,96 @@ class NotificadorActividades
         $usuarioQueModifico = $this->userModel->find($idUsuarioQueModifico);
         $nombreQuienModifico = $usuarioQueModifico['nombre_completo'] ?? 'Un usuario';
 
-        $asunto = "Actividad {$actividad['codigo']} cambió a: " . ucfirst(str_replace('_', ' ', $estadoNuevo));
-
         $urlActividad = base_url('actividades/ver/' . $actividad['id_actividad']);
         $colorEstado = $this->getColorEstado($estadoNuevo);
 
+        // Detectar si es una actividad con revision que pasa a en_revision
+        $esRevisionPendiente = ($estadoNuevo === 'en_revision' && !empty($actividad['requiere_revision']));
+
         $exito = true;
         foreach ($destinatarios as $usuario) {
-            $contenidoHTML = "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                <div style='background: {$colorEstado}; padding: 20px; text-align: center;'>
-                    <h1 style='color: white; margin: 0; font-size: 24px;'>Cambio de Estado</h1>
-                </div>
+            $esCreador = ($usuario['id_users'] == $actividad['id_usuario_creador']);
 
-                <div style='padding: 30px; background: #f8f9fa;'>
-                    <p style='font-size: 16px; color: #333;'>Hola <strong>{$usuario['nombre_completo']}</strong>,</p>
-                    <p style='font-size: 16px; color: #333;'><strong>{$nombreQuienModifico}</strong> ha actualizado el estado de una actividad:</p>
+            // Asunto y contenido personalizado si requiere revision del creador
+            if ($esRevisionPendiente && $esCreador) {
+                $asunto = "Actividad lista para tu revision - {$actividad['codigo']}";
+                $contenidoHTML = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <div style='background: #6f42c1; padding: 20px; text-align: center;'>
+                        <h1 style='color: white; margin: 0; font-size: 24px;'>Actividad Lista para tu Revision</h1>
+                    </div>
 
-                    <div style='background: white; border-radius: 8px; padding: 20px; margin: 20px 0;'>
-                        <p style='margin: 0 0 10px 0;'>
-                            <span style='color: #6c757d; font-size: 12px;'>{$actividad['codigo']}</span>
-                        </p>
-                        <h2 style='margin: 0 0 20px 0; color: #333; font-size: 20px;'>{$actividad['titulo']}</h2>
+                    <div style='padding: 30px; background: #f8f9fa;'>
+                        <p style='font-size: 16px; color: #333;'>Hola <strong>{$usuario['nombre_completo']}</strong>,</p>
+                        <p style='font-size: 16px; color: #333;'><strong>{$nombreQuienModifico}</strong> ha completado el trabajo en la siguiente actividad y necesita tu revision:</p>
 
-                        <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 6px;'>
-                            <span style='background: #6c757d; color: white; padding: 5px 15px; border-radius: 15px; font-size: 14px;'>
-                                " . ucfirst(str_replace('_', ' ', $estadoAnterior)) . "
-                            </span>
-                            <span style='margin: 0 15px; font-size: 20px;'>→</span>
-                            <span style='background: {$colorEstado}; color: white; padding: 5px 15px; border-radius: 15px; font-size: 14px;'>
-                                " . ucfirst(str_replace('_', ' ', $estadoNuevo)) . "
-                            </span>
+                        <div style='background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #6f42c1;'>
+                            <p style='margin: 0 0 10px 0;'>
+                                <span style='color: #6c757d; font-size: 12px;'>{$actividad['codigo']}</span>
+                            </p>
+                            <h2 style='margin: 0 0 15px 0; color: #333; font-size: 20px;'>{$actividad['titulo']}</h2>
+                        </div>
+
+                        <div style='background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0;'>
+                            <p style='margin: 0; color: #856404; font-size: 14px;'>
+                                <strong>Importante:</strong> Como creador de esta actividad, solo tu puedes marcarla como completada o cancelarla. Por favor revisala y cierra la actividad si el trabajo es satisfactorio.
+                            </p>
+                        </div>
+
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <a href='{$urlActividad}' style='display: inline-block; padding: 14px 28px; background: #6f42c1; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                                Revisar y Cerrar Actividad
+                            </a>
                         </div>
                     </div>
 
-                    <div style='text-align: center; margin: 30px 0;'>
-                        <a href='{$urlActividad}' style='display: inline-block; padding: 14px 28px; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
-                            Ver Actividad
-                        </a>
+                    <div style='padding: 20px; background: #e9ecef; text-align: center; font-size: 12px; color: #6c757d;'>
+                        <p style='margin: 0;'>Este es un mensaje automatico del sistema Kpi Cycloid.</p>
                     </div>
                 </div>
+                ";
+            } else {
+                $asunto = "Actividad {$actividad['codigo']} cambio a: " . ucfirst(str_replace('_', ' ', $estadoNuevo));
+                $contenidoHTML = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <div style='background: {$colorEstado}; padding: 20px; text-align: center;'>
+                        <h1 style='color: white; margin: 0; font-size: 24px;'>Cambio de Estado</h1>
+                    </div>
 
-                <div style='padding: 20px; background: #e9ecef; text-align: center; font-size: 12px; color: #6c757d;'>
-                    <p style='margin: 0;'>Este es un mensaje automático del sistema Kpi Cycloid.</p>
+                    <div style='padding: 30px; background: #f8f9fa;'>
+                        <p style='font-size: 16px; color: #333;'>Hola <strong>{$usuario['nombre_completo']}</strong>,</p>
+                        <p style='font-size: 16px; color: #333;'><strong>{$nombreQuienModifico}</strong> ha actualizado el estado de una actividad:</p>
+
+                        <div style='background: white; border-radius: 8px; padding: 20px; margin: 20px 0;'>
+                            <p style='margin: 0 0 10px 0;'>
+                                <span style='color: #6c757d; font-size: 12px;'>{$actividad['codigo']}</span>
+                            </p>
+                            <h2 style='margin: 0 0 20px 0; color: #333; font-size: 20px;'>{$actividad['titulo']}</h2>
+
+                            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 6px;'>
+                                <span style='background: #6c757d; color: white; padding: 5px 15px; border-radius: 15px; font-size: 14px;'>
+                                    " . ucfirst(str_replace('_', ' ', $estadoAnterior)) . "
+                                </span>
+                                <span style='margin: 0 15px; font-size: 20px;'>→</span>
+                                <span style='background: {$colorEstado}; color: white; padding: 5px 15px; border-radius: 15px; font-size: 14px;'>
+                                    " . ucfirst(str_replace('_', ' ', $estadoNuevo)) . "
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <a href='{$urlActividad}' style='display: inline-block; padding: 14px 28px; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                                Ver Actividad
+                            </a>
+                        </div>
+                    </div>
+
+                    <div style='padding: 20px; background: #e9ecef; text-align: center; font-size: 12px; color: #6c757d;'>
+                        <p style='margin: 0;'>Este es un mensaje automatico del sistema Kpi Cycloid.</p>
+                    </div>
                 </div>
-            </div>
-            ";
+                ";
+            }
 
             if (!$this->enviarEmail($usuario['correo'], $usuario['nombre_completo'], $asunto, $contenidoHTML)) {
                 $exito = false;
