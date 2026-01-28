@@ -570,23 +570,6 @@
                     </div>
                 </a>
             </div>
-            <!-- Total creadas activas -->
-            <div class="col-6 col-md-3 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users')) ?>"
-                   class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && empty($filtros['estado']) && empty($filtros['esperando_revision']) ? 'active' : '' ?>">
-                    <div class="card-body p-2">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-dark text-white me-2">
-                                <i class="bi bi-send"></i>
-                            </div>
-                            <div>
-                                <div class="stat-number"><?= $resumenCreador['total_creadas'] ?></div>
-                                <div class="stat-label">Activas</div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
             <!-- Completadas -->
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=completada') ?>"
