@@ -27,7 +27,13 @@
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
         .stat-card.active {
-            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.5);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.8);
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+            transform: translateY(-2px);
+        }
+        .stat-card.active .stat-label {
+            color: #0d6efd;
+            font-weight: 600;
         }
         .stat-icon {
             width: 45px;
@@ -499,10 +505,18 @@
         </div>
 
         <!-- Cards Como Creador -->
-        <?php if ($resumenCreador['total_creadas'] > 0 || $resumenCreador['esperando_revision'] > 0): ?>
+        <?php
+        $filtroCreadorActivo = !empty($filtros['id_creador']) || !empty($filtros['esperando_revision']);
+        ?>
+        <?php if ($resumenCreador['total_creadas'] > 0 || $resumenCreador['esperando_revision'] > 0 || $resumenCreador['completadas'] > 0 || $resumenCreador['canceladas'] > 0): ?>
         <div class="row g-3 mb-4">
-            <div class="col-12">
+            <div class="col-12 d-flex justify-content-between align-items-center">
                 <small class="text-muted fw-bold"><i class="bi bi-person-badge me-1"></i>ACTIVIDADES QUE CREASTE</small>
+                <?php if ($filtroCreadorActivo): ?>
+                    <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-lg me-1"></i>Quitar filtro
+                    </a>
+                <?php endif; ?>
             </div>
             <!-- Sin gestionar -->
             <div class="col-6 col-md-3 col-lg-2">
