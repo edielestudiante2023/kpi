@@ -567,7 +567,41 @@
                             </div>
                             <div>
                                 <div class="stat-number"><?= $resumenCreador['total_creadas'] ?></div>
-                                <div class="stat-label">Mis creadas</div>
+                                <div class="stat-label">Activas</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Completadas -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=completada') ?>"
+                   class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'completada' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-success text-white me-2">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number text-success"><?= $resumenCreador['completadas'] ?></div>
+                                <div class="stat-label">Completadas</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Canceladas -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=cancelada') ?>"
+                   class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'cancelada' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-danger text-white me-2">
+                                <i class="bi bi-x-circle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number text-danger"><?= $resumenCreador['canceladas'] ?></div>
+                                <div class="stat-label">Canceladas</div>
                             </div>
                         </div>
                     </div>

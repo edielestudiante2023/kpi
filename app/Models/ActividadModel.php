@@ -191,12 +191,17 @@ class ActividadModel extends Model
             'sin_gestionar' => 0,      // Pendientes sin iniciar
             'en_progreso' => 0,         // En progreso o en revision
             'esperando_revision' => 0,  // En revision con requiere_revision=1
-            'completadas' => 0
+            'completadas' => 0,
+            'canceladas' => 0
         ];
 
         foreach ($actividades as $act) {
-            if (in_array($act['estado'], ['completada', 'cancelada'])) {
+            if ($act['estado'] === 'completada') {
                 $resumen['completadas']++;
+                continue;
+            }
+            if ($act['estado'] === 'cancelada') {
+                $resumen['canceladas']++;
                 continue;
             }
 
