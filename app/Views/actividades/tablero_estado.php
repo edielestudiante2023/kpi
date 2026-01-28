@@ -498,6 +498,84 @@
             </div>
         </div>
 
+        <!-- Cards Como Creador -->
+        <?php if ($resumenCreador['total_creadas'] > 0 || $resumenCreador['esperando_revision'] > 0): ?>
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <small class="text-muted fw-bold"><i class="bi bi-person-badge me-1"></i>ACTIVIDADES QUE CREASTE</small>
+            </div>
+            <!-- Sin gestionar -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=pendiente') ?>"
+                   class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'pendiente' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-secondary text-white me-2">
+                                <i class="bi bi-hourglass"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumenCreador['sin_gestionar'] ?></div>
+                                <div class="stat-label">Sin gestionar</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- En progreso -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=en_progreso') ?>"
+                   class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'en_progreso' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-primary text-white me-2">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumenCreador['en_progreso'] ?></div>
+                                <div class="stat-label">En progreso</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Esperando mi revision -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&esperando_revision=1') ?>"
+                   class="stat-card card shadow-sm h-100 d-block border-purple <?= ($filtros['esperando_revision'] ?? '') ? 'active' : '' ?>"
+                   style="<?= $resumenCreador['esperando_revision'] > 0 ? 'border-color: #6f42c1 !important; border-width: 2px;' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon text-white me-2" style="background-color: #6f42c1;">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number" style="color: #6f42c1;"><?= $resumenCreador['esperando_revision'] ?></div>
+                                <div class="stat-label">Por revisar</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Total creadas activas -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users')) ?>"
+                   class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && empty($filtros['estado']) && empty($filtros['esperando_revision']) ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-dark text-white me-2">
+                                <i class="bi bi-send"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumenCreador['total_creadas'] ?></div>
+                                <div class="stat-label">Mis creadas</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Filtros -->
         <div class="card shadow-sm mb-4">
             <div class="card-body py-2">
@@ -613,7 +691,8 @@
         $hayFiltrosActivos = !empty($filtros['busqueda']) || !empty($filtros['id_asignado']) ||
                             !empty($filtros['prioridad']) || !empty($filtros['id_categoria']) ||
                             !empty($filtros['fecha_limite_desde']) || !empty($filtros['fecha_limite_hasta']) ||
-                            !empty($filtros['estado']) || !empty($filtros['vencidas']);
+                            !empty($filtros['estado']) || !empty($filtros['vencidas']) ||
+                            !empty($filtros['id_creador']) || !empty($filtros['esperando_revision']);
         ?>
         <?php if ($hayFiltrosActivos): ?>
             <div class="mb-3">
@@ -638,6 +717,12 @@
                     }
                     ?>
                     <span class="badge bg-info me-1">Responsable: <?= esc($nombreResp) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($filtros['id_creador'])): ?>
+                    <span class="badge bg-dark me-1">Creadas por mi</span>
+                <?php endif; ?>
+                <?php if (!empty($filtros['esperando_revision'])): ?>
+                    <span class="badge me-1" style="background-color: #6f42c1;">Esperando mi revision</span>
                 <?php endif; ?>
                 <?php if (!empty($filtros['fecha_limite_desde']) || !empty($filtros['fecha_limite_hasta'])): ?>
                     <span class="badge bg-warning text-dark me-1">

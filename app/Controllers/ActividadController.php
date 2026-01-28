@@ -104,6 +104,7 @@ class ActividadController extends BaseController
     {
         $filtros = [
             'id_asignado'          => $this->request->getGet('responsable'),
+            'id_creador'           => $this->request->getGet('creador'),
             'prioridad'            => $this->request->getGet('prioridad'),
             'id_categoria'         => $this->request->getGet('categoria'),
             'fecha_limite_desde'   => $this->request->getGet('fecha_desde'),
@@ -111,15 +112,17 @@ class ActividadController extends BaseController
             'busqueda'             => $this->request->getGet('busqueda'),
             'vencidas'             => $this->request->getGet('vencidas'),
             'proximas_vencer'      => $this->request->getGet('proximas'),
-            'estado'               => $this->request->getGet('estado')
+            'estado'               => $this->request->getGet('estado'),
+            'esperando_revision'   => $this->request->getGet('esperando_revision')
         ];
 
         $data = [
-            'tablero'     => $this->actividadModel->getActividadesPorEstado($filtros),
-            'resumen'     => $this->actividadModel->getResumenTablero($filtros),
-            'usuarios'    => $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll(),
-            'categorias'  => $this->categoriaModel->getActivas(),
-            'filtros'     => $filtros
+            'tablero'         => $this->actividadModel->getActividadesPorEstado($filtros),
+            'resumen'         => $this->actividadModel->getResumenTablero($filtros),
+            'resumenCreador'  => $this->actividadModel->getResumenComoCreador(session()->get('id_users')),
+            'usuarios'        => $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll(),
+            'categorias'      => $this->categoriaModel->getActivas(),
+            'filtros'         => $filtros
         ];
 
         return view('actividades/tablero_estado', $data);

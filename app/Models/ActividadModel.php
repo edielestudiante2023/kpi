@@ -110,6 +110,11 @@ class ActividadModel extends Model
                     ->where('dias_restantes <=', 7)
                     ->whereNotIn('estado', ['completada', 'cancelada']);
         }
+        // Filtro para actividades esperando revision del creador
+        if (!empty($filtros['esperando_revision'])) {
+            $builder->where('estado', 'en_revision')
+                    ->where('requiere_revision', 1);
+        }
 
         return $builder->orderBy('fecha_creacion', 'DESC')->get()->getResultArray();
     }
@@ -170,6 +175,45 @@ class ActividadModel extends Model
 
         // Ordenar responsables por cantidad de tareas activas
         uasort($resumen['por_responsable'], fn($a, $b) => $b['activas'] - $a['activas']);
+
+        return $resumen;
+    }
+
+    /**
+     * Obtiene resumen de actividades creadas por un usuario
+     */
+    public function getResumenComoCreador(int $idUsuario): array
+    {
+        $actividades = $this->getActividadesCompletas(['id_creador' => $idUsuario]);
+
+        $resumen = [
+            'total_creadas' => 0,
+            'sin_gestionar' => 0,      // Pendientes sin iniciar
+            'en_progreso' => 0,         // En progreso o en revision
+            'esperando_revision' => 0,  // En revision con requiere_revision=1
+            'completadas' => 0
+        ];
+
+        foreach ($actividades as $act) {
+            if (in_array($act['estado'], ['completada', 'cancelada'])) {
+                $resumen['completadas']++;
+                continue;
+            }
+
+            $resumen['total_creadas']++;
+
+            if ($act['estado'] === 'pendiente') {
+                $resumen['sin_gestionar']++;
+            } elseif ($act['estado'] === 'en_progreso') {
+                $resumen['en_progreso']++;
+            } elseif ($act['estado'] === 'en_revision') {
+                if (!empty($act['requiere_revision'])) {
+                    $resumen['esperando_revision']++;
+                } else {
+                    $resumen['en_progreso']++;
+                }
+            }
+        }
 
         return $resumen;
     }
