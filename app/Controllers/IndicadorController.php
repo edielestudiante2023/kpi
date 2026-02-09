@@ -13,6 +13,67 @@ class IndicadorController extends BaseController
 {
     protected $indicadorModel;
 
+    /**
+     * Evalúa una expresión aritmética de forma segura (sin eval).
+     * Soporta +, -, *, /, paréntesis y números decimales.
+     */
+    private function safeEval(string $expr): float
+    {
+        $expr = preg_replace('/\s+/', '', $expr);
+        $pos = 0;
+        $len = strlen($expr);
+
+        $parseExpr = null;
+        $parseTerm = null;
+        $parseFactor = null;
+
+        $parseFactor = function () use ($expr, &$pos, $len, &$parseExpr, &$parseFactor): float {
+            if ($pos < $len && $expr[$pos] === '-') {
+                $pos++;
+                return -$parseFactor();
+            }
+            if ($pos < $len && $expr[$pos] === '(') {
+                $pos++;
+                $result = $parseExpr();
+                if ($pos < $len && $expr[$pos] === ')') $pos++;
+                return $result;
+            }
+            $start = $pos;
+            while ($pos < $len && (ctype_digit($expr[$pos]) || $expr[$pos] === '.')) {
+                $pos++;
+            }
+            if ($start === $pos) return 0.0;
+            return (float) substr($expr, $start, $pos - $start);
+        };
+
+        $parseTerm = function () use ($expr, &$pos, $len, &$parseFactor): float {
+            $result = $parseFactor();
+            while ($pos < $len) {
+                if ($expr[$pos] === '*') { $pos++; $result *= $parseFactor(); }
+                elseif ($expr[$pos] === '/') {
+                    $pos++;
+                    $divisor = $parseFactor();
+                    $result = ($divisor != 0) ? $result / $divisor : INF;
+                }
+                else break;
+            }
+            return $result;
+        };
+
+        $parseExpr = function () use ($expr, &$pos, $len, &$parseTerm): float {
+            $result = $parseTerm();
+            while ($pos < $len) {
+                if ($expr[$pos] === '+') { $pos++; $result += $parseTerm(); }
+                elseif ($expr[$pos] === '-') { $pos++; $result -= $parseTerm(); }
+                else break;
+            }
+            return $result;
+        };
+
+        $result = $parseExpr();
+        return round($result, 4);
+    }
+
     public function initController(
         RequestInterface $request,
         ResponseInterface $response,
@@ -163,7 +224,7 @@ class IndicadorController extends BaseController
             }
         }
 
-        $resultado = eval("return {$formula};");
+        $resultado = $this->safeEval($formula);
 
         return view('management/fill_result', [
             'indicador' => $this->indicadorModel->find($id),
@@ -223,7 +284,7 @@ public function evaluarFormulaTrabajadorPost($id)
     log_message('debug', "🧪 Fórmula construida: {$formula}");
 
     try {
-        $resultado = eval("return {$formula};");
+        $resultado = $this->safeEval($formula);
         log_message('debug', "✅ Resultado calculado: {$resultado}");
     } catch (\Throwable $e) {
         log_message('error', "❌ Error al evaluar fórmula (Trabajador): {$e->getMessage()}");
@@ -291,7 +352,7 @@ public function evaluarFormulaJefePost($id)
     log_message('debug', "🧪 Fórmula construida: {$formula}");
 
     try {
-        $resultado = eval("return {$formula};");
+        $resultado = $this->safeEval($formula);
 
         log_message('debug', "✅ Resultado calculado: {$resultado}");
     } catch (\Throwable $e) {

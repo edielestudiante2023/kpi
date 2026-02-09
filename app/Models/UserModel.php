@@ -35,9 +35,8 @@ class UserModel extends Model
     protected $validationRules = [
         'nombre_completo'     => 'required|min_length[3]',
         'documento_identidad' => 'required|numeric',
-
-
-        'password'            => 'permit_empty|min_length[6]',
+        'correo'              => 'permit_empty|valid_email',
+        'password'            => 'permit_empty|min_length[8]',
         'id_roles'            => 'required|integer',
         'id_areas'            => 'permit_empty|is_not_unique[areas.id_areas]',
         'id_perfil_cargo'     => 'permit_empty|is_not_unique[perfiles_cargo.id_perfil_cargo]',

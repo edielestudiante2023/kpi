@@ -38,10 +38,24 @@ class AuthController extends BaseController
             return redirect()->to('/login')->with('error', 'Credenciales incorrectas.');
         }
 
+        // Rate limiting: máximo 5 intentos en 15 minutos por IP
+        $cache = \Config\Services::cache();
+        $ip = $this->request->getIPAddress();
+        $cacheKey = 'login_attempts_' . md5($ip);
+        $intentos = $cache->get($cacheKey) ?? 0;
+
+        if ($intentos >= 5) {
+            log_message('warning', "Rate limit alcanzado para IP: {$ip} - correo: {$correo}");
+            return redirect()->to('/login')->with('error', 'Demasiados intentos fallidos. Intenta de nuevo en 15 minutos.');
+        }
+
         $usuario = $this->userModel->where('correo', $correo)->first();
 
         // Mensaje genérico para evitar enumeración de usuarios
         if (!$usuario || $usuario['activo'] == 0 || !password_verify($password, $usuario['password'])) {
+            // Incrementar intentos fallidos
+            $cache->save($cacheKey, $intentos + 1, 900); // 900s = 15 minutos
+
             // Log interno para auditoría (no exponer al usuario)
             if (!$usuario) {
                 log_message('info', "Intento de login fallido: correo no existe - {$correo}");
@@ -52,6 +66,9 @@ class AuthController extends BaseController
             }
             return redirect()->to('/login')->with('error', 'Credenciales incorrectas.');
         }
+
+        // Login exitoso: limpiar intentos
+        $cache->delete($cacheKey);
 
         // Si es primer login, lo enviamos a cambiar clave
         if (password_verify($password, $usuario['password'])) {

@@ -107,7 +107,6 @@ class UserController extends BaseController
     {
         $post = $this->request->getPost();
 
-        /* dd($post); */
         if (empty($post['password'])) {
             unset($post['password']);
         } else {

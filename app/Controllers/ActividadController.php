@@ -257,12 +257,12 @@ class ActividadController extends BaseController
 
     /**
      * Verifica si el usuario puede editar/eliminar la actividad
-     * Solo el creador o superadmin (rol_id = 1) pueden hacerlo
+     * Solo el creador o superadmin (id_roles = 1) pueden hacerlo
      */
     protected function puedeEditarActividad($actividad): bool
     {
         $idUsuario = session()->get('id_users');
-        $rolId = session()->get('rol_id');
+        $rolId = session()->get('id_roles');
 
         return ($idUsuario == $actividad['id_usuario_creador']) || ($rolId == 1);
     }

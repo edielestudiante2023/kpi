@@ -74,9 +74,6 @@ class JerarquiaController extends Controller
             ->findAll();
 
 
-        // 🔍 👉 Pega aquí el var_dump para depuración:
-
-
         // 3. Precargar fórmulas por indicador
         $formulasHist = [];
         foreach ($equipo as $row) {
