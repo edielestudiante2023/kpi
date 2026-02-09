@@ -57,6 +57,15 @@
             border-radius: 8px;
             padding: 1rem;
         }
+        .formula-inline-container .formula-parts-inputs label {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        .formula-result-display {
+            min-height: 2rem;
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 
@@ -146,10 +155,6 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <a href="<?= base_url('jefatura/formula/' . $i['id_indicador']) ?>"
-                               class="btn btn-outline-secondary btn-sm" onclick="event.stopPropagation();">
-                                <i class="bi bi-calculator me-1"></i>Calcular
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -218,6 +223,45 @@
                                             <input type="hidden" name="periodo" class="periodo-input" value="<?= esc($periodo) ?>">
                                             <input type="hidden" name="single" value="<?= $ip ?>">
 
+                                            <?php if (isset($formulas[$i['id_indicador']]) && !empty($formulas[$i['id_indicador']])): ?>
+                                            <!-- MODO FORMULA INLINE -->
+                                            <div class="formula-inline-container"
+                                                 data-ip-id="<?= $ip ?>"
+                                                 data-formula-parts='<?= htmlspecialchars(json_encode($formulas[$i['id_indicador']]), ENT_QUOTES) ?>'>
+
+                                                <label class="form-label small fw-semibold mb-2">Variables de la formula</label>
+                                                <div class="formula-parts-inputs mb-3">
+                                                    <?php foreach ($formulas[$i['id_indicador']] as $parte): ?>
+                                                        <?php if ($parte['tipo_parte'] === 'dato'): ?>
+                                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                                <label class="form-label mb-0 fw-semibold" style="min-width: 120px; color: #6f42c1;">
+                                                                    <?= esc($parte['valor']) ?>
+                                                                </label>
+                                                                <input type="number" step="any"
+                                                                       class="form-control form-control-sm formula-var-input"
+                                                                       data-variable="<?= esc($parte['valor']) ?>"
+                                                                       placeholder="0"
+                                                                       style="max-width: 140px;">
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+
+                                                <div class="mb-3 p-2 bg-white rounded border">
+                                                    <div class="info-label mb-1">Resultado Calculado</div>
+                                                    <div class="formula-result-display">
+                                                        <span class="text-muted"><i class="bi bi-three-dots me-1"></i>Completa todos los campos...</span>
+                                                    </div>
+                                                </div>
+
+                                                <input type="hidden"
+                                                       name="resultado_real[<?= $ip ?>]"
+                                                       class="formula-result-hidden"
+                                                       value="">
+                                                <div class="formula-partes-hidden"></div>
+                                            </div>
+                                            <?php else: ?>
+                                            <!-- MODO INPUT DIRECTO (sin formula) -->
                                             <div class="mb-3">
                                                 <label class="form-label small fw-semibold">Resultado</label>
                                                 <div class="input-group">
@@ -228,6 +272,7 @@
                                                     <span class="input-group-text"><?= esc($i['unidad']) ?></span>
                                                 </div>
                                             </div>
+                                            <?php endif; ?>
 
                                             <div class="mb-3">
                                                 <label class="form-label small fw-semibold">Comentario (opcional)</label>
@@ -236,7 +281,10 @@
                                                           placeholder="Observaciones..."></textarea>
                                             </div>
 
-                                            <button type="submit" class="btn btn-success w-100">
+                                            <button type="submit" class="btn btn-success w-100"
+                                                <?php if (isset($formulas[$i['id_indicador']]) && !empty($formulas[$i['id_indicador']])): ?>
+                                                    disabled
+                                                <?php endif; ?>>
                                                 <i class="bi bi-check-lg me-1"></i>Guardar Resultado
                                             </button>
                                         </form>
@@ -256,6 +304,7 @@
     <!-- Bootstrap 5 JS Bundle y jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('js/formula-calculator.js') ?>"></script>
 
     <script>
         $(document).ready(function() {
