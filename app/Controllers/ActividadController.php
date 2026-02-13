@@ -45,6 +45,9 @@ class ActividadController extends BaseController
 
         // Verificar vencimientos una vez al día (sin cron)
         $this->verificarVencimientosDiarios();
+
+        // Enviar recordatorios de revisión (2 veces al día: mañana y tarde)
+        $this->verificarRecordatoriosRevision();
     }
 
     /**
@@ -95,6 +98,41 @@ class ActividadController extends BaseController
         }
 
         log_message('info', 'Verificación de vencimientos ejecutada: ' . count($actividadesProximas) . ' próximas, ' . count($actividadesVencidas) . ' vencidas');
+    }
+
+    /**
+     * Envía recordatorios de revisión (2 veces al día: mañana y tarde)
+     * Usa ventanas de tiempo para distribuir los 2 recordatorios diarios
+     */
+    protected function verificarRecordatoriosRevision()
+    {
+        $cache = \Config\Services::cache();
+        $horaActual = (int) date('H');
+
+        // Ventana AM: entre 7:00 y 12:59 → primer recordatorio del día
+        // Ventana PM: entre 13:00 y 22:59 → segundo recordatorio del día
+        if ($horaActual >= 7 && $horaActual < 13) {
+            $cacheKey = 'recordatorio_revision_am_' . date('Y-m-d');
+        } elseif ($horaActual >= 13 && $horaActual < 23) {
+            $cacheKey = 'recordatorio_revision_pm_' . date('Y-m-d');
+        } else {
+            return; // Fuera de horario de envío
+        }
+
+        // Si ya se ejecutó esta ventana, no hacer nada
+        if ($cache->get($cacheKey)) {
+            return;
+        }
+
+        // Marcar ventana como ejecutada (expira en 12 horas)
+        $cache->save($cacheKey, true, 43200);
+
+        try {
+            $resultados = $this->notificador->enviarRecordatoriosRevision();
+            log_message('info', "Recordatorios de revisión ({$cacheKey}): {$resultados['enviados']} enviados, {$resultados['errores']} errores, {$resultados['omitidos']} omitidos");
+        } catch (\Exception $e) {
+            log_message('error', 'Error en recordatorios de revisión: ' . $e->getMessage());
+        }
     }
 
     /**

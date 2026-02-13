@@ -26,7 +26,9 @@ class ActividadModel extends Model
         'porcentaje_avance',
         'observaciones',
         'notificado_vencimiento',
-        'requiere_revision'
+        'requiere_revision',
+        'revision_recordatorios_hoy',
+        'revision_recordatorio_fecha'
     ];
     protected $returnType       = 'array';
     protected $useTimestamps    = false;
@@ -295,6 +297,12 @@ class ActividadModel extends Model
         $estadoAnterior = $actividad['estado'];
 
         $dataUpdate = ['estado' => $nuevoEstado];
+
+        // Resetear contadores de recordatorio si sale de en_revision
+        if ($estadoAnterior === 'en_revision' && $nuevoEstado !== 'en_revision') {
+            $dataUpdate['revision_recordatorios_hoy'] = 0;
+            $dataUpdate['revision_recordatorio_fecha'] = null;
+        }
 
         if ($nuevoEstado === 'en_progreso' && empty($actividad['fecha_inicio'])) {
             $dataUpdate['fecha_inicio'] = date('Y-m-d H:i:s');

@@ -364,6 +364,144 @@ class NotificadorActividades
     }
 
     /**
+     * Notifica al creador que tiene una actividad pendiente de revisión (recordatorio)
+     */
+    public function notificarRecordatorioRevision(array $actividad): bool
+    {
+        if (empty($actividad['id_usuario_creador'])) {
+            return false;
+        }
+
+        $creador = $this->userModel->find($actividad['id_usuario_creador']);
+        if (!$creador || empty($creador['correo'])) {
+            return false;
+        }
+
+        $urlActividad = base_url('actividades/ver/' . $actividad['id_actividad']);
+        $fechaLimite = $actividad['fecha_limite']
+            ? date('d/m/Y', strtotime($actividad['fecha_limite']))
+            : 'Sin fecha límite';
+
+        // Calcular días en revisión
+        $diasEnRevision = '';
+        if (!empty($actividad['fecha_actualizacion'])) {
+            $fechaCambio = new \DateTime($actividad['fecha_actualizacion']);
+            $hoy = new \DateTime();
+            $diff = $hoy->diff($fechaCambio)->days;
+            $diasEnRevision = $diff === 1 ? '1 día' : $diff . ' días';
+        }
+
+        $asunto = "Recordatorio: Actividad pendiente de tu revisión - {$actividad['codigo']}";
+
+        $contenidoHTML = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <div style='background: #6f42c1; padding: 20px; text-align: center;'>
+                <h1 style='color: white; margin: 0; font-size: 24px;'>Recordatorio de Revisión</h1>
+            </div>
+
+            <div style='padding: 30px; background: #f8f9fa;'>
+                <p style='font-size: 16px; color: #333;'>Hola <strong>{$creador['nombre_completo']}</strong>,</p>
+                <p style='font-size: 16px; color: #333;'>Tienes una actividad que está esperando tu revisión" . ($diasEnRevision ? " desde hace <strong>{$diasEnRevision}</strong>" : "") . ":</p>
+
+                <div style='background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #6f42c1;'>
+                    <p style='margin: 0 0 10px 0;'>
+                        <span style='color: #6c757d; font-size: 12px;'>{$actividad['codigo']}</span>
+                    </p>
+                    <h2 style='margin: 0 0 15px 0; color: #333; font-size: 20px;'>{$actividad['titulo']}</h2>
+
+                    <table style='width: 100%; font-size: 14px;'>
+                        <tr>
+                            <td style='padding: 5px 0; color: #6c757d;'>Estado:</td>
+                            <td style='padding: 5px 0;'>
+                                <span style='background: #6f42c1; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;'>
+                                    En revisión
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 5px 0; color: #6c757d;'>Fecha límite:</td>
+                            <td style='padding: 5px 0; font-weight: bold;'>{$fechaLimite}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style='background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0;'>
+                    <p style='margin: 0; color: #856404; font-size: 14px;'>
+                        <strong>Acción requerida:</strong> Como creador de esta actividad, solo tú puedes marcarla como completada. Por favor revísala y cierra la actividad si el trabajo es satisfactorio.
+                    </p>
+                </div>
+
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{$urlActividad}' style='display: inline-block; padding: 14px 28px; background: #6f42c1; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                        Revisar y Cerrar Actividad
+                    </a>
+                </div>
+            </div>
+
+            <div style='padding: 20px; background: #e9ecef; text-align: center; font-size: 12px; color: #6c757d;'>
+                <p style='margin: 0;'>Este es un mensaje automático del sistema Kpi Cycloid.</p>
+                <p style='margin: 5px 0 0 0;'>Recibirás un máximo de 2 recordatorios por día.</p>
+            </div>
+        </div>
+        ";
+
+        return $this->enviarEmail($creador['correo'], $creador['nombre_completo'], $asunto, $contenidoHTML);
+    }
+
+    /**
+     * Envía recordatorios de revisión a creadores (máximo 2 por día por actividad)
+     */
+    public function enviarRecordatoriosRevision(): array
+    {
+        $actividadModel = new ActividadModel();
+        $hoy = date('Y-m-d');
+
+        $resultados = [
+            'enviados' => 0,
+            'errores' => 0,
+            'omitidos' => 0
+        ];
+
+        // Buscar actividades en revisión que requieren revisión del creador
+        $actividades = $actividadModel
+            ->where('estado', 'en_revision')
+            ->where('requiere_revision', 1)
+            ->findAll();
+
+        foreach ($actividades as $actividad) {
+            // Resetear contador si es un nuevo día
+            if ($actividad['revision_recordatorio_fecha'] !== $hoy) {
+                $actividadModel->update($actividad['id_actividad'], [
+                    'revision_recordatorios_hoy' => 0,
+                    'revision_recordatorio_fecha' => $hoy
+                ]);
+                $actividad['revision_recordatorios_hoy'] = 0;
+            }
+
+            // Si ya se enviaron 2 recordatorios hoy, saltar
+            if ((int) $actividad['revision_recordatorios_hoy'] >= 2) {
+                $resultados['omitidos']++;
+                continue;
+            }
+
+            // Enviar recordatorio
+            if ($this->notificarRecordatorioRevision($actividad)) {
+                $actividadModel->update($actividad['id_actividad'], [
+                    'revision_recordatorios_hoy' => (int) $actividad['revision_recordatorios_hoy'] + 1,
+                    'revision_recordatorio_fecha' => $hoy
+                ]);
+                $resultados['enviados']++;
+            } else {
+                $resultados['errores']++;
+            }
+        }
+
+        log_message('info', "Recordatorios de revisión: {$resultados['enviados']} enviados, {$resultados['errores']} errores, {$resultados['omitidos']} omitidos");
+
+        return $resultados;
+    }
+
+    /**
      * Envía el email usando SendGrid
      */
     protected function enviarEmail(string $emailDestino, string $nombreDestino, string $asunto, string $contenidoHTML): bool
