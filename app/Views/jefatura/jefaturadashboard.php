@@ -106,6 +106,47 @@
                 </div>
             </div>
 
+            <!-- BITÁCORA -->
+            <?php if ($session->get('bitacora_habilitada')): ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <h5 class="text-muted mb-3"><i class="bi bi-stopwatch me-2"></i>Bitacora de Tiempo</h5>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100 border-dark">
+                    <div class="card-body">
+                        <h5 class="card-title">Registrar Tiempo</h5>
+                        <p class="card-text">Inicia el cronometro y registra tus actividades del dia.</p>
+                        <a href="<?= base_url('bitacora') ?>" class="btn btn-dark" target="_blank">
+                            <i class="bi bi-stopwatch me-1"></i> Abrir Bitacora
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Mi Productividad</h5>
+                        <p class="card-text">Resumen mensual de horas trabajadas por dia.</p>
+                        <a href="<?= base_url('bitacora/resumen') ?>" class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-graph-up me-1"></i> Ver Resumen
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Productividad Equipo</h5>
+                        <p class="card-text">Revisa las horas registradas por tu equipo.</p>
+                        <a href="<?= base_url('bitacora/equipo') ?>" class="btn btn-outline-info" target="_blank">
+                            <i class="bi bi-people me-1"></i> Ver Equipo
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- EQUIPO Y JERARQUIA -->
             <div class="col-12">
                 <hr class="my-2">

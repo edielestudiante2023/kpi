@@ -1,0 +1,195 @@
+<?php $session = session(); ?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bitácora – Cycloid</title>
+
+    <!-- PWA -->
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bitácora">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="<?= base_url('bitacora-manifest.json') ?>">
+    <link rel="apple-touch-icon" href="<?= base_url('img/icons/icon-192x192.png') ?>">
+    <link rel="icon" type="image/png" href="<?= base_url('img/icons/icon-96x96.png') ?>">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --bs-body-bg: #f5f6fa;
+            --header-bg: #2c3e50;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bs-body-bg);
+            padding-top: 56px;
+            padding-bottom: 70px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Header fijo */
+        .bitacora-header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1030;
+            background: var(--header-bg);
+            color: #fff;
+            height: 56px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px;
+        }
+        .bitacora-header .user-name { font-size: 0.9rem; opacity: 0.85; }
+        .bitacora-header .logo { height: 32px; }
+
+        /* Bottom tabs */
+        .bitacora-tabs {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030;
+            background: #fff;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            height: 64px;
+        }
+        .bitacora-tabs a {
+            flex: 1;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-decoration: none;
+            color: #6c757d;
+            font-size: 0.7rem;
+            transition: color 0.2s;
+        }
+        .bitacora-tabs a.active { color: #0d6efd; font-weight: 600; }
+        .bitacora-tabs a i { font-size: 1.3rem; margin-bottom: 2px; }
+
+        /* Cronómetro */
+        .cronometro-display {
+            font-size: 3rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            color: #2c3e50;
+            line-height: 1;
+        }
+        .cronometro-display.running { color: #198754; }
+
+        /* Cards compactas */
+        .actividad-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .actividad-card .num {
+            background: #0d6efd;
+            color: #fff;
+            border-radius: 50%;
+            width: 28px; height: 28px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700;
+        }
+        .actividad-card.en-progreso { border-left: 4px solid #198754; }
+        .actividad-card.finalizada { border-left: 4px solid #6c757d; }
+
+        .total-horas {
+            background: #2c3e50;
+            color: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .total-horas strong { font-size: 1.4rem; }
+
+        /* Alerta sonora */
+        .alerta-sonora {
+            display: none;
+            position: fixed; top: 60px; left: 10px; right: 10px; z-index: 9999;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="bitacora-header">
+        <div class="d-flex align-items-center gap-2">
+            <img src="<?= base_url('img/cycloid_sqe.jpg') ?>" alt="Logo" class="logo rounded">
+            <span class="fw-bold">Bitácora</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="user-name d-none d-sm-inline"><?= esc($session->get('nombre_completo')) ?></span>
+            <a href="<?= base_url('logout') ?>" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerta sonora 30 min -->
+    <div class="alerta-sonora" id="alertaSonora">
+        <i class="bi bi-bell-fill text-warning fs-3"></i>
+        <div class="fw-bold mt-1">Actividad en progreso</div>
+        <div class="text-muted" id="alertaTexto"></div>
+        <button class="btn btn-sm btn-warning mt-2" onclick="cerrarAlerta()">Entendido</button>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="container-fluid px-3 py-3">
+        <?= $this->renderSection('content') ?>
+    </div>
+
+    <!-- Bottom Tabs -->
+    <?php $rolId = (int) $session->get('id_roles'); ?>
+    <div class="bitacora-tabs">
+        <a href="<?= base_url('bitacora') ?>" class="<?= ($tab ?? '') === 'bitacora' ? 'active' : '' ?>">
+            <i class="bi bi-stopwatch"></i>
+            Bitacora
+        </a>
+        <a href="<?= base_url('bitacora/resumen') ?>" class="<?= ($tab ?? '') === 'resumen' ? 'active' : '' ?>">
+            <i class="bi bi-graph-up"></i>
+            Resumen
+        </a>
+        <?php if (in_array($rolId, [1, 2, 3])): ?>
+        <a href="<?= base_url('bitacora/equipo') ?>" class="<?= ($tab ?? '') === 'equipo' ? 'active' : '' ?>">
+            <i class="bi bi-people"></i>
+            Equipo
+        </a>
+        <?php endif; ?>
+        <a href="<?= base_url('bitacora/centros-costo') ?>" class="<?= ($tab ?? '') === 'centros' ? 'active' : '' ?>">
+            <i class="bi bi-building"></i>
+            Centros
+        </a>
+    </div>
+
+    <!-- Audio alerta -->
+    <audio id="audioAlerta" preload="auto">
+        <source src="<?= base_url('sounds/alert.mp3') ?>" type="audio/mpeg">
+    </audio>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+
+    <!-- PWA Service Worker -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('<?= base_url('bitacora-sw.js') ?>');
+    }
+    </script>
+
+    <?= $this->renderSection('scripts') ?>
+</body>
+</html>

@@ -285,3 +285,26 @@ $routes->group('ia', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('generar-actividad', 'OpenAIController::generarActividad');
     $routes->get('status', 'OpenAIController::status');
 });
+
+// ====================================
+// MÓDULO BITÁCORA (PWA)
+// ====================================
+$routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function($routes) {
+    $routes->get('/', 'BitacoraController::index');
+    $routes->post('iniciar', 'BitacoraController::iniciarActividad');
+    $routes->post('terminar/(:num)', 'BitacoraController::terminarActividad/$1');
+    $routes->get('actividad-activa', 'BitacoraController::actividadActiva');
+    $routes->get('actividades-hoy', 'BitacoraController::actividadesHoy');
+    $routes->get('historial', 'BitacoraController::historial');
+    $routes->get('historial/(:segment)', 'BitacoraController::historial/$1');
+    $routes->get('resumen', 'BitacoraController::resumen');
+    $routes->get('resumen/(:num)/(:num)', 'BitacoraController::resumen/$1/$2');
+    $routes->get('equipo', 'BitacoraController::equipo');
+    $routes->get('equipo/(:num)/(:num)', 'BitacoraController::equipo/$1/$2');
+    $routes->get('equipo/detalle/(:num)/(:num)/(:num)', 'BitacoraController::equipoDetalle/$1/$2/$3');
+    $routes->get('centros-costo', 'BitacoraController::centrosCosto');
+    $routes->post('centros-costo/guardar', 'BitacoraController::guardarCentroCosto');
+    $routes->post('centros-costo/eliminar/(:num)', 'BitacoraController::eliminarCentroCosto/$1');
+    $routes->post('centros-costo/verificar-duplicado', 'BitacoraController::verificarDuplicadoCC');
+});
+// Cron bitácora: usar CLI → php spark bitacora:resumen-diario

@@ -1,0 +1,235 @@
+<?php
+
+namespace App\Libraries;
+
+use App\Models\UserModel;
+use App\Models\BitacoraActividadModel;
+
+require_once ROOTPATH . 'vendor/autoload.php';
+
+class NotificadorBitacora
+{
+    protected $userModel;
+    protected $bitacoraModel;
+    protected $fromEmail = 'notificacion.cycloidtalent@cycloidtalent.com';
+    protected $fromName  = 'Bitácora Cycloid';
+
+    public function __construct()
+    {
+        $this->userModel    = new UserModel();
+        $this->bitacoraModel = new BitacoraActividadModel();
+    }
+
+    /**
+     * Envía todos los reportes del día laboral anterior.
+     * Si hoy es lunes → reporta viernes. Si es sáb/dom → no envía.
+     */
+    public function enviarTodosLosReportes(): array
+    {
+        $resultado = [
+            'enviados'         => 0,
+            'errores'          => 0,
+            'sin_actividades'  => 0,
+            'fecha_reportada'  => null,
+        ];
+
+        $diaSemana = (int) date('w'); // 0=dom, 6=sáb
+
+        // No enviar sábado (6) ni domingo (0)
+        if ($diaSemana === 0 || $diaSemana === 6) {
+            $resultado['mensaje'] = 'Fin de semana, no se envían reportes';
+            return $resultado;
+        }
+
+        // Día laboral anterior
+        if ($diaSemana === 1) {
+            // Lunes → reportar viernes
+            $fechaReporte = date('Y-m-d', strtotime('-3 days'));
+        } else {
+            // Martes-viernes → reportar ayer
+            $fechaReporte = date('Y-m-d', strtotime('-1 day'));
+        }
+
+        $resultado['fecha_reportada'] = $fechaReporte;
+
+        // Obtener emails destinatarios desde .env
+        $emailsConfig = env('BITACORA_REPORT_EMAILS', '');
+        $destinatarios = array_filter(array_map('trim', explode(',', $emailsConfig)));
+
+        if (empty($destinatarios)) {
+            $resultado['mensaje'] = 'No hay destinatarios configurados en BITACORA_REPORT_EMAILS';
+            return $resultado;
+        }
+
+        // Obtener usuarios con bitácora habilitada
+        $usuarios = $this->userModel
+            ->where('activo', 1)
+            ->where('bitacora_habilitada', 1)
+            ->findAll();
+
+        foreach ($usuarios as $usuario) {
+            $actividades = $this->bitacoraModel->getActividadesDelDia(
+                (int) $usuario['id_users'],
+                $fechaReporte
+            );
+
+            // Si no hay actividades, omitir
+            if (empty($actividades)) {
+                $resultado['sin_actividades']++;
+                continue;
+            }
+
+            $totalMinutos = $this->bitacoraModel->getTotalMinutosDia(
+                (int) $usuario['id_users'],
+                $fechaReporte
+            );
+
+            $html = $this->generarHTMLReporte($usuario, $actividades, $totalMinutos, $fechaReporte);
+            $asunto = "Bitácora de {$usuario['nombre_completo']} — " . date('d/m/Y', strtotime($fechaReporte));
+
+            foreach ($destinatarios as $emailDest) {
+                if ($this->enviarEmail($emailDest, '', $asunto, $html)) {
+                    $resultado['enviados']++;
+                } else {
+                    $resultado['errores']++;
+                }
+            }
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Genera el HTML del reporte diario de un usuario
+     */
+    protected function generarHTMLReporte(array $usuario, array $actividades, float $totalMinutos, string $fecha): string
+    {
+        $totalHoras = $this->formatMinutosHoras($totalMinutos);
+        $fechaFormateada = date('d/m/Y', strtotime($fecha));
+
+        $diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        $diaNombre = $diasSemana[(int) date('w', strtotime($fecha))];
+
+        // Filas de la tabla
+        $filasHTML = '';
+        foreach ($actividades as $act) {
+            $horaInicio = date('h:i A', strtotime($act['hora_inicio']));
+            $horaFin = $act['hora_fin'] ? date('h:i A', strtotime($act['hora_fin'])) : 'En progreso';
+            $duracion = $act['duracion_minutos'] ? $this->formatMinutosHoras((float) $act['duracion_minutos']) : '-';
+            $ccNombre = $act['centro_costo_nombre'] ?? '-';
+
+            $filasHTML .= "
+                <tr>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center;'>{$act['numero_actividad']}</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($act['descripcion']) . "</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($ccNombre) . "</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center;'>{$horaInicio}</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center;'>{$horaFin}</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center; font-weight: bold;'>{$duracion}</td>
+                </tr>";
+        }
+
+        return "
+        <div style='font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;'>
+            <div style='background: #2c3e50; padding: 20px; text-align: center;'>
+                <h1 style='color: white; margin: 0; font-size: 22px;'>Reporte de Bitácora</h1>
+                <p style='color: rgba(255,255,255,0.7); margin: 5px 0 0 0; font-size: 14px;'>{$diaNombre} {$fechaFormateada}</p>
+            </div>
+
+            <div style='padding: 25px; background: #f8f9fa;'>
+                <div style='background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px;'>
+                    <table style='width: 100%; font-size: 14px;'>
+                        <tr>
+                            <td style='color: #6c757d;'>Usuario:</td>
+                            <td style='font-weight: bold;'>{$usuario['nombre_completo']}</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d;'>Cargo:</td>
+                            <td>{$usuario['cargo']}</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d;'>Total trabajado:</td>
+                            <td style='font-weight: bold; color: #198754; font-size: 16px;'>{$totalHoras}</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d;'>Actividades:</td>
+                            <td>" . count($actividades) . "</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <table style='width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 13px;'>
+                    <thead>
+                        <tr style='background: #2c3e50; color: white;'>
+                            <th style='padding: 10px; text-align: center;'>#</th>
+                            <th style='padding: 10px;'>Descripción</th>
+                            <th style='padding: 10px;'>Centro Costo</th>
+                            <th style='padding: 10px; text-align: center;'>Inicio</th>
+                            <th style='padding: 10px; text-align: center;'>Fin</th>
+                            <th style='padding: 10px; text-align: center;'>Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {$filasHTML}
+                    </tbody>
+                    <tfoot>
+                        <tr style='background: #e9ecef;'>
+                            <td colspan='5' style='padding: 10px; text-align: right; font-weight: bold;'>TOTAL:</td>
+                            <td style='padding: 10px; text-align: center; font-weight: bold; color: #198754; font-size: 15px;'>{$totalHoras}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div style='padding: 15px; background: #e9ecef; text-align: center; font-size: 11px; color: #6c757d;'>
+                <p style='margin: 0;'>Reporte generado automáticamente por Bitácora Cycloid</p>
+            </div>
+        </div>";
+    }
+
+    /**
+     * Formatea minutos a texto legible "Xh Ymin"
+     */
+    protected function formatMinutosHoras(float $min): string
+    {
+        $h = floor($min / 60);
+        $m = round($min - ($h * 60));
+        if ($h > 0) return $h . 'h ' . $m . 'min';
+        return $m . ' min';
+    }
+
+    /**
+     * Envía email via SendGrid
+     */
+    protected function enviarEmail(string $emailDestino, string $nombreDestino, string $asunto, string $contenidoHTML): bool
+    {
+        try {
+            $apiKey = env('SENDGRID_API_KEY');
+            if (empty($apiKey)) {
+                log_message('error', 'NotificadorBitacora: SENDGRID_API_KEY no configurada');
+                return false;
+            }
+
+            $email = new \SendGrid\Mail\Mail();
+            $email->setFrom($this->fromEmail, $this->fromName);
+            $email->setSubject($asunto);
+            $email->addTo($emailDestino, $nombreDestino ?: $emailDestino);
+            $email->addContent("text/html", $contenidoHTML);
+
+            $sendgrid = new \SendGrid($apiKey);
+            $response = $sendgrid->send($email);
+            $statusCode = $response->statusCode();
+
+            if ($statusCode >= 200 && $statusCode < 300) {
+                log_message('info', "NotificadorBitacora: Email enviado a {$emailDestino} - {$asunto}");
+                return true;
+            } else {
+                log_message('error', "NotificadorBitacora: Error SendGrid - Status: {$statusCode} - Body: " . $response->body());
+                return false;
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'NotificadorBitacora: Excepción - ' . $e->getMessage());
+            return false;
+        }
+    }
+}

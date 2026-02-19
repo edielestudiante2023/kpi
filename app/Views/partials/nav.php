@@ -194,6 +194,14 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                     </li>
                     <?php endif; ?>
                 <?php endif; ?>
+
+                <?php if ($session->get('bitacora_habilitada')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?= base_url('bitacora') ?>" target="_blank">
+                        <i class="bi bi-stopwatch me-1"></i>Bitacora
+                    </a>
+                </li>
+                <?php endif; ?>
             </ul>
 
             <!-- Usuario y logout -->

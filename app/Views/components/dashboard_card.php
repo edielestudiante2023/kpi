@@ -17,6 +17,7 @@
 $btnClass = $btnClass ?? 'btn-primary';
 $cardClass = $cardClass ?? '';
 $icon = $icon ?? 'bi-arrow-right';
+$target = $target ?? '';
 ?>
 <div class="card shadow-sm h-100 <?= esc($cardClass) ?>">
     <div class="card-body d-flex flex-column">
@@ -25,7 +26,7 @@ $icon = $icon ?? 'bi-arrow-right';
             <h5 class="card-title mb-0"><?= esc($title) ?></h5>
         </div>
         <p class="card-text flex-grow-1"><?= esc($description) ?></p>
-        <a href="<?= esc($url) ?>" class="btn <?= esc($btnClass) ?> mt-auto">
+        <a href="<?= esc($url) ?>" class="btn <?= esc($btnClass) ?> mt-auto"<?= $target ? ' target="' . esc($target) . '"' : '' ?>>
             <i class="bi <?= esc($icon) ?> me-1"></i> <?= esc($btnText) ?>
         </a>
     </div>

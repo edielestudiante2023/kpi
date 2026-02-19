@@ -154,6 +154,14 @@ PROMPT;
     }
 
     /**
+     * Realiza petición con prompt directo (uso general)
+     */
+    public function makeRequestRaw(string $prompt): array
+    {
+        return $this->makeRequest($prompt);
+    }
+
+    /**
      * Realiza la petición a la API de OpenAI
      */
     private function makeRequest(string $prompt): array

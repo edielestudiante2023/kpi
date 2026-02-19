@@ -83,13 +83,14 @@ class AuthController extends BaseController
 
         // Crear sesión normal
         $sessionData = [
-            'id_users'        => $usuario['id_users'],
-            'nombre_completo' => $usuario['nombre_completo'],
-            'correo'          => $usuario['correo'],
-            'id_roles'        => $usuario['id_roles'],
-            'id_perfil_cargo' => $usuario['id_perfil_cargo'],
-            'logged_in'       => true,
-            'isLoggedIn'      => true
+            'id_users'            => $usuario['id_users'],
+            'nombre_completo'     => $usuario['nombre_completo'],
+            'correo'              => $usuario['correo'],
+            'id_roles'            => $usuario['id_roles'],
+            'id_perfil_cargo'     => $usuario['id_perfil_cargo'],
+            'bitacora_habilitada' => $usuario['bitacora_habilitada'] ?? 0,
+            'logged_in'           => true,
+            'isLoggedIn'          => true
         ];
         $session->set($sessionData);
 

@@ -56,6 +56,37 @@ $session = session();
                 ]) ?>
             </div>
 
+            <!-- BITÁCORA -->
+            <?php if ($session->get('bitacora_habilitada')): ?>
+            <div class="col-12">
+                <hr class="my-2">
+                <h5 class="text-muted mb-3"><i class="bi bi-stopwatch me-2"></i>Bitacora de Tiempo</h5>
+            </div>
+            <div class="col-md-6">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Registrar Tiempo',
+                    'description' => 'Inicia el cronometro y registra tus actividades del dia.',
+                    'url' => base_url('bitacora'),
+                    'icon' => 'bi-stopwatch',
+                    'btnText' => 'Abrir Bitacora',
+                    'btnClass' => 'btn-dark',
+                    'cardClass' => 'border-dark',
+                    'target' => '_blank',
+                ]) ?>
+            </div>
+            <div class="col-md-6">
+                <?= view('components/dashboard_card', [
+                    'title' => 'Mi Productividad',
+                    'description' => 'Resumen mensual de horas trabajadas por dia.',
+                    'url' => base_url('bitacora/resumen'),
+                    'icon' => 'bi-graph-up',
+                    'btnText' => 'Ver Resumen',
+                    'btnClass' => 'btn-outline-primary',
+                    'target' => '_blank',
+                ]) ?>
+            </div>
+            <?php endif; ?>
+
             <!-- INDICADORES -->
             <div class="col-12">
                 <hr class="my-2">

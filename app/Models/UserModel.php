@@ -25,6 +25,7 @@ class UserModel extends Model
         'token_fecha',
         'reset_token',          // ← NUEVO
         'reset_token_expira',   // ← NUEVO
+        'bitacora_habilitada',
     ];
 
 
@@ -48,9 +49,7 @@ class UserModel extends Model
         'token_fecha'         => 'permit_empty|valid_date[Y-m-d H:i:s]',
         'reset_token'        => 'permit_empty|max_length[255]',
         'reset_token_expira' => 'permit_empty|valid_date[Y-m-d H:i:s]',
-
-
-
+        'bitacora_habilitada' => 'permit_empty|in_list[0,1]',
     ];
 
     /**
