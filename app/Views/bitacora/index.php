@@ -244,11 +244,33 @@ $tieneActiva = !empty($actividadActiva);
         }
     }
 
+    // ---- Pedir permiso de notificaciones ----
+    function pedirPermisoNotificaciones() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }
+
+    // ---- Notificación del sistema (via Service Worker) ----
+    function notificacionSistema(texto) {
+        if ('Notification' in window && Notification.permission === 'granted' &&
+            'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'mostrar-alerta',
+                title: 'Bitácora Cycloid',
+                body: texto
+            });
+        }
+    }
+
     // ---- Iniciar cronómetro visual ----
     function iniciarCronometro(segInicio) {
         // Guardar timestamp de referencia: "Date.now() cuando el cronómetro tenía 0 segundos"
         timestampInicio = Date.now() - ((segInicio || 0) * 1000);
         ultimaAlerta30 = Math.floor((segInicio || 0) / (30 * 60));
+
+        // Pedir permiso para notificaciones del sistema
+        pedirPermisoNotificaciones();
 
         actualizarCronometro();
         timerInterval = setInterval(actualizarCronometro, 1000);
@@ -271,24 +293,43 @@ $tieneActiva = !empty($actividadActiva);
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden && timestampInicio) {
             actualizarCronometro();
+            // Reproducir sonido si hubo alertas perdidas mientras estaba en segundo plano
+            const seg = getSegundosReales();
+            const bloque30 = Math.floor(seg / (30 * 60));
+            if (bloque30 > 0 && bloque30 > ultimaAlerta30) {
+                // Hay alertas perdidas: reproducir sonido ahora
+                if (audio) {
+                    audio.currentTime = 0;
+                    audio.play().catch(() => {});
+                }
+            }
         }
     });
 
-    // ---- Alerta sonora ----
+    // ---- Alerta sonora + notificación del sistema ----
     function mostrarAlerta() {
-        const alertaDiv = document.getElementById('alertaSonora');
-        const alertaTexto = document.getElementById('alertaTexto');
         const descEl = document.querySelector('.fw-bold.mb-2');
+        const descripcion = descEl ? descEl.textContent : 'Actividad en progreso';
+        const seg = getSegundosReales();
+        const minutos = Math.floor(seg / 60);
+        const textoNotif = descripcion + ' — ' + minutos + ' min';
 
-        if (alertaTexto && descEl) {
-            alertaTexto.textContent = descEl.textContent;
-        }
-        if (alertaDiv) alertaDiv.style.display = 'block';
+        // Notificación del sistema (funciona con pantalla bloqueada)
+        notificacionSistema(textoNotif);
 
-        // Reproducir sonido
-        if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
+        // Si la página está visible, también mostrar alerta in-page
+        if (!document.hidden) {
+            const alertaDiv = document.getElementById('alertaSonora');
+            const alertaTexto = document.getElementById('alertaTexto');
+
+            if (alertaTexto) alertaTexto.textContent = descripcion;
+            if (alertaDiv) alertaDiv.style.display = 'block';
+
+            // Reproducir sonido
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            }
         }
 
         // Vibrar si es posible

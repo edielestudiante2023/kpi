@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bitacora-v2';
+const CACHE_NAME = 'bitacora-v3';
 const ASSETS = [
   '/bitacora',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
@@ -43,5 +43,35 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => caches.match(event.request))
+  );
+});
+
+// ---- Notificaciones desde la página ----
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'mostrar-alerta') {
+    self.registration.showNotification(event.data.title || 'Bitácora Cycloid', {
+      body: event.data.body || 'Actividad en progreso',
+      icon: '/img/icons/icon-192x192.png',
+      badge: '/img/icons/icon-72x72.png',
+      vibrate: [300, 100, 300, 100, 300],
+      tag: 'bitacora-30min',
+      renotify: true,
+      requireInteraction: true
+    });
+  }
+});
+
+// Clic en notificación: abrir la bitácora
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes('/bitacora') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow('/bitacora');
+    })
   );
 });
