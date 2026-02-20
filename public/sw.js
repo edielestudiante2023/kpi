@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kpi-cycloid-v1';
+const CACHE_NAME = 'kpi-cycloid-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Recursos que se cachean inmediatamente al instalar
