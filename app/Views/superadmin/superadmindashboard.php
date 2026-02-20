@@ -24,7 +24,36 @@
     <div class="container py-4">
         <h1 class="mb-4">Dashboard Superadmin Cycloid</h1>
 
-        <!-- MODULO DE ACTIVIDADES - PRIMERO -->
+        <!-- BITÁCORA - PRIMERO -->
+        <?php $session = session(); ?>
+        <?php if ($session->get('bitacora_habilitada')): ?>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-stopwatch me-2"></i>Bitacora de Tiempo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="<?= base_url('bitacora') ?>" class="btn btn-dark w-100" target="_blank">
+                            <i class="bi bi-stopwatch me-1"></i> Registrar Tiempo
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="<?= base_url('bitacora/resumen') ?>" class="btn btn-outline-primary w-100" target="_blank">
+                            <i class="bi bi-graph-up me-1"></i> Mi Productividad
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="<?= base_url('bitacora/equipo') ?>" class="btn btn-outline-info w-100" target="_blank">
+                            <i class="bi bi-people me-1"></i> Productividad Equipo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- MODULO DE ACTIVIDADES -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="bi bi-kanban me-2"></i>Gestion de Actividades</h5>
@@ -54,35 +83,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- BITÁCORA -->
-        <?php $session = session(); ?>
-        <?php if ($session->get('bitacora_habilitada')): ?>
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="bi bi-stopwatch me-2"></i>Bitacora de Tiempo</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <a href="<?= base_url('bitacora') ?>" class="btn btn-dark w-100" target="_blank">
-                            <i class="bi bi-stopwatch me-1"></i> Registrar Tiempo
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="<?= base_url('bitacora/resumen') ?>" class="btn btn-outline-primary w-100" target="_blank">
-                            <i class="bi bi-graph-up me-1"></i> Mi Productividad
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="<?= base_url('bitacora/equipo') ?>" class="btn btn-outline-info w-100" target="_blank">
-                            <i class="bi bi-people me-1"></i> Productividad Equipo
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- Tabla de accesos por rol -->
         <div class="card shadow-sm">
