@@ -170,7 +170,8 @@ $tieneActiva = !empty($actividadActiva);
     const CSRF_HASH  = '<?= csrf_hash() ?>';
 
     let timerInterval = null;
-    let segundosTranscurridos = 0;
+    let timestampInicio = null;  // Date.now() referencia para calcular tiempo real
+    let ultimaAlerta30 = 0;     // último bloque de 30 min alertado
     let audioDesbloqueado = false;
     const audio = document.getElementById('audioAlerta');
 
@@ -199,6 +200,12 @@ $tieneActiva = !empty($actividadActiva);
         return m + ' min';
     }
 
+    // ---- Calcular segundos reales transcurridos (inmune a suspensión) ----
+    function getSegundosReales() {
+        if (!timestampInicio) return 0;
+        return Math.floor((Date.now() - timestampInicio) / 1000);
+    }
+
     // ---- Heartbeat: mantener sesión viva solo mientras el cronómetro corre ----
     let heartbeatInterval = null;
     const HEARTBEAT_URL = BASE + 'sesion/heartbeat';
@@ -221,23 +228,30 @@ $tieneActiva = !empty($actividadActiva);
         }
     }
 
-    // ---- Iniciar cronómetro visual ----
-    function iniciarCronometro(segInicio) {
-        segundosTranscurridos = segInicio || 0;
+    // ---- Actualizar display del cronómetro ----
+    function actualizarCronometro() {
         const display = document.getElementById('cronometro');
         if (!display) return;
 
-        display.textContent = formatTime(segundosTranscurridos);
+        const seg = getSegundosReales();
+        display.textContent = formatTime(seg);
 
-        timerInterval = setInterval(function() {
-            segundosTranscurridos++;
-            display.textContent = formatTime(segundosTranscurridos);
+        // Alerta cada 30 minutos
+        const bloque30 = Math.floor(seg / (30 * 60));
+        if (bloque30 > 0 && bloque30 > ultimaAlerta30) {
+            ultimaAlerta30 = bloque30;
+            mostrarAlerta();
+        }
+    }
 
-            // Alerta cada 30 minutos
-            if (segundosTranscurridos > 0 && segundosTranscurridos % (30 * 60) === 0) {
-                mostrarAlerta();
-            }
-        }, 1000);
+    // ---- Iniciar cronómetro visual ----
+    function iniciarCronometro(segInicio) {
+        // Guardar timestamp de referencia: "Date.now() cuando el cronómetro tenía 0 segundos"
+        timestampInicio = Date.now() - ((segInicio || 0) * 1000);
+        ultimaAlerta30 = Math.floor((segInicio || 0) / (30 * 60));
+
+        actualizarCronometro();
+        timerInterval = setInterval(actualizarCronometro, 1000);
 
         // Mantener sesión viva mientras el cronómetro corre
         iniciarHeartbeat();
@@ -249,8 +263,16 @@ $tieneActiva = !empty($actividadActiva);
             clearInterval(timerInterval);
             timerInterval = null;
         }
+        timestampInicio = null;
         detenerHeartbeat();
     }
+
+    // ---- Recalcular al volver a la pantalla (después de suspensión) ----
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && timestampInicio) {
+            actualizarCronometro();
+        }
+    });
 
     // ---- Alerta sonora ----
     function mostrarAlerta() {
