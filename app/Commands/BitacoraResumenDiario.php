@@ -11,14 +11,23 @@ class BitacoraResumenDiario extends BaseCommand
     protected $group       = 'Bitacora';
     protected $name        = 'bitacora:resumen-diario';
     protected $description = 'Envia el reporte diario de bitacora de cada usuario a Edison y Diana';
-    protected $usage       = 'bitacora:resumen-diario';
+    protected $usage       = 'bitacora:resumen-diario [fecha]';
+    protected $arguments   = [
+        'fecha' => 'Fecha a reportar (YYYY-MM-DD). Si no se indica, reporta ayer.',
+    ];
 
     public function run(array $params)
     {
-        CLI::write('Iniciando envio de reportes de bitacora...', 'yellow');
+        $fecha = $params[0] ?? null;
+
+        if ($fecha) {
+            CLI::write("Enviando reporte para fecha especifica: {$fecha}", 'yellow');
+        } else {
+            CLI::write('Iniciando envio de reportes de bitacora (ayer)...', 'yellow');
+        }
 
         $notificador = new NotificadorBitacora();
-        $resultados = $notificador->enviarTodosLosReportes();
+        $resultados = $notificador->enviarTodosLosReportes($fecha);
 
         CLI::write('');
         CLI::write('=== RESULTADOS ===', 'green');

@@ -24,7 +24,7 @@ class NotificadorBitacora
      * Envía todos los reportes del día laboral anterior.
      * Si hoy es lunes → reporta viernes. Si es sáb/dom → no envía.
      */
-    public function enviarTodosLosReportes(): array
+    public function enviarTodosLosReportes(?string $fechaManual = null): array
     {
         $resultado = [
             'enviados'         => 0,
@@ -33,8 +33,8 @@ class NotificadorBitacora
             'fecha_reportada'  => null,
         ];
 
-        // Siempre reportar el día anterior (incluye fines de semana)
-        $fechaReporte = date('Y-m-d', strtotime('-1 day'));
+        // Fecha manual o día anterior por defecto
+        $fechaReporte = $fechaManual ?: date('Y-m-d', strtotime('-1 day'));
 
         $resultado['fecha_reportada'] = $fechaReporte;
 
