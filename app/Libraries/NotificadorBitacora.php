@@ -38,14 +38,9 @@ class NotificadorBitacora
 
         $resultado['fecha_reportada'] = $fechaReporte;
 
-        // Obtener emails destinatarios desde .env
+        // Obtener emails en copia desde .env (Diana, Edison, etc.)
         $emailsConfig = env('BITACORA_REPORT_EMAILS', '');
-        $destinatarios = array_filter(array_map('trim', explode(',', $emailsConfig)));
-
-        if (empty($destinatarios)) {
-            $resultado['mensaje'] = 'No hay destinatarios configurados en BITACORA_REPORT_EMAILS';
-            return $resultado;
-        }
+        $copias = array_filter(array_map('trim', explode(',', $emailsConfig)));
 
         // Obtener usuarios con bitácora habilitada
         $usuarios = $this->userModel
@@ -73,12 +68,11 @@ class NotificadorBitacora
             $html = $this->generarHTMLReporte($usuario, $actividades, $totalMinutos, $fechaReporte);
             $asunto = "Bitácora de {$usuario['nombre_completo']} — " . date('d/m/Y', strtotime($fechaReporte));
 
-            foreach ($destinatarios as $emailDest) {
-                if ($this->enviarEmail($emailDest, '', $asunto, $html)) {
-                    $resultado['enviados']++;
-                } else {
-                    $resultado['errores']++;
-                }
+            // Enviar PARA el usuario, con CC a Diana/Edison
+            if ($this->enviarEmail($usuario['correo'], $usuario['nombre_completo'], $asunto, $html, $copias)) {
+                $resultado['enviados']++;
+            } else {
+                $resultado['errores']++;
             }
         }
 
@@ -187,7 +181,7 @@ class NotificadorBitacora
     /**
      * Envía email via SendGrid
      */
-    protected function enviarEmail(string $emailDestino, string $nombreDestino, string $asunto, string $contenidoHTML): bool
+    protected function enviarEmail(string $emailDestino, string $nombreDestino, string $asunto, string $contenidoHTML, array $copias = []): bool
     {
         try {
             $apiKey = env('SENDGRID_API_KEY');
@@ -200,6 +194,15 @@ class NotificadorBitacora
             $email->setFrom($this->fromEmail, $this->fromName);
             $email->setSubject($asunto);
             $email->addTo($emailDestino, $nombreDestino ?: $emailDestino);
+
+            // Agregar CC (copia)
+            foreach ($copias as $cc) {
+                // No duplicar si el usuario ya es uno de los CC
+                if (strtolower(trim($cc)) !== strtolower(trim($emailDestino))) {
+                    $email->addCc($cc);
+                }
+            }
+
             $email->addContent("text/html", $contenidoHTML);
 
             $sendgrid = new \SendGrid($apiKey);
@@ -207,7 +210,7 @@ class NotificadorBitacora
             $statusCode = $response->statusCode();
 
             if ($statusCode >= 200 && $statusCode < 300) {
-                log_message('info', "NotificadorBitacora: Email enviado a {$emailDestino} - {$asunto}");
+                log_message('info', "NotificadorBitacora: Email enviado a {$emailDestino} (CC: " . implode(', ', $copias) . ") - {$asunto}");
                 return true;
             } else {
                 log_message('error', "NotificadorBitacora: Error SendGrid - Status: {$statusCode} - Body: " . $response->body());
