@@ -33,22 +33,8 @@ class NotificadorBitacora
             'fecha_reportada'  => null,
         ];
 
-        $diaSemana = (int) date('w'); // 0=dom, 6=sáb
-
-        // No enviar sábado (6) ni domingo (0)
-        if ($diaSemana === 0 || $diaSemana === 6) {
-            $resultado['mensaje'] = 'Fin de semana, no se envían reportes';
-            return $resultado;
-        }
-
-        // Día laboral anterior
-        if ($diaSemana === 1) {
-            // Lunes → reportar viernes
-            $fechaReporte = date('Y-m-d', strtotime('-3 days'));
-        } else {
-            // Martes-viernes → reportar ayer
-            $fechaReporte = date('Y-m-d', strtotime('-1 day'));
-        }
+        // Siempre reportar el día anterior (incluye fines de semana)
+        $fechaReporte = date('Y-m-d', strtotime('-1 day'));
 
         $resultado['fecha_reportada'] = $fechaReporte;
 
