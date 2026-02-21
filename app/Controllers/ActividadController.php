@@ -172,13 +172,18 @@ class ActividadController extends BaseController
     public function tableroResponsable()
     {
         $filtros = [
-            'estado'      => $this->request->getGet('estado'),
-            'prioridad'   => $this->request->getGet('prioridad'),
-            'id_categoria' => $this->request->getGet('categoria')
+            'estado'             => $this->request->getGet('estado'),
+            'prioridad'          => $this->request->getGet('prioridad'),
+            'id_categoria'       => $this->request->getGet('categoria'),
+            'fecha_limite_desde' => $this->request->getGet('fecha_desde'),
+            'fecha_limite_hasta' => $this->request->getGet('fecha_hasta'),
+            'vencidas'           => $this->request->getGet('vencidas'),
+            'proximas_vencer'    => $this->request->getGet('proximas'),
         ];
 
         $data = [
             'porResponsable' => $this->actividadModel->getActividadesPorResponsable($filtros),
+            'resumen'        => $this->actividadModel->getResumenTablero($filtros),
             'categorias'     => $this->categoriaModel->getActivas(),
             'filtros'        => $filtros
         ];

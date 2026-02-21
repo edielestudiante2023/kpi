@@ -6,10 +6,59 @@
     <title>Tablero por Responsable - KPI Cycloid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         body {
             background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
             min-height: 100vh;
+        }
+        /* Cards de resumen */
+        .stat-card {
+            border-radius: 10px;
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        .stat-card.active {
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.8);
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+            transform: translateY(-2px);
+        }
+        .stat-card.active .stat-label {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Filtros avanzados */
+        .filtros-avanzados {
+            display: none;
+        }
+        .filtros-avanzados.show {
+            display: block;
         }
         .responsable-container {
             display: flex;
@@ -123,6 +172,19 @@
 
         /* ========== RESPONSIVE MOBILE ========== */
         @media (max-width: 768px) {
+            /* Stat cards más compactas */
+            .stat-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            .stat-number {
+                font-size: 1.2rem;
+            }
+            .stat-label {
+                font-size: 0.65rem;
+            }
+
             /* Header más compacto */
             .d-flex.justify-content-between.align-items-center.mb-4 {
                 flex-direction: column;
@@ -244,20 +306,116 @@
             </div>
         </div>
 
+        <!-- Cards de Resumen (clickeables) -->
+        <?php
+        $filtroEstadoActivo = $filtros['estado'] ?? '';
+        $filtroVencidas = $filtros['vencidas'] ?? '';
+        $filtroProximas = $filtros['proximas_vencer'] ?? '';
+        $sinFiltroCards = empty($filtroEstadoActivo) && empty($filtroVencidas) && empty($filtroProximas);
+        ?>
+        <div class="row g-3 mb-4">
+            <!-- Total -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/responsable') ?>" class="stat-card card shadow-sm h-100 d-block <?= $sinFiltroCards ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-dark text-white me-2">
+                                <i class="bi bi-list-task"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumen['total'] ?></div>
+                                <div class="stat-label">Total</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Pendientes -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/responsable?estado=pendiente') ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'pendiente' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-secondary text-white me-2">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumen['por_estado']['pendiente'] ?></div>
+                                <div class="stat-label">Pendientes</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- En Progreso -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/responsable?estado=en_progreso') ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'en_progreso' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-primary text-white me-2">
+                                <i class="bi bi-play-circle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumen['por_estado']['en_progreso'] ?></div>
+                                <div class="stat-label">En Progreso</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Completadas -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/responsable?estado=completada') ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'completada' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-success text-white me-2">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number"><?= $resumen['por_estado']['completada'] ?></div>
+                                <div class="stat-label">Completadas</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Vencidas -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/responsable?vencidas=1') ?>" class="stat-card card shadow-sm h-100 d-block border-danger <?= !empty($filtroVencidas) ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-danger text-white me-2">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number text-danger"><?= $resumen['vencidas'] ?></div>
+                                <div class="stat-label">Vencidas</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- Proximas a vencer -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/responsable?proximas=1') ?>" class="stat-card card shadow-sm h-100 d-block border-warning <?= !empty($filtroProximas) ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-warning text-dark me-2">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number text-warning"><?= $resumen['proximas_vencer'] ?></div>
+                                <div class="stat-label">Por vencer</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
         <!-- Filtros -->
         <div class="card shadow-sm mb-4">
             <div class="card-body py-2">
                 <form method="get" class="row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label small mb-1">Estado</label>
-                        <select name="estado" class="form-select form-select-sm">
-                            <option value="">Todos</option>
-                            <option value="pendiente" <?= ($filtros['estado'] ?? '') === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
-                            <option value="en_progreso" <?= ($filtros['estado'] ?? '') === 'en_progreso' ? 'selected' : '' ?>>En Progreso</option>
-                            <option value="en_revision" <?= ($filtros['estado'] ?? '') === 'en_revision' ? 'selected' : '' ?>>En Revision</option>
-                            <option value="completada" <?= ($filtros['estado'] ?? '') === 'completada' ? 'selected' : '' ?>>Completada</option>
-                        </select>
-                    </div>
                     <div class="col-md-2">
                         <label class="form-label small mb-1">Prioridad</label>
                         <select name="prioridad" class="form-select form-select-sm">
@@ -279,16 +437,62 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-sm btn-primary w-100">
-                            <i class="bi bi-funnel me-1"></i> Filtrar
-                        </button>
+                    <div class="col-md-4">
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnFiltrosAvanzados">
+                                <i class="bi bi-sliders me-1"></i> Fechas
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
+                                <i class="bi bi-funnel me-1"></i> Filtrar
+                            </button>
+                            <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-x-lg me-1"></i> Limpiar
+                            </a>
+                        </div>
                     </div>
-                    <div class="col-md-2">
-                        <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-sm btn-outline-secondary w-100">
-                            <i class="bi bi-x-lg me-1"></i> Limpiar
-                        </a>
+
+                    <!-- Filtros avanzados (fechas) -->
+                    <div class="filtros-avanzados mt-3 <?= (!empty($filtros['fecha_limite_desde']) || !empty($filtros['fecha_limite_hasta'])) ? 'show' : '' ?>" id="filtrosAvanzados">
+                        <div class="row g-2 pt-2 border-top">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Fecha limite desde</label>
+                                <input type="text" name="fecha_desde" class="form-control form-control-sm datepicker"
+                                       value="<?= esc($filtros['fecha_limite_desde'] ?? '') ?>"
+                                       placeholder="Seleccionar...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Fecha limite hasta</label>
+                                <input type="text" name="fecha_hasta" class="form-control form-control-sm datepicker"
+                                       value="<?= esc($filtros['fecha_limite_hasta'] ?? '') ?>"
+                                       placeholder="Seleccionar...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small mb-1">Accesos rapidos</label>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <a href="<?= base_url('actividades/responsable?vencidas=1') ?>" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Vencidas
+                                    </a>
+                                    <a href="<?= base_url('actividades/responsable?fecha_desde=' . date('Y-m-d') . '&fecha_hasta=' . date('Y-m-d', strtotime('+7 days'))) ?>" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-clock-history me-1"></i>Proximos 7 dias
+                                    </a>
+                                    <a href="<?= base_url('actividades/responsable?fecha_desde=' . date('Y-m-01') . '&fecha_hasta=' . date('Y-m-t')) ?>" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-calendar-month me-1"></i>Este mes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Campos ocultos para mantener filtros de cards -->
+                    <?php if (!empty($filtros['estado'])): ?>
+                        <input type="hidden" name="estado" value="<?= esc($filtros['estado']) ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($filtros['vencidas'])): ?>
+                        <input type="hidden" name="vencidas" value="1">
+                    <?php endif; ?>
+                    <?php if (!empty($filtros['proximas_vencer'])): ?>
+                        <input type="hidden" name="proximas" value="1">
+                    <?php endif; ?>
                 </form>
             </div>
         </div>
@@ -412,5 +616,22 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script>
+        // Flatpickr en campos de fecha
+        flatpickr('.datepicker', {
+            locale: 'es',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd/m/Y',
+            allowInput: true
+        });
+
+        // Toggle filtros avanzados
+        document.getElementById('btnFiltrosAvanzados').addEventListener('click', function() {
+            document.getElementById('filtrosAvanzados').classList.toggle('show');
+        });
+    </script>
 </body>
 </html>

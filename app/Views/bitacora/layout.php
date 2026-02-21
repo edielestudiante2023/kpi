@@ -121,6 +121,39 @@
             from { transform: translateY(-100%); opacity: 0; }
             to   { transform: translateY(0); opacity: 1; }
         }
+
+        /* Banner offline */
+        .offline-banner {
+            display: none;
+            position: fixed; top: 56px; left: 0; right: 0; z-index: 1029;
+            background: #dc3545;
+            color: #fff;
+            text-align: center;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .offline-banner.visible { display: block; }
+        body.is-offline { padding-top: 80px; }
+
+        /* Toast offline guardado */
+        .offline-toast {
+            position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 9999;
+            background: #198754;
+            color: #fff;
+            border-radius: 10px;
+            padding: 12px 16px;
+            text-align: center;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+            display: none;
+        }
+        .offline-toast.visible { display: block; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>

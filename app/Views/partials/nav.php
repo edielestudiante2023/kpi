@@ -62,7 +62,10 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                                 <i class="bi bi-person-check me-2"></i>Mis Actividades
                             </a></li>
                             <li><a class="dropdown-item" href="<?= base_url('actividades/tablero') ?>">
-                                <i class="bi bi-kanban me-2"></i>Tablero
+                                <i class="bi bi-kanban me-2"></i>Tablero por Estado
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('actividades/responsable') ?>">
+                                <i class="bi bi-people me-2"></i>Tablero por Responsable
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="<?= base_url('actividades/nueva') ?>">
@@ -104,7 +107,10 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                                 <i class="bi bi-person-check me-2"></i>Mis Actividades
                             </a></li>
                             <li><a class="dropdown-item" href="<?= base_url('actividades/tablero') ?>">
-                                <i class="bi bi-kanban me-2"></i>Tablero
+                                <i class="bi bi-kanban me-2"></i>Tablero por Estado
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('actividades/responsable') ?>">
+                                <i class="bi bi-people me-2"></i>Tablero por Responsable
                             </a></li>
                         </ul>
                     </li>
@@ -169,7 +175,10 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="<?= base_url('actividades/tablero') ?>">
-                                <i class="bi bi-kanban me-2"></i>Tablero
+                                <i class="bi bi-kanban me-2"></i>Tablero por Estado
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('actividades/responsable') ?>">
+                                <i class="bi bi-people me-2"></i>Tablero por Responsable
                             </a></li>
                             <li><a class="dropdown-item" href="<?= base_url('actividades/lista') ?>">
                                 <i class="bi bi-list-ul me-2"></i>Lista
