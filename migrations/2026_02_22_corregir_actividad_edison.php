@@ -8,8 +8,24 @@
  *       (Lee credenciales del .env del proyecto)
  */
 
-// ── Conexión (lee del .env del proyecto) ──────────────────
-$dotenv = @parse_ini_file(__DIR__ . '/../.env');
+// ── Leer .env manualmente (compatible con formato CI4) ────
+function leerEnv(string $path): array {
+    $vars = [];
+    if (!file_exists($path)) return $vars;
+    foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        if (strpos($line, '=') === false) continue;
+        [$key, $val] = array_map('trim', explode('=', $line, 2));
+        $val = trim($val, "\"' ");
+        $vars[$key] = $val;
+    }
+    return $vars;
+}
+
+$dotenv = leerEnv(__DIR__ . '/../.env');
+
+// ── Conexión ──────────────────────────────────────────────
 $config = [
     'host'     => $dotenv['database.default.hostname'] ?? '127.0.0.1',
     'port'     => $dotenv['database.default.port']     ?? 3306,
