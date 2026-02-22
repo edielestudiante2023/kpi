@@ -216,11 +216,74 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
 
-    <!-- PWA Service Worker -->
+    <!-- PWA Service Worker + Push Subscription -->
     <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('<?= base_url('bitacora-sw.js') ?>');
-    }
+    (function() {
+        var BASE = '<?= base_url() ?>';
+        var CSRF_NAME = '<?= csrf_token() ?>';
+        var CSRF_HASH = '<?= csrf_hash() ?>';
+
+        if (!('serviceWorker' in navigator)) return;
+
+        navigator.serviceWorker.register('<?= base_url('bitacora-sw.js') ?>')
+            .then(function(registration) {
+                // Esperar a que el SW esté activo
+                var sw = registration.installing || registration.waiting || registration.active;
+                if (!sw) return;
+
+                function suscribirPush() {
+                    // Pedir permiso de notificaciones
+                    if (!('Notification' in window)) return;
+                    if (Notification.permission === 'denied') return;
+
+                    Notification.requestPermission().then(function(permission) {
+                        if (permission !== 'granted') return;
+
+                        // Obtener VAPID public key del servidor
+                        fetch(BASE + 'bitacora/push/vapid-key')
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) {
+                                if (!data.publicKey) return;
+
+                                // Convertir base64url a Uint8Array
+                                var rawKey = data.publicKey.replace(/-/g, '+').replace(/_/g, '/');
+                                var padding = '='.repeat((4 - rawKey.length % 4) % 4);
+                                var bytes = atob(rawKey + padding);
+                                var array = new Uint8Array(bytes.length);
+                                for (var i = 0; i < bytes.length; i++) array[i] = bytes.charCodeAt(i);
+
+                                return registration.pushManager.subscribe({
+                                    userVisibleOnly: true,
+                                    applicationServerKey: array
+                                });
+                            })
+                            .then(function(subscription) {
+                                if (!subscription) return;
+
+                                // Enviar suscripción al servidor
+                                var key = subscription.getKey('p256dh');
+                                var auth = subscription.getKey('auth');
+                                var fd = new FormData();
+                                fd.append('endpoint', subscription.endpoint);
+                                fd.append('p256dh', btoa(String.fromCharCode.apply(null, new Uint8Array(key))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''));
+                                fd.append('auth', btoa(String.fromCharCode.apply(null, new Uint8Array(auth))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''));
+                                fd.append(CSRF_NAME, CSRF_HASH);
+
+                                fetch(BASE + 'bitacora/push/subscribe', { method: 'POST', body: fd });
+                            })
+                            .catch(function(e) { console.log('Push subscription error:', e); });
+                    });
+                }
+
+                if (sw.state === 'activated') {
+                    suscribirPush();
+                } else {
+                    sw.addEventListener('statechange', function() {
+                        if (sw.state === 'activated') suscribirPush();
+                    });
+                }
+            });
+    })();
     </script>
 
     <?= $this->renderSection('scripts') ?>

@@ -413,4 +413,41 @@ PROMPT;
         return $this->response->setJSON(['ok' => true]);
     }
 
+    // ================================================================
+    // Push Notifications
+    // ================================================================
+
+    /**
+     * Guardar suscripción push del navegador
+     */
+    public function guardarPushSubscription()
+    {
+        $userId = session()->get('id_users');
+        if (!$userId) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'No autenticado']);
+        }
+
+        $endpoint = $this->request->getPost('endpoint');
+        $p256dh   = $this->request->getPost('p256dh');
+        $auth     = $this->request->getPost('auth');
+
+        if (!$endpoint || !$p256dh || !$auth) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Datos incompletos']);
+        }
+
+        $model = new \App\Models\PushSubscriptionModel();
+        $ok = $model->guardarSuscripcion((int) $userId, $endpoint, $p256dh, $auth);
+
+        return $this->response->setJSON(['ok' => $ok]);
+    }
+
+    /**
+     * Retornar la VAPID public key para el cliente JS
+     */
+    public function vapidPublicKey()
+    {
+        return $this->response->setJSON([
+            'publicKey' => env('VAPID_PUBLIC_KEY', ''),
+        ]);
+    }
 }

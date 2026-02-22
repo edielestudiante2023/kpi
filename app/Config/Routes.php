@@ -306,5 +306,8 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->post('centros-costo/guardar', 'BitacoraController::guardarCentroCosto');
     $routes->post('centros-costo/eliminar/(:num)', 'BitacoraController::eliminarCentroCosto/$1');
     $routes->post('centros-costo/verificar-duplicado', 'BitacoraController::verificarDuplicadoCC');
+    // Push notifications
+    $routes->post('push/subscribe', 'BitacoraController::guardarPushSubscription');
+    $routes->get('push/vapid-key', 'BitacoraController::vapidPublicKey');
 });
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario
