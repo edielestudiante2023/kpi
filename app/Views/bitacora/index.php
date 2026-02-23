@@ -22,6 +22,11 @@ $tieneActiva = !empty($actividadActiva);
                     <i class="bi bi-building"></i> <?= esc($actividadActiva['centro_costo_nombre'] ?? '') ?>
                 </div>
 
+                <button class="btn btn-outline-secondary btn-sm w-100 mb-3" id="btnDescartar"
+                        data-id="<?= $actividadActiva['id_bitacora'] ?>">
+                    <i class="bi bi-trash me-1"></i> ¿Olvidaste detener el tiempo?
+                </button>
+
                 <div class="cronometro-display running" id="cronometro">00:00:00</div>
 
                 <div class="text-muted small mt-1">
@@ -504,6 +509,33 @@ $tieneActiva = !empty($actividadActiva);
                     alert('Error de conexión');
                     btnTerminar.disabled = false;
                     btnTerminar.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad';
+                });
+        });
+    }
+
+    // ---- Botón DESCARTAR (olvidaste detener) ----
+    const btnDescartar = document.getElementById('btnDescartar');
+    if (btnDescartar) {
+        btnDescartar.addEventListener('click', function() {
+            const id = btnDescartar.getAttribute('data-id');
+            const ok = confirm('Esta acción borrará tu último registro y no podremos recuperar la información, esa gestión desafortunadamente no quedará registrada.\n\nTe invitamos a estar más atento al control de tu bitácora de actividades.');
+            if (!ok) return;
+
+            btnDescartar.disabled = true;
+            detenerCronometro();
+
+            ajax('POST', 'bitacora/descartar/' + id, {})
+                .then(function(resp) {
+                    if (resp.ok) {
+                        location.reload();
+                    } else {
+                        alert(resp.error || 'Error al descartar');
+                        btnDescartar.disabled = false;
+                    }
+                })
+                .catch(function() {
+                    alert('Error de conexión');
+                    btnDescartar.disabled = false;
                 });
         });
     }

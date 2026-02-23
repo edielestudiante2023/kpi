@@ -267,6 +267,31 @@ class BitacoraController extends BaseController
     }
 
     /**
+     * Descartar actividad en progreso (olvidó detener el tiempo)
+     */
+    public function descartarActividad($id)
+    {
+        if (!$this->verificarAcceso()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $userId    = session()->get('id_users');
+        $actividad = $this->bitacoraModel->find($id);
+
+        if (!$actividad || $actividad['id_usuario'] != $userId) {
+            return $this->response->setJSON(['error' => 'Actividad no encontrada'])->setStatusCode(404);
+        }
+
+        if ($actividad['estado'] !== 'en_progreso') {
+            return $this->response->setJSON(['error' => 'Solo se pueden descartar actividades en progreso'])->setStatusCode(400);
+        }
+
+        $this->bitacoraModel->delete($id);
+
+        return $this->response->setJSON(['ok' => true]);
+    }
+
+    /**
      * Obtener actividad activa actual (AJAX)
      */
     public function actividadActiva()
