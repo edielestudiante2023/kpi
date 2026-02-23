@@ -22,7 +22,7 @@ $tieneActiva = !empty($actividadActiva);
                     <i class="bi bi-building"></i> <?= esc($actividadActiva['centro_costo_nombre'] ?? '') ?>
                 </div>
 
-                <button class="btn btn-outline-secondary btn-sm w-100 mb-3" id="btnDescartar"
+                <button class="btn btn-sm w-100 mb-3" style="background-color:#6f42c1;color:#fff;" id="btnDescartar"
                         data-id="<?= $actividadActiva['id_bitacora'] ?>">
                     <i class="bi bi-trash me-1"></i> ¿Olvidaste detener el tiempo?
                 </button>
