@@ -475,4 +475,330 @@ PROMPT;
             'publicKey' => env('VAPID_PUBLIC_KEY', ''),
         ]);
     }
+
+    // ================================================================
+    // Liquidación Quincenal
+    // ================================================================
+
+    private function esAdminBitacora(): bool
+    {
+        return (int) (session()->get('admin_bitacora') ?? 0) === 1;
+    }
+
+    /**
+     * Vista principal de liquidación (solo admin_bitacora)
+     */
+    public function liquidacion()
+    {
+        if (!$this->verificarAcceso()) return redirect()->to('/login');
+        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
+
+        $liquidacionModel = new \App\Models\LiquidacionModel();
+        $festivoModel     = new \App\Models\DiaFestivoModel();
+        $userModel        = new \App\Models\UserModel();
+
+        // Determinar inicio del periodo
+        $ultima = $liquidacionModel->getUltimaLiquidacion();
+        $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
+        $fechaHoy = date('Y-m-d H:i:s');
+
+        // Días hábiles del periodo
+        $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaHoy);
+
+        // Preview de cada usuario
+        $usuarios = $userModel->where('activo', 1)->where('bitacora_habilitada', 1)->findAll();
+        $preview = [];
+        foreach ($usuarios as $u) {
+            $minutos = $this->bitacoraModel->getTotalMinutosRango((int) $u['id_users'], $fechaInicio, $fechaHoy);
+            $horasTrabajadas = round($minutos / 60, 2);
+
+            $jornada = $u['jornada'] ?? 'completa';
+            $horasDia = $jornada === 'media' ? 4 : 8;
+            $eficiencia = $jornada === 'media' ? 0.90 : 0.80;
+            $horasMeta = round($diasHabiles * $horasDia * $eficiencia, 2);
+
+            $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 2) : 0;
+
+            $preview[] = [
+                'id_users'         => $u['id_users'],
+                'nombre_completo'  => $u['nombre_completo'],
+                'jornada'          => $jornada,
+                'horas_trabajadas' => $horasTrabajadas,
+                'horas_meta'       => $horasMeta,
+                'porcentaje'       => $porcentaje,
+            ];
+        }
+
+        // Historial
+        $historial = $liquidacionModel->getHistorial();
+
+        return view('bitacora/liquidacion', [
+            'tab'          => 'liquidacion',
+            'fechaInicio'  => $fechaInicio,
+            'fechaHoy'     => $fechaHoy,
+            'diasHabiles'  => $diasHabiles,
+            'preview'      => $preview,
+            'historial'    => $historial,
+        ]);
+    }
+
+    /**
+     * Ejecutar liquidación (corte de quincena) — AJAX POST
+     */
+    public function ejecutarLiquidacion()
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $liquidacionModel = new \App\Models\LiquidacionModel();
+        $detalleModel     = new \App\Models\DetalleLiquidacionModel();
+        $festivoModel     = new \App\Models\DiaFestivoModel();
+        $userModel        = new \App\Models\UserModel();
+
+        $ahora = date('Y-m-d H:i:s');
+        $notas = $this->request->getPost('notas') ?? '';
+
+        // Inicio del periodo
+        $ultima = $liquidacionModel->getUltimaLiquidacion();
+        $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
+
+        // 1. Cortar actividades en progreso
+        $enProgreso = $this->bitacoraModel->getTodasEnProgreso();
+        foreach ($enProgreso as $act) {
+            $inicio = new \DateTime($act['hora_inicio']);
+            $fin    = new \DateTime($ahora);
+            $duracion = round(($fin->getTimestamp() - $inicio->getTimestamp()) / 60, 2);
+
+            // Finalizar la actividad actual
+            $this->bitacoraModel->update($act['id_bitacora'], [
+                'hora_fin'         => $ahora,
+                'duracion_minutos' => $duracion,
+                'estado'           => 'finalizada',
+            ]);
+
+            // Crear continuación para el siguiente periodo
+            $this->bitacoraModel->insert([
+                'id_usuario'       => $act['id_usuario'],
+                'numero_actividad' => $this->bitacoraModel->getNextNumeroActividad((int) $act['id_usuario'], date('Y-m-d')),
+                'descripcion'      => '(cont.) ' . $act['descripcion'],
+                'id_centro_costo'  => $act['id_centro_costo'],
+                'fecha'            => date('Y-m-d'),
+                'hora_inicio'      => $ahora,
+                'hora_fin'         => null,
+                'duracion_minutos' => null,
+                'estado'           => 'en_progreso',
+            ]);
+        }
+
+        // 2. Calcular días hábiles
+        $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
+
+        // 3. Crear registro de liquidación
+        $liquidacionModel->insert([
+            'fecha_inicio'  => $fechaInicio,
+            'fecha_corte'   => $ahora,
+            'dias_habiles'  => $diasHabiles,
+            'ejecutado_por' => (int) session()->get('id_users'),
+            'notas'         => $notas,
+        ]);
+        $idLiquidacion = $liquidacionModel->getInsertID();
+
+        // 4. Calcular por usuario
+        $usuarios = $userModel->where('activo', 1)->where('bitacora_habilitada', 1)->findAll();
+        $detalles = [];
+
+        foreach ($usuarios as $u) {
+            $jornada = $u['jornada'] ?? 'completa';
+            $horasDia = $jornada === 'media' ? 4 : 8;
+            $eficiencia = $jornada === 'media' ? 0.90 : 0.80;
+            $horasMeta = round($diasHabiles * $horasDia * $eficiencia, 2);
+
+            $minutos = $this->bitacoraModel->getTotalMinutosRango((int) $u['id_users'], $fechaInicio, $ahora);
+            $horasTrabajadas = round($minutos / 60, 2);
+
+            $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 2) : 0;
+
+            $detalleModel->insert([
+                'id_liquidacion'        => $idLiquidacion,
+                'id_usuario'            => $u['id_users'],
+                'jornada'               => $jornada,
+                'dias_habiles'          => $diasHabiles,
+                'horas_meta'            => $horasMeta,
+                'horas_trabajadas'      => $horasTrabajadas,
+                'porcentaje_cumplimiento' => $porcentaje,
+            ]);
+
+            $detalles[] = [
+                'usuario'   => $u,
+                'jornada'   => $jornada,
+                'horas_meta' => $horasMeta,
+                'horas_trabajadas' => $horasTrabajadas,
+                'porcentaje' => $porcentaje,
+            ];
+        }
+
+        $db->transComplete();
+
+        if (!$db->transStatus()) {
+            return $this->response->setJSON(['error' => 'Error en la transacción'])->setStatusCode(500);
+        }
+
+        // 5. Enviar emails de liquidación
+        $notificador = new \App\Libraries\NotificadorBitacora();
+        $emailsConfig = env('BITACORA_REPORT_EMAILS', '');
+        $copias = array_filter(array_map('trim', explode(',', $emailsConfig)));
+
+        foreach ($detalles as $d) {
+            $html = $this->generarHTMLLiquidacion($d, $fechaInicio, $ahora, $diasHabiles);
+            $asunto = "Liquidación Quincenal — {$d['usuario']['nombre_completo']}";
+            $notificador->enviarEmail(
+                $d['usuario']['correo'],
+                $d['usuario']['nombre_completo'],
+                $asunto,
+                $html,
+                $copias
+            );
+        }
+
+        return $this->response->setJSON([
+            'ok'             => true,
+            'id_liquidacion' => $idLiquidacion,
+            'actividades_cortadas' => count($enProgreso),
+        ]);
+    }
+
+    /**
+     * Detalle de una liquidación pasada (AJAX GET)
+     */
+    public function detalleLiquidacion($id)
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $liquidacionModel = new \App\Models\LiquidacionModel();
+        $detalle = $liquidacionModel->getDetalle((int) $id);
+
+        return $this->response->setJSON(['ok' => true, 'detalle' => $detalle]);
+    }
+
+    /**
+     * HTML del email de liquidación
+     */
+    private function generarHTMLLiquidacion(array $d, string $inicio, string $corte, int $diasHabiles): string
+    {
+        $inicioFmt = date('d/m/Y h:i A', strtotime($inicio));
+        $corteFmt  = date('d/m/Y h:i A', strtotime($corte));
+        $jornadaTxt = $d['jornada'] === 'media' ? 'Media jornada (4h/día, 90%)' : 'Jornada completa (8h/día, 80%)';
+
+        $color = '#dc3545'; // rojo
+        if ($d['porcentaje'] >= 100) $color = '#198754'; // verde
+        elseif ($d['porcentaje'] >= 80) $color = '#ffc107'; // amarillo
+
+        $nombre = htmlspecialchars($d['usuario']['nombre_completo']);
+        $cargo  = htmlspecialchars($d['usuario']['cargo'] ?? '');
+
+        return "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <div style='background: #2c3e50; padding: 20px; text-align: center;'>
+                <h1 style='color: white; margin: 0; font-size: 22px;'>Liquidación Quincenal</h1>
+                <p style='color: rgba(255,255,255,0.7); margin: 5px 0 0 0; font-size: 13px;'>Periodo: {$inicioFmt} — {$corteFmt}</p>
+            </div>
+            <div style='padding: 25px; background: #f8f9fa;'>
+                <div style='background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px;'>
+                    <table style='width: 100%; font-size: 14px;'>
+                        <tr><td style='color: #6c757d;'>Usuario:</td><td style='font-weight: bold;'>{$nombre}</td></tr>
+                        <tr><td style='color: #6c757d;'>Cargo:</td><td>{$cargo}</td></tr>
+                        <tr><td style='color: #6c757d;'>Jornada:</td><td>{$jornadaTxt}</td></tr>
+                        <tr><td style='color: #6c757d;'>Días hábiles:</td><td>{$diasHabiles}</td></tr>
+                    </table>
+                </div>
+                <div style='background: white; border-radius: 8px; padding: 20px; text-align: center;'>
+                    <table style='width: 100%; font-size: 14px; margin-bottom: 15px;'>
+                        <tr>
+                            <td style='text-align: center;'>
+                                <div style='font-size: 12px; color: #6c757d;'>Horas Meta</div>
+                                <div style='font-size: 24px; font-weight: bold;'>{$d['horas_meta']}h</div>
+                            </td>
+                            <td style='text-align: center;'>
+                                <div style='font-size: 12px; color: #6c757d;'>Horas Trabajadas</div>
+                                <div style='font-size: 24px; font-weight: bold;'>{$d['horas_trabajadas']}h</div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div style='font-size: 14px; color: #6c757d; margin-bottom: 8px;'>Porcentaje de Pago</div>
+                    <div style='font-size: 48px; font-weight: 900; color: {$color};'>{$d['porcentaje']}%</div>
+                    <div style='background: #e9ecef; border-radius: 10px; height: 20px; margin-top: 15px; overflow: hidden;'>
+                        <div style='background: {$color}; height: 100%; width: " . min($d['porcentaje'], 100) . "%; border-radius: 10px;'></div>
+                    </div>
+                </div>
+            </div>
+            <div style='padding: 15px; background: #e9ecef; text-align: center; font-size: 11px; color: #6c757d;'>
+                Generado por Bitácora Cycloid
+            </div>
+        </div>";
+    }
+
+    // ================================================================
+    // Festivos
+    // ================================================================
+
+    /**
+     * CRUD de días festivos
+     */
+    public function festivos($anio = null)
+    {
+        if (!$this->verificarAcceso()) return redirect()->to('/login');
+        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
+
+        $anio = $anio ?: (int) date('Y');
+        $festivoModel = new \App\Models\DiaFestivoModel();
+
+        return view('bitacora/festivos', [
+            'tab'      => 'liquidacion',
+            'anio'     => $anio,
+            'festivos' => $festivoModel->getFestivosAnio($anio),
+        ]);
+    }
+
+    public function guardarFestivo()
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $fecha = $this->request->getPost('fecha');
+        $descripcion = $this->request->getPost('descripcion');
+
+        if (!$fecha || !$descripcion) {
+            return $this->response->setJSON(['error' => 'Fecha y descripción son requeridas'])->setStatusCode(400);
+        }
+
+        $festivoModel = new \App\Models\DiaFestivoModel();
+        $anio = (int) date('Y', strtotime($fecha));
+
+        $festivoModel->insert([
+            'fecha'       => $fecha,
+            'descripcion' => $descripcion,
+            'anio'        => $anio,
+        ]);
+
+        return $this->response->setJSON(['ok' => true, 'id' => $festivoModel->getInsertID()]);
+    }
+
+    public function eliminarFestivo($id)
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $festivoModel = new \App\Models\DiaFestivoModel();
+        $festivoModel->delete($id);
+
+        return $this->response->setJSON(['ok' => true]);
+    }
 }

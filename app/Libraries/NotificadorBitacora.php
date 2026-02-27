@@ -4,6 +4,8 @@ namespace App\Libraries;
 
 use App\Models\UserModel;
 use App\Models\BitacoraActividadModel;
+use App\Models\DiaFestivoModel;
+use App\Models\LiquidacionModel;
 
 require_once ROOTPATH . 'vendor/autoload.php';
 
@@ -65,7 +67,8 @@ class NotificadorBitacora
                 $fechaReporte
             );
 
-            $html = $this->generarHTMLReporte($usuario, $actividades, $totalMinutos, $fechaReporte);
+            $progresoQuincenal = $this->calcularProgresoQuincenal($usuario);
+            $html = $this->generarHTMLReporte($usuario, $actividades, $totalMinutos, $fechaReporte, $progresoQuincenal);
             $asunto = "Bitácora de {$usuario['nombre_completo']} — " . date('d/m/Y', strtotime($fechaReporte));
 
             // Enviar PARA el usuario, con CC a Diana/Edison
@@ -80,9 +83,54 @@ class NotificadorBitacora
     }
 
     /**
+     * Calcula el progreso quincenal de un usuario
+     */
+    protected function calcularProgresoQuincenal(array $usuario): ?array
+    {
+        try {
+            $liqModel = new LiquidacionModel();
+            $festivoModel = new DiaFestivoModel();
+
+            $ultima = $liqModel->getUltimaLiquidacion();
+            $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '');
+            if (empty($fechaInicio)) return null;
+
+            $ahora = date('Y-m-d H:i:s');
+            $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
+            if ($diasHabiles <= 0) return null;
+
+            $totalMin = $this->bitacoraModel->getTotalMinutosRango(
+                (int) $usuario['id_users'], $fechaInicio, $ahora
+            );
+            $horasTrabajadas = round($totalMin / 60, 2);
+
+            $jornada = $usuario['jornada'] ?? 'completa';
+            if ($jornada === 'media') {
+                $horasMeta = round($diasHabiles * 4 * 0.90, 2);
+            } else {
+                $horasMeta = round($diasHabiles * 8 * 0.80, 2);
+            }
+
+            $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 1) : 0;
+
+            return [
+                'fecha_inicio'     => $fechaInicio,
+                'dias_habiles'     => $diasHabiles,
+                'horas_trabajadas' => $horasTrabajadas,
+                'horas_meta'       => $horasMeta,
+                'porcentaje'       => $porcentaje,
+                'jornada'          => $jornada,
+            ];
+        } catch (\Exception $e) {
+            log_message('error', 'NotificadorBitacora: Error progreso quincenal - ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Genera el HTML del reporte diario de un usuario
      */
-    protected function generarHTMLReporte(array $usuario, array $actividades, float $totalMinutos, string $fecha): string
+    protected function generarHTMLReporte(array $usuario, array $actividades, float $totalMinutos, string $fecha, ?array $progreso = null): string
     {
         $totalHoras = $this->formatMinutosHoras($totalMinutos);
         $fechaFormateada = date('d/m/Y', strtotime($fecha));
@@ -159,12 +207,54 @@ class NotificadorBitacora
                         </tr>
                     </tfoot>
                 </table>
+
+                {$this->generarSeccionProgresoQuincenal($progreso)}
             </div>
 
             <div style='padding: 15px; background: #e9ecef; text-align: center; font-size: 11px; color: #6c757d;'>
                 <p style='margin: 0;'>Reporte generado automáticamente por Bitácora Cycloid</p>
             </div>
         </div>";
+    }
+
+    /**
+     * Genera la sección HTML de progreso quincenal para el email diario
+     */
+    protected function generarSeccionProgresoQuincenal(?array $progreso): string
+    {
+        if (!$progreso) return '';
+
+        $color = '#dc3545';
+        if ($progreso['porcentaje'] >= 100) $color = '#198754';
+        elseif ($progreso['porcentaje'] >= 80) $color = '#ffc107';
+
+        $barWidth = min($progreso['porcentaje'], 100);
+        $desde = date('d/m/Y', strtotime($progreso['fecha_inicio']));
+        $jornadaLabel = $progreso['jornada'] === 'media' ? 'Media jornada' : 'Jornada completa';
+
+        return "
+                <div style='background: white; border-radius: 8px; padding: 15px; margin-top: 20px;'>
+                    <h3 style='margin: 0 0 10px 0; font-size: 15px; color: #2c3e50;'>Progreso Quincenal</h3>
+                    <table style='width: 100%; font-size: 13px; margin-bottom: 10px;'>
+                        <tr>
+                            <td style='color: #6c757d;'>Periodo desde:</td>
+                            <td>{$desde} — Hoy</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d;'>Días hábiles:</td>
+                            <td>{$progreso['dias_habiles']} ({$jornadaLabel})</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d;'>Horas acumuladas:</td>
+                            <td style='font-weight: bold;'>{$progreso['horas_trabajadas']}h / {$progreso['horas_meta']}h meta</td>
+                        </tr>
+                    </table>
+                    <div style='background: #e9ecef; border-radius: 10px; height: 24px; overflow: hidden;'>
+                        <div style='background: {$color}; height: 100%; width: {$barWidth}%; border-radius: 10px; text-align: center; color: white; font-size: 12px; font-weight: bold; line-height: 24px;'>
+                            {$progreso['porcentaje']}%
+                        </div>
+                    </div>
+                </div>";
     }
 
     /**
@@ -181,7 +271,7 @@ class NotificadorBitacora
     /**
      * Envía email via SendGrid
      */
-    protected function enviarEmail(string $emailDestino, string $nombreDestino, string $asunto, string $contenidoHTML, array $copias = []): bool
+    public function enviarEmail(string $emailDestino, string $nombreDestino, string $asunto, string $contenidoHTML, array $copias = []): bool
     {
         try {
             $apiKey = env('SENDGRID_API_KEY');

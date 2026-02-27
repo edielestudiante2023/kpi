@@ -202,6 +202,12 @@
             Equipo
         </a>
         <?php endif; ?>
+        <?php if ($session->get('admin_bitacora')): ?>
+        <a href="<?= base_url('bitacora/liquidacion') ?>" class="<?= ($tab ?? '') === 'liquidacion' ? 'active' : '' ?>">
+            <i class="bi bi-calculator"></i>
+            Liquidación
+        </a>
+        <?php endif; ?>
         <a href="<?= base_url('bitacora/centros-costo') ?>" class="<?= ($tab ?? '') === 'centros' ? 'active' : '' ?>">
             <i class="bi bi-building"></i>
             Centros

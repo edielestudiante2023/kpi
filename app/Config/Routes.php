@@ -310,5 +310,14 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     // Push notifications
     $routes->post('push/subscribe', 'BitacoraController::guardarPushSubscription');
     $routes->get('push/vapid-key', 'BitacoraController::vapidPublicKey');
+    // Liquidación quincenal
+    $routes->get('liquidacion', 'BitacoraController::liquidacion');
+    $routes->post('liquidacion/ejecutar', 'BitacoraController::ejecutarLiquidacion');
+    $routes->get('liquidacion/detalle/(:num)', 'BitacoraController::detalleLiquidacion/$1');
+    // Festivos
+    $routes->get('festivos', 'BitacoraController::festivos');
+    $routes->get('festivos/(:num)', 'BitacoraController::festivos/$1');
+    $routes->post('festivos/guardar', 'BitacoraController::guardarFestivo');
+    $routes->post('festivos/eliminar/(:num)', 'BitacoraController::eliminarFestivo/$1');
 });
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario

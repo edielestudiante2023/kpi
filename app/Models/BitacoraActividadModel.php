@@ -126,4 +126,29 @@ class BitacoraActividadModel extends Model
     {
         return $this->getResumenMensual($idUsuario, $anio, $mes);
     }
+
+    /**
+     * Total minutos finalizados en un rango de fechas (para liquidación)
+     */
+    public function getTotalMinutosRango(int $idUsuario, string $desde, string $hasta): float
+    {
+        $db = \Config\Database::connect();
+        $result = $db->query("
+            SELECT COALESCE(SUM(duracion_minutos), 0) AS total
+            FROM bitacora_actividades
+            WHERE id_usuario = ?
+              AND estado = 'finalizada'
+              AND hora_inicio >= ?
+              AND hora_fin <= ?
+        ", [$idUsuario, $desde, $hasta])->getRowArray();
+        return (float) ($result['total'] ?? 0);
+    }
+
+    /**
+     * Todas las actividades en progreso (para corte de liquidación)
+     */
+    public function getTodasEnProgreso(): array
+    {
+        return $this->where('estado', 'en_progreso')->findAll();
+    }
 }

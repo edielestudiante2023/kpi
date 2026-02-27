@@ -26,6 +26,8 @@ class UserModel extends Model
         'reset_token',          // ← NUEVO
         'reset_token_expira',   // ← NUEVO
         'bitacora_habilitada',
+        'jornada',
+        'admin_bitacora',
     ];
 
 
@@ -50,6 +52,8 @@ class UserModel extends Model
         'reset_token'        => 'permit_empty|max_length[255]',
         'reset_token_expira' => 'permit_empty|valid_date[Y-m-d H:i:s]',
         'bitacora_habilitada' => 'permit_empty|in_list[0,1]',
+        'jornada'             => 'permit_empty|in_list[completa,media]',
+        'admin_bitacora'      => 'permit_empty|in_list[0,1]',
     ];
 
     /**
