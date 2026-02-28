@@ -47,7 +47,7 @@ $esMesActual = ($anio == date('Y') && $mes == date('n'));
     <?php foreach ($equipo as $u):
         $minutos = (float)$u['total_minutos'];
         $horasDecimal = $minutos / 60;
-        $diasLaborales = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+        $diasLaborales = (int)date('t', mktime(0, 0, 0, $mes, 1, $anio));
         // Estimado burdo de dias laborales (22 aprox)
         $diasLab = min(22, $diasLaborales);
         $porcentaje = $diasLab > 0 ? min(100, round(((int)$u['dias_registrados'] / $diasLab) * 100)) : 0;
