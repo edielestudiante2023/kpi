@@ -145,6 +145,7 @@ class ActividadController extends BaseController
             'id_creador'           => $this->request->getGet('creador'),
             'prioridad'            => $this->request->getGet('prioridad'),
             'id_categoria'         => $this->request->getGet('categoria'),
+            'id_area'              => $this->request->getGet('area'),
             'fecha_limite_desde'   => $this->request->getGet('fecha_desde'),
             'fecha_limite_hasta'   => $this->request->getGet('fecha_hasta'),
             'busqueda'             => $this->request->getGet('busqueda'),
@@ -160,6 +161,7 @@ class ActividadController extends BaseController
             'resumenCreador'  => $this->actividadModel->getResumenComoCreador(session()->get('id_users')),
             'usuarios'        => $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll(),
             'categorias'      => $this->categoriaModel->getActivas(),
+            'areas'           => $this->areaModel->where('estado_area', 'activa')->orderBy('nombre_area')->findAll(),
             'filtros'         => $filtros
         ];
 

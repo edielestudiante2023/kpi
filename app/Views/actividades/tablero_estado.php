@@ -636,7 +636,7 @@
                             </select>
                         </div>
                         <!-- Prioridad -->
-                        <div class="col-md-2">
+                        <div class="col-md-1">
                             <label class="form-label small mb-1">Prioridad</label>
                             <select name="prioridad" class="form-select form-select-sm">
                                 <option value="">Todas</option>
@@ -658,8 +658,20 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <!-- Area -->
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Área</label>
+                            <select name="area" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <?php foreach ($areas as $a): ?>
+                                    <option value="<?= $a['id_areas'] ?>" <?= ($filtros['id_area'] ?? '') == $a['id_areas'] ? 'selected' : '' ?>>
+                                        <?= esc($a['nombre_area']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <!-- Botones -->
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="d-flex gap-1">
                                 <button type="button" class="btn btn-sm btn-outline-secondary" id="btnFiltrosAvanzados">
                                     <i class="bi bi-sliders me-1"></i> Fechas
@@ -721,6 +733,7 @@
         <?php
         $hayFiltrosActivos = !empty($filtros['busqueda']) || !empty($filtros['id_asignado']) ||
                             !empty($filtros['prioridad']) || !empty($filtros['id_categoria']) ||
+                            !empty($filtros['id_area']) ||
                             !empty($filtros['fecha_limite_desde']) || !empty($filtros['fecha_limite_hasta']) ||
                             !empty($filtros['estado']) || !empty($filtros['vencidas']) ||
                             !empty($filtros['id_creador']) || !empty($filtros['esperando_revision']);
@@ -748,6 +761,18 @@
                     }
                     ?>
                     <span class="badge bg-info me-1">Responsable: <?= esc($nombreResp) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($filtros['id_area'])): ?>
+                    <?php
+                    $nombreArea = '';
+                    foreach ($areas as $a) {
+                        if ($a['id_areas'] == $filtros['id_area']) {
+                            $nombreArea = $a['nombre_area'];
+                            break;
+                        }
+                    }
+                    ?>
+                    <span class="badge bg-success me-1">Área: <?= esc($nombreArea) ?></span>
                 <?php endif; ?>
                 <?php if (!empty($filtros['id_creador'])): ?>
                     <span class="badge bg-dark me-1">Creadas por mi</span>

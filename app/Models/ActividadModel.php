@@ -80,6 +80,9 @@ class ActividadModel extends Model
         if (!empty($filtros['id_categoria'])) {
             $builder->where('id_categoria', $filtros['id_categoria']);
         }
+        if (!empty($filtros['id_area'])) {
+            $builder->where('id_area', $filtros['id_area']);
+        }
         // Filtro por rango de fecha limite
         if (!empty($filtros['fecha_limite_desde'])) {
             $builder->where('fecha_limite >=', $filtros['fecha_limite_desde']);

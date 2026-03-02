@@ -54,10 +54,11 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
 
         // E.g.: $this->session = service('session');
+        ini_set('session.gc_maxlifetime', 86400);
         $session = service('session');
 
-        // Definir timeout en segundos (ej. 30 minutos)
-        $timeout = 30 * 60;
+        // Definir timeout en segundos (24 horas)
+        $timeout = 24 * 60 * 60;
 
         // Si existe la última actividad y ya expiró:
         if ($session->has('last_activity') && (time() - $session->get('last_activity') > $timeout)) {
