@@ -54,7 +54,6 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
 
         // E.g.: $this->session = service('session');
-        ini_set('session.gc_maxlifetime', 86400);
         $session = service('session');
 
         // Definir timeout en segundos (24 horas)
