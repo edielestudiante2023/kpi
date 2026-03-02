@@ -96,8 +96,14 @@ class NotificadorBitacora
             if (empty($fechaInicio)) return null;
 
             $ahora = date('Y-m-d H:i:s');
-            $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
-            if ($diasHabiles <= 0) return null;
+
+            // Días hábiles transcurridos (solo para mostrar avance)
+            $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
+
+            // Meta fija: días hábiles de la quincena completa (14 días calendario = 2 semanas)
+            $fechaFinQuincena = date('Y-m-d', strtotime(substr($fechaInicio, 0, 10) . ' +14 days'));
+            $diasHabilesMeta  = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
+            if ($diasHabilesMeta <= 0) return null;
 
             $totalMin = $this->bitacoraModel->getTotalMinutosRango(
                 (int) $usuario['id_users'], $fechaInicio, $ahora
@@ -106,16 +112,17 @@ class NotificadorBitacora
 
             $jornada = $usuario['jornada'] ?? 'completa';
             if ($jornada === 'media') {
-                $horasMeta = round($diasHabiles * 4 * 0.90, 2);
+                $horasMeta = round($diasHabilesMeta * 4 * 0.90, 2);
             } else {
-                $horasMeta = round($diasHabiles * 8 * 0.80, 2);
+                $horasMeta = round($diasHabilesMeta * 8 * 0.80, 2);
             }
 
             $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 1) : 0;
 
             return [
                 'fecha_inicio'     => $fechaInicio,
-                'dias_habiles'     => $diasHabiles,
+                'dias_habiles'     => $diasHabilesMeta,
+                'dias_transcurridos' => $diasTranscurridos,
                 'horas_trabajadas' => $horasTrabajadas,
                 'horas_meta'       => $horasMeta,
                 'porcentaje'       => $porcentaje,
@@ -242,7 +249,7 @@ class NotificadorBitacora
                         </tr>
                         <tr>
                             <td style='color: #6c757d;'>Días hábiles:</td>
-                            <td>{$progreso['dias_habiles']} ({$jornadaLabel})</td>
+                            <td>{$progreso['dias_transcurridos']} de {$progreso['dias_habiles']} ({$jornadaLabel})</td>
                         </tr>
                         <tr>
                             <td style='color: #6c757d;'>Horas acumuladas:</td>
