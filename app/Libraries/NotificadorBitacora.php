@@ -67,7 +67,7 @@ class NotificadorBitacora
                 $fechaReporte
             );
 
-            $progresoQuincenal = $this->calcularProgresoQuincenal($usuario);
+            $progresoQuincenal = $this->calcularProgresoQuincenal($usuario, $fechaReporte . ' 23:59:59');
             $html = $this->generarHTMLReporte($usuario, $actividades, $totalMinutos, $fechaReporte, $progresoQuincenal);
             $asunto = "Bitácora de {$usuario['nombre_completo']} — " . date('d/m/Y', strtotime($fechaReporte));
 
@@ -85,7 +85,7 @@ class NotificadorBitacora
     /**
      * Calcula el progreso quincenal de un usuario
      */
-    protected function calcularProgresoQuincenal(array $usuario): ?array
+    protected function calcularProgresoQuincenal(array $usuario, ?string $hasta = null): ?array
     {
         try {
             $liqModel = new LiquidacionModel();
@@ -95,7 +95,7 @@ class NotificadorBitacora
             $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '');
             if (empty($fechaInicio)) return null;
 
-            $ahora = date('Y-m-d H:i:s');
+            $ahora = $hasta ?? date('Y-m-d H:i:s');
 
             // Días hábiles transcurridos (solo para mostrar avance)
             $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
