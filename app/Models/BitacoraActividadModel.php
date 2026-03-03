@@ -145,6 +145,26 @@ class BitacoraActividadModel extends Model
     }
 
     /**
+     * Total de minutos por día en un rango de fechas (para tabla quincenal)
+     */
+    public function getResumenDiarioRango(int $idUsuario, string $desde, string $hasta): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                fecha,
+                SUM(duracion_minutos) AS total_minutos
+            FROM bitacora_actividades
+            WHERE id_usuario = ?
+              AND estado = 'finalizada'
+              AND fecha >= DATE(?)
+              AND fecha <= DATE(?)
+            GROUP BY fecha
+            ORDER BY fecha ASC
+        ", [$idUsuario, $desde, $hasta])->getResultArray();
+    }
+
+    /**
      * Todas las actividades en progreso (para corte de liquidación)
      */
     public function getTodasEnProgreso(): array

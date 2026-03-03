@@ -119,14 +119,19 @@ class NotificadorBitacora
 
             $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 1) : 0;
 
+            $diasDetalle = $this->bitacoraModel->getResumenDiarioRango(
+                (int) $usuario['id_users'], $fechaInicio, $ahora
+            );
+
             return [
-                'fecha_inicio'     => $fechaInicio,
-                'dias_habiles'     => $diasHabilesMeta,
+                'fecha_inicio'       => $fechaInicio,
+                'dias_habiles'       => $diasHabilesMeta,
                 'dias_transcurridos' => $diasTranscurridos,
-                'horas_trabajadas' => $horasTrabajadas,
-                'horas_meta'       => $horasMeta,
-                'porcentaje'       => $porcentaje,
-                'jornada'          => $jornada,
+                'horas_trabajadas'   => $horasTrabajadas,
+                'horas_meta'         => $horasMeta,
+                'porcentaje'         => $porcentaje,
+                'jornada'            => $jornada,
+                'dias_detalle'       => $diasDetalle,
             ];
         } catch (\Exception $e) {
             log_message('error', 'NotificadorBitacora: Error progreso quincenal - ' . $e->getMessage());
@@ -261,7 +266,44 @@ class NotificadorBitacora
                             {$progreso['porcentaje']}%
                         </div>
                     </div>
+                    {$this->generarTablaDetalleDias($progreso['dias_detalle'] ?? [])}
                 </div>";
+    }
+
+    /**
+     * Genera tabla HTML con el detalle de horas por día de la quincena
+     */
+    protected function generarTablaDetalleDias(array $dias): string
+    {
+        if (empty($dias)) return '';
+
+        $diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        $filas = '';
+        foreach ($dias as $dia) {
+            $nombreDia = $diasSemana[(int) date('w', strtotime($dia['fecha']))];
+            $fechaFmt  = date('d/m', strtotime($dia['fecha']));
+            $horas     = $this->formatMinutosHoras((float) $dia['total_minutos']);
+            $filas .= "
+                        <tr>
+                            <td style='padding: 5px 8px; color: #6c757d; font-size: 12px;'>{$nombreDia}</td>
+                            <td style='padding: 5px 8px; font-size: 12px;'>{$fechaFmt}</td>
+                            <td style='padding: 5px 8px; text-align: right; font-weight: bold; font-size: 12px;'>{$horas}</td>
+                        </tr>";
+        }
+
+        return "
+                    <table style='width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px;'>
+                        <thead>
+                            <tr style='background: #f1f3f5;'>
+                                <th style='padding: 6px 8px; text-align: left; color: #495057; font-weight: 600;'>Día</th>
+                                <th style='padding: 6px 8px; text-align: left; color: #495057; font-weight: 600;'>Fecha</th>
+                                <th style='padding: 6px 8px; text-align: right; color: #495057; font-weight: 600;'>Horas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {$filas}
+                        </tbody>
+                    </table>";
     }
 
     /**
