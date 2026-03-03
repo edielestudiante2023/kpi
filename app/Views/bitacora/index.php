@@ -57,13 +57,15 @@ $tieneActiva = !empty($actividadActiva);
 
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Centro de Costo</label>
-                    <div class="d-flex gap-2">
-                        <select class="form-select" id="selCentroCosto" required>
-                            <option value="">Selecciona...</option>
-                            <?php foreach ($centrosCosto as $cc): ?>
-                                <option value="<?= $cc['id_centro_costo'] ?>"><?= esc($cc['nombre']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="flex-grow-1">
+                            <select class="form-select" id="selCentroCosto" required>
+                                <option value="">Selecciona...</option>
+                                <?php foreach ($centrosCosto as $cc): ?>
+                                    <option value="<?= $cc['id_centro_costo'] ?>"><?= esc($cc['nombre']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCC" title="Nuevo centro de costo">
                             <i class="bi bi-plus-lg"></i>
                         </button>
@@ -173,6 +175,17 @@ $tieneActiva = !empty($actividadActiva);
     const BASE = '<?= base_url() ?>';
     const CSRF_NAME  = '<?= csrf_token() ?>';
     const CSRF_HASH  = '<?= csrf_hash() ?>';
+
+    // ---- Inicializar Select2 en Centro de Costo ----
+    const $selCC = $('#selCentroCosto');
+    if ($selCC.length) {
+        $selCC.select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Selecciona...',
+            allowClear: true,
+            width: '100%'
+        });
+    }
 
     let timerInterval = null;
     let timestampInicio = null;  // Date.now() referencia para calcular tiempo real
@@ -372,7 +385,7 @@ $tieneActiva = !empty($actividadActiva);
     if (btnIniciar) {
         btnIniciar.addEventListener('click', function() {
             const desc = document.getElementById('txtDescripcion').value.trim();
-            const cc   = document.getElementById('selCentroCosto').value;
+            const cc   = $('#selCentroCosto').val();
 
             if (!desc) { alert('Escribe la descripción de la actividad'); return; }
             if (!cc)   { alert('Selecciona un centro de costo'); return; }
@@ -430,7 +443,7 @@ $tieneActiva = !empty($actividadActiva);
                         // Listeners para "Usar este"
                         lista.querySelectorAll('.btn-usar-existente').forEach(function(b) {
                             b.addEventListener('click', function() {
-                                document.getElementById('selCentroCosto').value = this.dataset.id;
+                                $('#selCentroCosto').val(this.dataset.id).trigger('change');
                                 bootstrap.Modal.getInstance(document.getElementById('modalNuevoCC')).hide();
                             });
                         });
@@ -462,13 +475,10 @@ $tieneActiva = !empty($actividadActiva);
         ajax('POST', 'bitacora/centros-costo/guardar', { nombre: nombre, descripcion: desc })
             .then(function(resp) {
                 if (resp.ok) {
-                    // Agregar al select y seleccionarlo
-                    const sel = document.getElementById('selCentroCosto');
-                    const opt = document.createElement('option');
-                    opt.value = resp.id;
-                    opt.textContent = nombre;
-                    sel.appendChild(opt);
-                    sel.value = resp.id;
+                    // Agregar al select y seleccionarlo via Select2
+                    const $sel = $('#selCentroCosto');
+                    const newOpt = new Option(nombre, resp.id, true, true);
+                    $sel.append(newOpt).trigger('change');
                     bootstrap.Modal.getInstance(document.getElementById('modalNuevoCC')).hide();
                     document.getElementById('ccNombre').value = '';
                     document.getElementById('ccDescripcion').value = '';
