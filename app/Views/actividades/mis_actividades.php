@@ -160,8 +160,8 @@
                     <button type="button" class="btn btn-sm btn-outline-warning" id="btnVencidas" title="Mostrar vencidas">
                         <i class="bi bi-exclamation-triangle me-1"></i>Vencidas
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnLimpiarFecha">
-                        <i class="bi bi-x-lg me-1"></i>Limpiar
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="btnLimpiarTodo">
+                        <i class="bi bi-x-circle me-1"></i>Limpiar todo
                     </button>
                 </div>
                 <div class="d-flex gap-1 ms-auto flex-wrap">
@@ -679,12 +679,20 @@
             redraw();
         });
 
-        // ── Botón Limpiar fecha ───────────────────────────────────────
-        $('#btnLimpiarFecha').on('click', function() {
+        // ── Botón Limpiar todo ────────────────────────────────────────
+        $('#btnLimpiarTodo').on('click', function() {
+            // Limpiar fechas
             fpDesde.clear();
             fpHasta.clear();
             fechaDesde = '';
             fechaHasta = '';
+            // Limpiar filtros de ambos tabs
+            filtros.asig = { estado: '', prioridad: '', vencidas: false };
+            filtros.crea = { estado: '', prioridad: '', vencidas: false };
+            // Quitar visual activo de todas las cards
+            $('.stat-card').removeClass('active');
+            // Resetear botón Vencidas del header
+            $('#btnVencidas').removeClass('btn-warning').addClass('btn-outline-warning');
             redraw();
         });
 
