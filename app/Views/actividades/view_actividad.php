@@ -301,7 +301,7 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-outline-secondary">
+                    <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-outline-secondary" id="btnVolverTablero">
                         <i class="bi bi-arrow-left me-1"></i> Volver
                     </a>
                     <?php
@@ -890,6 +890,15 @@
                 btn.html('<i class="bi bi-' + iconos[estado] + ' me-1"></i>' + nombres[estado]);
             });
         }
+    </script>
+    <script>
+        // Restaurar URL del tablero con filtros al hacer clic en Volver
+        (function() {
+            const backUrl = sessionStorage.getItem('actividadesTableroBack');
+            if (backUrl) {
+                document.getElementById('btnVolverTablero').href = backUrl;
+            }
+        })();
     </script>
 </body>
 </html>

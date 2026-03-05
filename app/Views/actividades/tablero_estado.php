@@ -407,11 +407,32 @@
             </div>
         </div>
 
+        <?php
+        // Params secundarios que se conservan al hacer clic en los cards de estado/vencidas
+        $_sp = array_filter([
+            'responsable' => $filtros['id_asignado'] ?? '',
+            'prioridad'   => $filtros['prioridad'] ?? '',
+            'categoria'   => $filtros['id_categoria'] ?? '',
+            'area'        => $filtros['id_area'] ?? '',
+            'fecha_desde' => $filtros['fecha_limite_desde'] ?? '',
+            'fecha_hasta' => $filtros['fecha_limite_hasta'] ?? '',
+            'busqueda'    => $filtros['busqueda'] ?? '',
+        ]);
+        // Params de estado actuales (para cards de responsable en el resumen inferior)
+        $_spE = array_filter([
+            'estado'   => $filtros['estado'] ?? '',
+            'vencidas' => $filtros['vencidas'] ?? '',
+            'proximas' => $filtros['proximas_vencer'] ?? '',
+        ]);
+        $_uid = session()->get('id_users');
+        $_url = fn($extra = []) => base_url('actividades/tablero' . (($q = http_build_query(array_filter(array_merge($_sp, $extra)))) ? "?$q" : ''));
+        ?>
+
         <!-- Cards de Resumen (clickeables) -->
         <div class="row g-3 mb-4">
             <!-- Total -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero') ?>" class="stat-card card shadow-sm h-100 d-block <?= empty($filtros['estado']) && empty($filtros['vencidas']) ? 'active' : '' ?>">
+                <a href="<?= $_url() ?>" class="stat-card card shadow-sm h-100 d-block <?= empty($filtros['estado']) && empty($filtros['vencidas']) ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-dark text-white me-2">
@@ -427,7 +448,7 @@
             </div>
             <!-- Pendientes -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?estado=pendiente') ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'pendiente' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'pendiente']) ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'pendiente' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-secondary text-white me-2">
@@ -443,7 +464,7 @@
             </div>
             <!-- En Progreso -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?estado=en_progreso') ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'en_progreso' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'en_progreso']) ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'en_progreso' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary text-white me-2">
@@ -459,7 +480,7 @@
             </div>
             <!-- En Revisión -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?estado=en_revision') ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'en_revision' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'en_revision']) ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'en_revision' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon text-white me-2" style="background:#6f42c1;">
@@ -475,7 +496,7 @@
             </div>
             <!-- Completadas -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?estado=completada') ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'completada' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'completada']) ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'completada' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-success text-white me-2">
@@ -491,7 +512,7 @@
             </div>
             <!-- Vencidas -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?vencidas=1') ?>" class="stat-card card shadow-sm h-100 d-block border-danger <?= ($filtros['vencidas'] ?? '') ? 'active' : '' ?>">
+                <a href="<?= $_url(['vencidas' => '1']) ?>" class="stat-card card shadow-sm h-100 d-block border-danger <?= ($filtros['vencidas'] ?? '') ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-danger text-white me-2">
@@ -507,7 +528,7 @@
             </div>
             <!-- Proximas a vencer -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?proximas=1') ?>" class="stat-card card shadow-sm h-100 d-block border-warning">
+                <a href="<?= $_url(['proximas' => '1']) ?>" class="stat-card card shadow-sm h-100 d-block border-warning">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-warning text-dark me-2">
@@ -532,14 +553,14 @@
             <div class="col-12 d-flex justify-content-between align-items-center">
                 <small class="text-muted fw-bold"><i class="bi bi-person-badge me-1"></i>ACTIVIDADES QUE CREASTE</small>
                 <?php if ($filtroCreadorActivo): ?>
-                    <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-sm btn-outline-secondary">
+                    <a href="<?= $_url() ?>" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-x-lg me-1"></i>Quitar filtro
                     </a>
                 <?php endif; ?>
             </div>
             <!-- Sin gestionar -->
             <div class="col-6 col-md-3 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=pendiente') ?>"
+                <a href="<?= $_url(['creador' => $_uid, 'estado' => 'pendiente']) ?>"
                    class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'pendiente' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
@@ -556,7 +577,7 @@
             </div>
             <!-- En progreso -->
             <div class="col-6 col-md-3 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=en_progreso') ?>"
+                <a href="<?= $_url(['creador' => $_uid, 'estado' => 'en_progreso']) ?>"
                    class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'en_progreso' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
@@ -573,7 +594,7 @@
             </div>
             <!-- Esperando mi revision -->
             <div class="col-6 col-md-3 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&esperando_revision=1') ?>"
+                <a href="<?= $_url(['creador' => $_uid, 'esperando_revision' => '1']) ?>"
                    class="stat-card card shadow-sm h-100 d-block border-purple <?= ($filtros['esperando_revision'] ?? '') ? 'active' : '' ?>"
                    style="<?= $resumenCreador['esperando_revision'] > 0 ? 'border-color: #6f42c1 !important; border-width: 2px;' : '' ?>">
                     <div class="card-body p-2">
@@ -591,7 +612,7 @@
             </div>
             <!-- Completadas -->
             <div class="col-6 col-md-3 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=completada') ?>"
+                <a href="<?= $_url(['creador' => $_uid, 'estado' => 'completada']) ?>"
                    class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'completada' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
@@ -608,7 +629,7 @@
             </div>
             <!-- Canceladas -->
             <div class="col-6 col-md-3 col-lg-2">
-                <a href="<?= base_url('actividades/tablero?creador=' . session()->get('id_users') . '&estado=cancelada') ?>"
+                <a href="<?= $_url(['creador' => $_uid, 'estado' => 'cancelada']) ?>"
                    class="stat-card card shadow-sm h-100 d-block <?= ($filtros['id_creador'] ?? '') == session()->get('id_users') && ($filtros['estado'] ?? '') === 'cancelada' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
@@ -723,13 +744,13 @@
                             <div class="col-md-6">
                                 <label class="form-label small mb-1">Accesos rapidos</label>
                                 <div class="d-flex gap-1 flex-wrap">
-                                    <a href="<?= base_url('actividades/tablero?vencidas=1') ?>" class="btn btn-sm btn-outline-danger">
+                                    <a href="<?= $_url(['vencidas' => '1']) ?>" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-exclamation-triangle me-1"></i>Vencidas
                                     </a>
-                                    <a href="<?= base_url('actividades/tablero?fecha_desde=' . date('Y-m-d') . '&fecha_hasta=' . date('Y-m-d', strtotime('+7 days'))) ?>" class="btn btn-sm btn-outline-warning">
+                                    <a href="<?= $_url(['fecha_desde' => date('Y-m-d'), 'fecha_hasta' => date('Y-m-d', strtotime('+7 days'))]) ?>" class="btn btn-sm btn-outline-warning">
                                         <i class="bi bi-clock-history me-1"></i>Proximos 7 dias
                                     </a>
-                                    <a href="<?= base_url('actividades/tablero?fecha_desde=' . date('Y-m-01') . '&fecha_hasta=' . date('Y-m-t')) ?>" class="btn btn-sm btn-outline-info">
+                                    <a href="<?= $_url(['fecha_desde' => date('Y-m-01'), 'fecha_hasta' => date('Y-m-t')]) ?>" class="btn btn-sm btn-outline-info">
                                         <i class="bi bi-calendar-month me-1"></i>Este mes
                                     </a>
                                 </div>
@@ -940,7 +961,7 @@
                             if ($resp['total'] == 0) continue;
                         ?>
                             <div class="col-6 col-md-3 col-lg-2">
-                                <a href="<?= base_url('actividades/tablero?responsable=' . $resp['id']) ?>"
+                                <a href="<?= $_url(array_merge($_spE, ['responsable' => $resp['id']])) ?>"
                                    class="responsable-card d-block <?= ($filtros['id_asignado'] ?? '') == $resp['id'] ? 'active' : '' ?>">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="text-truncate small"><?= esc($resp['nombre']) ?></span>
@@ -1038,6 +1059,7 @@
                 if (!this.classList.contains('dragging')) {
                     const idActividad = this.dataset.id;
                     if (idActividad) {
+                        sessionStorage.setItem('actividadesTableroBack', window.location.href);
                         window.location.href = '<?= base_url('actividades/ver/') ?>' + idActividad;
                     }
                 }

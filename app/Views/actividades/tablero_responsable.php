@@ -312,11 +312,20 @@
         $filtroVencidas = $filtros['vencidas'] ?? '';
         $filtroProximas = $filtros['proximas_vencer'] ?? '';
         $sinFiltroCards = empty($filtroEstadoActivo) && empty($filtroVencidas) && empty($filtroProximas);
+
+        // Params secundarios que se conservan al hacer clic en los cards de estado/vencidas
+        $_sp = array_filter([
+            'prioridad'   => $filtros['prioridad'] ?? '',
+            'categoria'   => $filtros['id_categoria'] ?? '',
+            'fecha_desde' => $filtros['fecha_limite_desde'] ?? '',
+            'fecha_hasta' => $filtros['fecha_limite_hasta'] ?? '',
+        ]);
+        $_url = fn($extra = []) => base_url('actividades/responsable' . (($q = http_build_query(array_filter(array_merge($_sp, $extra)))) ? "?$q" : ''));
         ?>
         <div class="row g-3 mb-4">
             <!-- Total -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/responsable') ?>" class="stat-card card shadow-sm h-100 d-block <?= $sinFiltroCards ? 'active' : '' ?>">
+                <a href="<?= $_url() ?>" class="stat-card card shadow-sm h-100 d-block <?= $sinFiltroCards ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-dark text-white me-2">
@@ -332,7 +341,7 @@
             </div>
             <!-- Pendientes -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/responsable?estado=pendiente') ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'pendiente' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'pendiente']) ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'pendiente' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-secondary text-white me-2">
@@ -348,7 +357,7 @@
             </div>
             <!-- En Progreso -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/responsable?estado=en_progreso') ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'en_progreso' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'en_progreso']) ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'en_progreso' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-primary text-white me-2">
@@ -364,7 +373,7 @@
             </div>
             <!-- Completadas -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/responsable?estado=completada') ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'completada' ? 'active' : '' ?>">
+                <a href="<?= $_url(['estado' => 'completada']) ?>" class="stat-card card shadow-sm h-100 d-block <?= $filtroEstadoActivo === 'completada' ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-success text-white me-2">
@@ -380,7 +389,7 @@
             </div>
             <!-- Vencidas -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/responsable?vencidas=1') ?>" class="stat-card card shadow-sm h-100 d-block border-danger <?= !empty($filtroVencidas) ? 'active' : '' ?>">
+                <a href="<?= $_url(['vencidas' => '1']) ?>" class="stat-card card shadow-sm h-100 d-block border-danger <?= !empty($filtroVencidas) ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-danger text-white me-2">
@@ -396,7 +405,7 @@
             </div>
             <!-- Proximas a vencer -->
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?= base_url('actividades/responsable?proximas=1') ?>" class="stat-card card shadow-sm h-100 d-block border-warning <?= !empty($filtroProximas) ? 'active' : '' ?>">
+                <a href="<?= $_url(['proximas' => '1']) ?>" class="stat-card card shadow-sm h-100 d-block border-warning <?= !empty($filtroProximas) ? 'active' : '' ?>">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center">
                             <div class="stat-icon bg-warning text-dark me-2">
@@ -469,13 +478,13 @@
                             <div class="col-md-6">
                                 <label class="form-label small mb-1">Accesos rapidos</label>
                                 <div class="d-flex gap-1 flex-wrap">
-                                    <a href="<?= base_url('actividades/responsable?vencidas=1') ?>" class="btn btn-sm btn-outline-danger">
+                                    <a href="<?= $_url(['vencidas' => '1']) ?>" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-exclamation-triangle me-1"></i>Vencidas
                                     </a>
-                                    <a href="<?= base_url('actividades/responsable?fecha_desde=' . date('Y-m-d') . '&fecha_hasta=' . date('Y-m-d', strtotime('+7 days'))) ?>" class="btn btn-sm btn-outline-warning">
+                                    <a href="<?= $_url(['fecha_desde' => date('Y-m-d'), 'fecha_hasta' => date('Y-m-d', strtotime('+7 days'))]) ?>" class="btn btn-sm btn-outline-warning">
                                         <i class="bi bi-clock-history me-1"></i>Proximos 7 dias
                                     </a>
-                                    <a href="<?= base_url('actividades/responsable?fecha_desde=' . date('Y-m-01') . '&fecha_hasta=' . date('Y-m-t')) ?>" class="btn btn-sm btn-outline-info">
+                                    <a href="<?= $_url(['fecha_desde' => date('Y-m-01'), 'fecha_hasta' => date('Y-m-t')]) ?>" class="btn btn-sm btn-outline-info">
                                         <i class="bi bi-calendar-month me-1"></i>Este mes
                                     </a>
                                 </div>
@@ -631,6 +640,13 @@
         // Toggle filtros avanzados
         document.getElementById('btnFiltrosAvanzados').addEventListener('click', function() {
             document.getElementById('filtrosAvanzados').classList.toggle('show');
+        });
+
+        // Guardar URL antes de navegar a una actividad (para que "Volver" regrese con filtros)
+        document.querySelectorAll('.stretched-link').forEach(link => {
+            link.addEventListener('click', function() {
+                sessionStorage.setItem('actividadesTableroBack', window.location.href);
+            });
         });
     </script>
 </body>
