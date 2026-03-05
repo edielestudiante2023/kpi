@@ -600,12 +600,56 @@
             order: [[5, 'asc']]
         });
 
-        // ── Helper: redibujar y actualizar badges ─────────────────────
+        // ── Recalcular conteos de cards según filtro de fechas ────────
+        // Cuenta filas que pasan el filtro de fecha (sin importar estado/prioridad)
+        function updateCardCounts() {
+            ['asig', 'crea'].forEach(function(clave) {
+                var table  = clave === 'asig' ? tableAsig : tableCrea;
+                var tabId  = clave === 'asig' ? 'asignadas' : 'creadas';
+                var counts = { total: 0, pendiente: 0, en_progreso: 0, en_revision: 0,
+                               completada: 0, cancelada: 0, vencidas: 0,
+                               urgente: 0, alta: 0, media: 0, baja: 0 };
+
+                table.rows().every(function() {
+                    var node = this.node();
+                    if (!node) return;
+                    var fecha    = node.dataset.fecha    || '';
+                    var vencida  = node.dataset.vencida  || '0';
+                    var estado   = node.dataset.estado   || '';
+                    var prioridad= node.dataset.prioridad|| '';
+
+                    // Verificar rango de fechas
+                    if (fechaDesde || fechaHasta) {
+                        if (!fecha) return;
+                        if (fechaDesde && fecha < fechaDesde) return;
+                        if (fechaHasta && fecha > fechaHasta) return;
+                    }
+
+                    counts.total++;
+                    if (counts[estado]    !== undefined) counts[estado]++;
+                    if (counts[prioridad] !== undefined) counts[prioridad]++;
+                    if (vencida === '1') counts.vencidas++;
+                });
+
+                $('#' + tabId + ' .stat-card').each(function() {
+                    var filtro = $(this).data('filtro');
+                    var valor  = String($(this).data('valor') || '');
+                    var count  = filtro === 'estado'    ? (valor === '' ? counts.total : (counts[valor] || 0))
+                               : filtro === 'prioridad' ? (counts[valor] || 0)
+                               : filtro === 'vencidas'  ? counts.vencidas
+                               : 0;
+                    $(this).find('.stat-number').text(count);
+                });
+            });
+        }
+
+        // ── Helper: redibujar y actualizar badges y cards ─────────────
         function redraw() {
             tableAsig.draw();
             tableCrea.draw();
             $('#badgeAsig').text(tableAsig.page.info().recordsDisplay);
             $('#badgeCrea').text(tableCrea.page.info().recordsDisplay);
+            updateCardCounts();
         }
 
         // ── Clicks en stat cards ──────────────────────────────────────
