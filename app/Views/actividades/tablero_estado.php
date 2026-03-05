@@ -753,6 +753,9 @@
                                     <a href="<?= $_url(['fecha_desde' => date('Y-m-01'), 'fecha_hasta' => date('Y-m-t')]) ?>" class="btn btn-sm btn-outline-info">
                                         <i class="bi bi-calendar-month me-1"></i>Este mes
                                     </a>
+                                    <a href="<?= $_url(['fecha_desde' => date('Y-m-01', strtotime('first day of last month')), 'fecha_hasta' => date('Y-m-t', strtotime('last day of last month'))]) ?>" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-calendar-minus me-1"></i>Mes anterior
+                                    </a>
                                 </div>
                             </div>
                         </div>
