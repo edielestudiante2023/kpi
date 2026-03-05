@@ -576,6 +576,7 @@ class NotificadorActividades
             $hoy = [];
             $proximasVencer = [];
             $enProgreso = [];
+            $enRevision = [];
             $pendientes = [];
 
             foreach ($actividadesActivas as $act) {
@@ -588,7 +589,9 @@ class NotificadorActividades
                     $hoy[] = $act;
                 } elseif ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes <= 3) {
                     $proximasVencer[] = $act;
-                } elseif ($act['estado'] === 'en_progreso' || $act['estado'] === 'en_revision') {
+                } elseif ($act['estado'] === 'en_revision') {
+                    $enRevision[] = $act;
+                } elseif ($act['estado'] === 'en_progreso') {
                     $enProgreso[] = $act;
                 } else {
                     $pendientes[] = $act;
@@ -602,6 +605,7 @@ class NotificadorActividades
                 $hoy,
                 $proximasVencer,
                 $enProgreso,
+                $enRevision,
                 $pendientes
             );
 
@@ -626,10 +630,11 @@ class NotificadorActividades
         array $hoy,
         array $proximasVencer,
         array $enProgreso,
+        array $enRevision,
         array $pendientes
     ): string {
         $urlTablero = base_url('actividades/tablero');
-        $totalActivas = count($vencidas) + count($hoy) + count($proximasVencer) + count($enProgreso) + count($pendientes);
+        $totalActivas = count($vencidas) + count($hoy) + count($proximasVencer) + count($enProgreso) + count($enRevision) + count($pendientes);
 
         $html = "
         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
@@ -659,6 +664,10 @@ class NotificadorActividades
                         <div style='font-size: 24px; font-weight: bold;'>" . count($enProgreso) . "</div>
                         <div style='font-size: 11px;'>EN PROGRESO</div>
                     </div>
+                    <div style='flex: 1; min-width: 80px; background: #6f42c1; color: white; padding: 15px; border-radius: 8px; text-align: center;'>
+                        <div style='font-size: 24px; font-weight: bold;'>" . count($enRevision) . "</div>
+                        <div style='font-size: 11px;'>EN REVISIÓN</div>
+                    </div>
                     <div style='flex: 1; min-width: 80px; background: #6c757d; color: white; padding: 15px; border-radius: 8px; text-align: center;'>
                         <div style='font-size: 24px; font-weight: bold;'>" . count($pendientes) . "</div>
                         <div style='font-size: 11px;'>PENDIENTES</div>
@@ -683,6 +692,11 @@ class NotificadorActividades
         // Sección en progreso (máximo 5)
         if (!empty($enProgreso)) {
             $html .= $this->generarSeccionActividades('En progreso', array_slice($enProgreso, 0, 5), '#0d6efd');
+        }
+
+        // Sección en revisión (máximo 5)
+        if (!empty($enRevision)) {
+            $html .= $this->generarSeccionActividades('En revisión — esperando aprobación', array_slice($enRevision, 0, 5), '#6f42c1');
         }
 
         // Sección pendientes (máximo 5)

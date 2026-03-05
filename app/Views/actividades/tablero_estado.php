@@ -398,6 +398,9 @@
                 <a href="<?= base_url('actividades/responsable') ?>" class="btn btn-outline-secondary">
                     <i class="bi bi-people me-1"></i> Por Responsable
                 </a>
+                <a href="<?= base_url('actividades/mis-actividades') ?>" class="btn btn-outline-success">
+                    <i class="bi bi-person-check me-1"></i> Mis Actividades
+                </a>
                 <a href="<?= base_url('actividades/nueva') ?>" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i> Nueva Actividad
                 </a>
@@ -449,6 +452,22 @@
                             <div>
                                 <div class="stat-number"><?= $resumen['por_estado']['en_progreso'] ?></div>
                                 <div class="stat-label">En Progreso</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <!-- En Revisión -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="<?= base_url('actividades/tablero?estado=en_revision') ?>" class="stat-card card shadow-sm h-100 d-block <?= ($filtros['estado'] ?? '') === 'en_revision' ? 'active' : '' ?>">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon text-white me-2" style="background:#6f42c1;">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                            <div>
+                                <div class="stat-number" style="color:#6f42c1;"><?= $resumen['por_estado']['en_revision'] ?? 0 ?></div>
+                                <div class="stat-label">En Revisión</div>
                             </div>
                         </div>
                     </div>
