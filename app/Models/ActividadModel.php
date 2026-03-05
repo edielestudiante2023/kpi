@@ -149,15 +149,15 @@ class ActividadModel extends Model
             // Conteo por estado
             $resumen['por_estado'][$act['estado']]++;
 
-            // Conteo de vencidas (no completadas ni canceladas)
+            // Conteo de vencidas (en_revision excluida: ya entregaron, el plazo no les aplica)
             if (!empty($act['dias_restantes']) && $act['dias_restantes'] < 0
-                && !in_array($act['estado'], ['completada', 'cancelada'])) {
+                && !in_array($act['estado'], ['completada', 'cancelada', 'en_revision'])) {
                 $resumen['vencidas']++;
             }
 
-            // Conteo proximas a vencer (7 dias)
+            // Conteo proximas a vencer (7 dias, también excluye en_revision)
             if (isset($act['dias_restantes']) && $act['dias_restantes'] >= 0 && $act['dias_restantes'] <= 7
-                && !in_array($act['estado'], ['completada', 'cancelada'])) {
+                && !in_array($act['estado'], ['completada', 'cancelada', 'en_revision'])) {
                 $resumen['proximas_vencer']++;
             }
 
