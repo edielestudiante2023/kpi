@@ -737,6 +737,21 @@ class ActividadController extends BaseController
                 'tamanio'         => $tamanio
             ]);
 
+            // Notificar por email sobre el archivo subido
+            try {
+                $this->notificador->notificarSubidaArchivo(
+                    $actividad,
+                    [
+                        'nombre_original' => $nombreOriginal,
+                        'tipo_mime'       => $tipoMime,
+                        'tamanio'         => $tamanio
+                    ],
+                    session()->get('id_users')
+                );
+            } catch (\Exception $e) {
+                log_message('error', 'Error al notificar subida de archivo: ' . $e->getMessage());
+            }
+
             if ($this->request->isAJAX()) {
                 return $this->response->setJSON([
                     'success' => true,

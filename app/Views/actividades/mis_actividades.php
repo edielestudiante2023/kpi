@@ -751,6 +751,11 @@
             redraw();
         });
 
+        // Ajustar DataTables al cambiar de tab (fix para tabs ocultos)
+        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+        });
+
         // Guardar URL antes de navegar a una actividad
         $(document).on('click', 'a[href*="/ver/"]', function() {
             sessionStorage.setItem('actividadesTableroBack', window.location.href);

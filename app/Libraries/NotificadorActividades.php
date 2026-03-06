@@ -449,6 +449,118 @@ class NotificadorActividades
     }
 
     /**
+     * Notifica cuando se sube un archivo adjunto a una actividad
+     */
+    public function notificarSubidaArchivo(array $actividad, array $archivo, int $idUsuarioQueSubio): bool
+    {
+        $destinatarios = [];
+
+        // Notificar al creador (si no es quien subió)
+        if ($actividad['id_usuario_creador'] != $idUsuarioQueSubio) {
+            $creador = $this->userModel->find($actividad['id_usuario_creador']);
+            if ($creador && !empty($creador['correo'])) {
+                $destinatarios[] = $creador;
+            }
+        }
+
+        // Notificar al asignado (si existe y no es quien subió)
+        if (!empty($actividad['id_usuario_asignado']) && $actividad['id_usuario_asignado'] != $idUsuarioQueSubio) {
+            $asignado = $this->userModel->find($actividad['id_usuario_asignado']);
+            if ($asignado && !empty($asignado['correo'])) {
+                $destinatarios[] = $asignado;
+            }
+        }
+
+        if (empty($destinatarios)) {
+            return true;
+        }
+
+        $usuarioQueSubio = $this->userModel->find($idUsuarioQueSubio);
+        $nombreQuienSubio = $usuarioQueSubio['nombre_completo'] ?? 'Un usuario';
+
+        $asunto = "Nuevo archivo adjunto en {$actividad['codigo']}";
+        $urlActividad = base_url('actividades/ver/' . $actividad['id_actividad']);
+
+        // Icono según tipo de archivo
+        $iconoArchivo = $this->getIconoArchivo($archivo['tipo_mime']);
+        $tamanioFormateado = $this->formatearTamanioEmail($archivo['tamanio']);
+
+        $exito = true;
+        foreach ($destinatarios as $usuario) {
+            $contenidoHTML = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background: #20c997; padding: 20px; text-align: center;'>
+                    <h1 style='color: white; margin: 0; font-size: 24px;'>Nuevo Archivo Adjunto</h1>
+                </div>
+
+                <div style='padding: 30px; background: #f8f9fa;'>
+                    <p style='font-size: 16px; color: #333;'>Hola <strong>{$usuario['nombre_completo']}</strong>,</p>
+                    <p style='font-size: 16px; color: #333;'><strong>{$nombreQuienSubio}</strong> ha subido un archivo en una actividad:</p>
+
+                    <div style='background: white; border-radius: 8px; padding: 20px; margin: 20px 0;'>
+                        <p style='margin: 0 0 10px 0;'>
+                            <span style='color: #6c757d; font-size: 12px;'>{$actividad['codigo']}</span>
+                        </p>
+                        <h3 style='margin: 0 0 15px 0; color: #333;'>{$actividad['titulo']}</h3>
+
+                        <div style='background: #f8f9fa; border-left: 4px solid #20c997; padding: 15px; margin-top: 15px; border-radius: 0 6px 6px 0;'>
+                            <table style='width: 100%;'>
+                                <tr>
+                                    <td style='width: 40px; vertical-align: top; font-size: 24px;'>{$iconoArchivo}</td>
+                                    <td>
+                                        <p style='margin: 0; font-weight: 600; color: #333;'>" . htmlspecialchars($archivo['nombre_original']) . "</p>
+                                        <p style='margin: 4px 0 0 0; font-size: 12px; color: #6c757d;'>{$tamanioFormateado}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{$urlActividad}' style='display: inline-block; padding: 14px 28px; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                            Ver Actividad y Descargar
+                        </a>
+                    </div>
+                </div>
+
+                <div style='padding: 20px; background: #e9ecef; text-align: center; font-size: 12px; color: #6c757d;'>
+                    <p style='margin: 0;'>Este es un mensaje automático del sistema Kpi Cycloid.</p>
+                </div>
+            </div>
+            ";
+
+            if (!$this->enviarEmail($usuario['correo'], $usuario['nombre_completo'], $asunto, $contenidoHTML)) {
+                $exito = false;
+            }
+        }
+
+        return $exito;
+    }
+
+    /**
+     * Retorna un icono según el tipo MIME del archivo
+     */
+    protected function getIconoArchivo(string $tipoMime): string
+    {
+        if (str_starts_with($tipoMime, 'image/')) return '🖼️';
+        if (str_contains($tipoMime, 'pdf')) return '📄';
+        if (str_contains($tipoMime, 'word') || str_contains($tipoMime, 'document')) return '📝';
+        if (str_contains($tipoMime, 'excel') || str_contains($tipoMime, 'spreadsheet')) return '📊';
+        if (str_contains($tipoMime, 'zip') || str_contains($tipoMime, 'rar')) return '📦';
+        return '📎';
+    }
+
+    /**
+     * Formatea el tamaño de archivo para el email
+     */
+    protected function formatearTamanioEmail(int $bytes): string
+    {
+        if ($bytes >= 1048576) return round($bytes / 1048576, 1) . ' MB';
+        if ($bytes >= 1024) return round($bytes / 1024, 1) . ' KB';
+        return $bytes . ' bytes';
+    }
+
+    /**
      * Envía recordatorios de revisión a creadores (máximo 2 por día por actividad)
      */
     public function enviarRecordatoriosRevision(): array
@@ -582,15 +694,15 @@ class NotificadorActividades
             foreach ($actividadesActivas as $act) {
                 $diasRestantes = $act['dias_restantes'];
 
-                // Clasificar por urgencia
-                if ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes < 0) {
+                // En revisión: la persona ya entregó, el vencimiento no le aplica
+                if ($act['estado'] === 'en_revision') {
+                    $enRevision[] = $act;
+                } elseif ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes < 0) {
                     $vencidas[] = $act;
                 } elseif ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes == 0) {
                     $hoy[] = $act;
                 } elseif ($diasRestantes !== null && $diasRestantes !== '' && (int)$diasRestantes <= 3) {
                     $proximasVencer[] = $act;
-                } elseif ($act['estado'] === 'en_revision') {
-                    $enRevision[] = $act;
                 } elseif ($act['estado'] === 'en_progreso') {
                     $enProgreso[] = $act;
                 } else {
