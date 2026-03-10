@@ -250,11 +250,19 @@ class BitacoraController extends BaseController
         $diff   = $fin->getTimestamp() - $inicio->getTimestamp();
         $duracionMinutos = round($diff / 60, 2);
 
-        $this->bitacoraModel->update($id, [
+        $updateData = [
             'hora_fin'          => $ahora,
             'duracion_minutos'  => $duracionMinutos,
             'estado'            => 'finalizada',
-        ]);
+        ];
+
+        // Actualizar descripción si el usuario la editó al terminar
+        $nuevaDescripcion = $this->request->getPost('descripcion');
+        if ($nuevaDescripcion !== null && trim($nuevaDescripcion) !== '') {
+            $updateData['descripcion'] = trim($nuevaDescripcion);
+        }
+
+        $this->bitacoraModel->update($id, $updateData);
 
         $totalMinutos = $this->bitacoraModel->getTotalMinutosDia($userId, $actividad['fecha']);
 

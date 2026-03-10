@@ -499,28 +499,76 @@ $tieneActiva = !empty($actividadActiva);
     if (btnTerminar) {
         btnTerminar.addEventListener('click', function() {
             const id = btnTerminar.getAttribute('data-id');
-            if (!confirm('¿Terminar esta actividad?')) return;
+            const descActual = <?= json_encode($actividadActiva['descripcion'] ?? '') ?>;
 
-            btnTerminar.disabled = true;
-            btnTerminar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Finalizando...';
-            detenerCronometro();
+            Swal.fire({
+                title: '¿Terminar esta actividad?',
+                text: '¿Deseas editar la descripción antes de finalizar?',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-pencil-square me-1"></i> Sí, editar descripción',
+                denyButtonText: '<i class="bi bi-check-circle me-1"></i> No, terminar así',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#0d6efd',
+                denyButtonColor: '#198754',
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    // Mostrar segundo modal con textarea para editar descripción
+                    Swal.fire({
+                        title: 'Editar descripción',
+                        input: 'textarea',
+                        inputLabel: 'Descripción de la actividad',
+                        inputValue: descActual,
+                        inputAttributes: {
+                            rows: 5,
+                            style: 'font-size: 0.95rem;'
+                        },
+                        inputValidator: function(value) {
+                            if (!value || !value.trim()) return 'La descripción no puede estar vacía';
+                        },
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#dc3545',
+                    }).then(function(result2) {
+                        if (result2.isConfirmed) {
+                            finalizarActividad(id, result2.value);
+                        }
+                    });
+                } else if (result.isDenied) {
+                    // Terminar sin editar
+                    finalizarActividad(id, null);
+                }
+            });
+        });
+    }
 
-            ajax('POST', 'bitacora/terminar/' + id, {})
-                .then(function(resp) {
-                    if (resp.ok) {
-                        location.reload();
-                    } else {
-                        alert(resp.error || 'Error al terminar');
-                        btnTerminar.disabled = false;
-                        btnTerminar.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad';
-                    }
-                })
-                .catch(function() {
-                    alert('Error de conexión');
+    function finalizarActividad(id, nuevaDescripcion) {
+        btnTerminar.disabled = true;
+        btnTerminar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Finalizando...';
+        detenerCronometro();
+
+        var datos = {};
+        if (nuevaDescripcion !== null) {
+            datos.descripcion = nuevaDescripcion;
+        }
+
+        ajax('POST', 'bitacora/terminar/' + id, datos)
+            .then(function(resp) {
+                if (resp.ok) {
+                    location.reload();
+                } else {
+                    Swal.fire('Error', resp.error || 'Error al terminar', 'error');
                     btnTerminar.disabled = false;
                     btnTerminar.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad';
-                });
-        });
+                }
+            })
+            .catch(function() {
+                Swal.fire('Error', 'Error de conexión', 'error');
+                btnTerminar.disabled = false;
+                btnTerminar.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad';
+            });
     }
 
     // ---- Botón DESCARTAR (olvidaste detener) ----
