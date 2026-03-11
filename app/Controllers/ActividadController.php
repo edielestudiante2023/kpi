@@ -238,12 +238,26 @@ class ActividadController extends BaseController
                 ->withInput();
         }
 
+        // Prevenir duplicados: verificar si ya existe una actividad idéntica creada en los últimos 60 segundos
+        $titulo = $this->request->getPost('titulo');
+        $idCreador = session()->get('id_users');
+        $duplicado = $this->actividadModel
+            ->where('titulo', $titulo)
+            ->where('id_usuario_creador', $idCreador)
+            ->where('fecha_creacion >=', date('Y-m-d H:i:s', strtotime('-60 seconds')))
+            ->first();
+
+        if ($duplicado) {
+            return redirect()->to('/actividades/ver/' . $duplicado['id_actividad'])
+                ->with('success', 'Actividad ya creada. Código: ' . $duplicado['codigo']);
+        }
+
         $data = [
             'codigo'             => $this->actividadModel->generarCodigo(),
-            'titulo'             => $this->request->getPost('titulo'),
+            'titulo'             => $titulo,
             'descripcion'        => $this->request->getPost('descripcion'),
             'id_categoria'       => $this->request->getPost('id_categoria') ?: null,
-            'id_usuario_creador' => session()->get('id_users'),
+            'id_usuario_creador' => $idCreador,
             'id_usuario_asignado' => $this->request->getPost('id_usuario_asignado') ?: null,
             'id_area'            => $this->request->getPost('id_area') ?: null,
             'prioridad'          => $this->request->getPost('prioridad'),
@@ -473,6 +487,30 @@ class ActividadController extends BaseController
 
         return redirect()->to('/actividades/ver/' . $id)
             ->with('success', 'Actividad actualizada correctamente.');
+    }
+
+    /**
+     * Verificar si ya existe una actividad con el mismo título para el usuario
+     */
+    public function verificarTituloAjax()
+    {
+        $titulo    = trim($this->request->getPost('titulo') ?? '');
+        $idCreador = session()->get('id_users');
+
+        if ($titulo === '') {
+            return $this->response->setJSON(['existe' => false]);
+        }
+
+        $existente = $this->actividadModel
+            ->where('titulo', $titulo)
+            ->where('id_usuario_creador', $idCreador)
+            ->first();
+
+        return $this->response->setJSON([
+            'existe' => (bool) $existente,
+            'codigo' => $existente['codigo'] ?? null,
+            'id'     => $existente['id_actividad'] ?? null,
+        ]);
     }
 
     /**

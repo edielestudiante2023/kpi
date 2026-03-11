@@ -275,7 +275,7 @@
                             <a href="<?= base_url('actividades/tablero') ?>" class="btn btn-outline-secondary">
                                 Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="btnCrear">
                                 <i class="bi bi-check-lg me-1"></i> Crear Actividad
                             </button>
                         </div>
@@ -290,8 +290,13 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
+            var BASE = '<?= base_url() ?>';
+            var CSRF_NAME = '<?= csrf_token() ?>';
+            var CSRF_HASH = '<?= csrf_hash() ?>';
+
             $('.select2').select2({
                 theme: 'default',
                 allowClear: true,
@@ -305,6 +310,59 @@
                 altFormat: 'd/m/Y',
                 minDate: 'today',
                 allowInput: true
+            });
+
+            // Interceptar submit para verificar título duplicado
+            $('form').on('submit', function(e) {
+                var btn = $('#btnCrear');
+                if (btn.prop('disabled')) return false;
+                e.preventDefault();
+
+                var titulo = $('#titulo').val().trim();
+                if (!titulo) { this.submit(); return; }
+
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Verificando...');
+
+                var fd = new FormData();
+                fd.append('titulo', titulo);
+                fd.append(CSRF_NAME, CSRF_HASH);
+
+                var form = this;
+                fetch(BASE + 'actividades/verificar-titulo', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(resp) {
+                        if (resp.existe) {
+                            btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Crear Actividad');
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Actividad con título similar',
+                                html: '<p>Ya existe la actividad <strong>' + resp.codigo + '</strong> con ese mismo título.</p>' +
+                                      '<p class="text-muted" style="font-size:0.9rem;">Cada actividad debe tener un título único. ' +
+                                      'Puedes complementarlo con datos específicos del <strong>cliente</strong>, la <strong>fecha</strong> ' +
+                                      'o un pincelazo del <strong>resultado esperado</strong>.</p>' +
+                                      '<p class="text-muted" style="font-size:0.85rem;"><em>Ejemplo: "Revisión contable <strong>Acme Corp - Marzo 2026</strong>"</em></p>',
+                                confirmButtonText: 'Entendido, voy a ajustar el título',
+                                confirmButtonColor: '#0d6efd',
+                                showCancelButton: true,
+                                cancelButtonText: 'Ver actividad existente',
+                                cancelButtonColor: '#6c757d'
+                            }).then(function(result) {
+                                if (result.dismiss === Swal.DismissReason.cancel) {
+                                    window.open(BASE + 'actividades/ver/' + resp.id, '_blank');
+                                } else {
+                                    $('#titulo').focus().select();
+                                }
+                            });
+                        } else {
+                            btn.html('<span class="spinner-border spinner-border-sm me-1"></span> Creando...');
+                            form.submit();
+                        }
+                    })
+                    .catch(function() {
+                        // Si falla la verificación, enviar el form normalmente
+                        btn.html('<span class="spinner-border spinner-border-sm me-1"></span> Creando...');
+                        form.submit();
+                    });
             });
         });
     </script>

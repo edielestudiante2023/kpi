@@ -237,6 +237,7 @@ $routes->group('actividades', ['namespace' => 'App\Controllers'], function($rout
     // AJAX
     $routes->post('cambiar-estado', 'ActividadController::cambiarEstadoAjax');
     $routes->post('comentario', 'ActividadController::agregarComentarioAjax');
+    $routes->post('verificar-titulo', 'ActividadController::verificarTituloAjax');
 
     // Archivos
     $routes->post('archivo/subir/(:num)', 'ActividadController::subirArchivo/$1');
