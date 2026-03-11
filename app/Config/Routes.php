@@ -319,5 +319,21 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->get('festivos/(:num)', 'BitacoraController::festivos/$1');
     $routes->post('festivos/guardar', 'BitacoraController::guardarFestivo');
     $routes->post('festivos/eliminar/(:num)', 'BitacoraController::eliminarFestivo/$1');
+    // Novedades de Tiempo — Colectivas
+    $routes->get('novedades-colectivas', 'BitacoraController::novedadesColectivas');
+    $routes->get('novedades-colectivas/(:num)', 'BitacoraController::novedadesColectivas/$1');
+    $routes->post('novedades-colectivas/guardar', 'BitacoraController::guardarNovedadColectiva');
+    $routes->post('novedades-colectivas/eliminar/(:num)', 'BitacoraController::eliminarNovedadColectiva/$1');
+    // Novedades de Tiempo — Individuales
+    $routes->get('novedades-individuales', 'BitacoraController::novedadesIndividuales');
+    $routes->post('novedades-individuales/guardar', 'BitacoraController::guardarNovedadIndividual');
+    $routes->post('novedades-individuales/eliminar/(:num)', 'BitacoraController::eliminarNovedadIndividual/$1');
+    // Correcciones (autenticado)
+    $routes->post('correccion/solicitar', 'BitacoraController::solicitarCorreccion');
 });
+// Correcciones bitácora — rutas públicas (token, sin login)
+$routes->get('bitacora-correccion/(:segment)', 'BitacoraController::verCorreccion/$1');
+$routes->post('bitacora-correccion/aprobar/(:segment)', 'BitacoraController::aprobarCorreccion/$1');
+$routes->post('bitacora-correccion/rechazar/(:segment)', 'BitacoraController::rechazarCorreccion/$1');
+
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario

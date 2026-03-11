@@ -308,6 +308,7 @@
     })();
     </script>
 
+    <?= $this->renderSection('modals') ?>
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

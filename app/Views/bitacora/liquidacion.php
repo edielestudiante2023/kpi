@@ -9,7 +9,7 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-bold">Periodo Actual</span>
-            <span class="badge bg-primary"><?= $diasHabiles ?> días hábiles</span>
+            <span class="badge bg-primary"><?= $diasTranscurridos ?> de <?= $diasHabiles ?> días hábiles</span>
         </div>
         <div class="text-muted small">
             <i class="bi bi-calendar-range me-1"></i>
@@ -94,8 +94,16 @@
 </div>
 
 <!-- Link a festivos -->
-<a href="<?= base_url('bitacora/festivos') ?>" class="btn btn-outline-secondary btn-sm w-100 mb-3">
+<a href="<?= base_url('bitacora/festivos') ?>" class="btn btn-outline-secondary btn-sm w-100 mb-2">
     <i class="bi bi-calendar-event me-1"></i> Gestionar Días Festivos
+</a>
+
+<!-- Novedades de Tiempo -->
+<a href="<?= base_url('bitacora/novedades-colectivas') ?>" class="btn btn-outline-info btn-sm w-100 mb-2">
+    <i class="bi bi-calendar2-check me-1"></i> Novedades Colectivas (Fechas Especiales)
+</a>
+<a href="<?= base_url('bitacora/novedades-individuales') ?>" class="btn btn-outline-info btn-sm w-100 mb-3">
+    <i class="bi bi-person-check me-1"></i> Novedades Individuales
 </a>
 
 <!-- Historial -->

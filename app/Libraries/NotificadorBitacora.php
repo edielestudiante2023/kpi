@@ -18,6 +18,7 @@ class NotificadorBitacora
 
     public function __construct()
     {
+        helper('bitacora');
         $this->userModel    = new UserModel();
         $this->bitacoraModel = new BitacoraActividadModel();
     }
@@ -111,11 +112,11 @@ class NotificadorBitacora
             $horasTrabajadas = round($totalMin / 60, 2);
 
             $jornada = $usuario['jornada'] ?? 'completa';
-            if ($jornada === 'media') {
-                $horasMeta = round($diasHabilesMeta * 4 * 0.90, 2);
-            } else {
-                $horasMeta = round($diasHabilesMeta * 8 * 0.80, 2);
-            }
+            $novedadColModel = new \App\Models\NovedadColectivaModel();
+            $novedadIndModel = new \App\Models\NovedadIndividualModel();
+            $horasColectivas = $novedadColModel->getHorasColectivasRango($fechaInicio, $fechaFinQuincena);
+            $horasIndividuales = $novedadIndModel->getHorasIndividualesRango((int) $usuario['id_users'], $fechaInicio, $fechaFinQuincena);
+            $horasMeta = calcularMetaHoras($diasHabilesMeta, $jornada, $horasColectivas, $horasIndividuales);
 
             $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 1) : 0;
 

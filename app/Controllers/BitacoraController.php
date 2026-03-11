@@ -510,8 +510,17 @@ PROMPT;
         $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
         $fechaHoy = date('Y-m-d H:i:s');
 
-        // Días hábiles del periodo
-        $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaHoy);
+        // Días hábiles transcurridos (hasta hoy)
+        $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $fechaHoy);
+
+        // Meta fija: días hábiles de la quincena completa (14 días calendario)
+        $fechaFinQuincena = date('Y-m-d', strtotime(substr($fechaInicio, 0, 10) . ' +14 days'));
+        $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
+
+        // Novedades de tiempo
+        $novedadColModel = new \App\Models\NovedadColectivaModel();
+        $novedadIndModel = new \App\Models\NovedadIndividualModel();
+        $horasColectivas = $novedadColModel->getHorasColectivasRango($fechaInicio, $fechaFinQuincena);
 
         // Preview de cada usuario
         $usuarios = $userModel->where('activo', 1)->where('bitacora_habilitada', 1)->findAll();
@@ -521,9 +530,8 @@ PROMPT;
             $horasTrabajadas = round($minutos / 60, 2);
 
             $jornada = $u['jornada'] ?? 'completa';
-            $horasDia = $jornada === 'media' ? 4 : 8;
-            $eficiencia = $jornada === 'media' ? 0.90 : 0.80;
-            $horasMeta = round($diasHabiles * $horasDia * $eficiencia, 2);
+            $horasIndividuales = $novedadIndModel->getHorasIndividualesRango((int) $u['id_users'], $fechaInicio, $fechaFinQuincena);
+            $horasMeta = calcularMetaHoras($diasHabiles, $jornada, $horasColectivas, $horasIndividuales);
 
             $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 2) : 0;
 
@@ -541,12 +549,13 @@ PROMPT;
         $historial = $liquidacionModel->getHistorial();
 
         return view('bitacora/liquidacion', [
-            'tab'          => 'liquidacion',
-            'fechaInicio'  => $fechaInicio,
-            'fechaHoy'     => $fechaHoy,
-            'diasHabiles'  => $diasHabiles,
-            'preview'      => $preview,
-            'historial'    => $historial,
+            'tab'               => 'liquidacion',
+            'fechaInicio'       => $fechaInicio,
+            'fechaHoy'          => $fechaHoy,
+            'diasHabiles'       => $diasHabiles,
+            'diasTranscurridos' => $diasTranscurridos,
+            'preview'           => $preview,
+            'historial'         => $historial,
         ]);
     }
 
@@ -602,8 +611,10 @@ PROMPT;
             ]);
         }
 
-        // 2. Calcular días hábiles
-        $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
+        // 2. Calcular días hábiles (transcurridos y meta quincenal)
+        $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
+        $fechaFinQuincena = date('Y-m-d', strtotime(substr($fechaInicio, 0, 10) . ' +14 days'));
+        $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
 
         // 3. Crear registro de liquidación
         $liquidacionModel->insert([
@@ -615,15 +626,19 @@ PROMPT;
         ]);
         $idLiquidacion = $liquidacionModel->getInsertID();
 
-        // 4. Calcular por usuario
+        // 4. Novedades de tiempo
+        $novedadColModel = new \App\Models\NovedadColectivaModel();
+        $novedadIndModel = new \App\Models\NovedadIndividualModel();
+        $horasColectivas = $novedadColModel->getHorasColectivasRango($fechaInicio, $fechaFinQuincena);
+
+        // 5. Calcular por usuario
         $usuarios = $userModel->where('activo', 1)->where('bitacora_habilitada', 1)->findAll();
         $detalles = [];
 
         foreach ($usuarios as $u) {
             $jornada = $u['jornada'] ?? 'completa';
-            $horasDia = $jornada === 'media' ? 4 : 8;
-            $eficiencia = $jornada === 'media' ? 0.90 : 0.80;
-            $horasMeta = round($diasHabiles * $horasDia * $eficiencia, 2);
+            $horasIndividuales = $novedadIndModel->getHorasIndividualesRango((int) $u['id_users'], $fechaInicio, $fechaFinQuincena);
+            $horasMeta = calcularMetaHoras($diasHabiles, $jornada, $horasColectivas, $horasIndividuales);
 
             $minutos = $this->bitacoraModel->getTotalMinutosRango((int) $u['id_users'], $fechaInicio, $ahora);
             $horasTrabajadas = round($minutos / 60, 2);
@@ -808,5 +823,476 @@ PROMPT;
         $festivoModel->delete($id);
 
         return $this->response->setJSON(['ok' => true]);
+    }
+
+    // ========================================
+    // NOVEDADES DE TIEMPO
+    // ========================================
+
+    /**
+     * Novedades Colectivas (Fechas Especiales) — GET vista CRUD
+     */
+    public function novedadesColectivas($anio = null)
+    {
+        if (!$this->verificarAcceso()) return redirect()->to('/login');
+        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
+
+        $anio = $anio ?: (int) date('Y');
+        $model = new \App\Models\NovedadColectivaModel();
+
+        return view('bitacora/novedades_colectivas', [
+            'tab'       => 'liquidacion',
+            'anio'      => $anio,
+            'novedades' => $model->getNovedadesAnio($anio),
+        ]);
+    }
+
+    /**
+     * Guardar novedad colectiva — POST AJAX
+     */
+    public function guardarNovedadColectiva()
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $fecha = $this->request->getPost('fecha');
+        $descripcion = $this->request->getPost('descripcion');
+        $horasReduccion = (float) $this->request->getPost('horas_reduccion');
+
+        if (!$fecha || !$descripcion || $horasReduccion <= 0) {
+            return $this->response->setJSON(['error' => 'Todos los campos son requeridos'])->setStatusCode(400);
+        }
+
+        $model = new \App\Models\NovedadColectivaModel();
+        $model->insert([
+            'fecha'           => $fecha,
+            'descripcion'     => $descripcion,
+            'horas_reduccion' => $horasReduccion,
+            'anio'            => (int) date('Y', strtotime($fecha)),
+            'created_by'      => (int) session()->get('id_users'),
+        ]);
+
+        return $this->response->setJSON(['ok' => true, 'id' => $model->getInsertID()]);
+    }
+
+    /**
+     * Eliminar novedad colectiva — POST AJAX
+     */
+    public function eliminarNovedadColectiva($id)
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $model = new \App\Models\NovedadColectivaModel();
+        $model->delete($id);
+        return $this->response->setJSON(['ok' => true]);
+    }
+
+    /**
+     * Novedades Individuales — GET vista CRUD
+     */
+    public function novedadesIndividuales()
+    {
+        if (!$this->verificarAcceso()) return redirect()->to('/login');
+        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
+
+        $userModel = new \App\Models\UserModel();
+        $model = new \App\Models\NovedadIndividualModel();
+
+        // Mostrar novedades del año actual
+        $desde = date('Y') . '-01-01';
+        $hasta = date('Y') . '-12-31';
+
+        return view('bitacora/novedades_individuales', [
+            'tab'       => 'liquidacion',
+            'usuarios'  => $userModel->where('activo', 1)->where('bitacora_habilitada', 1)->orderBy('nombre_completo')->findAll(),
+            'novedades' => $model->getNovedadesRango($desde, $hasta),
+        ]);
+    }
+
+    /**
+     * Guardar novedad individual — POST AJAX
+     */
+    public function guardarNovedadIndividual()
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $idUsuario = (int) $this->request->getPost('id_usuario');
+        $fecha = $this->request->getPost('fecha');
+        $horasReduccion = (float) $this->request->getPost('horas_reduccion');
+        $motivo = $this->request->getPost('motivo');
+
+        if (!$idUsuario || !$fecha || $horasReduccion <= 0 || !$motivo) {
+            return $this->response->setJSON(['error' => 'Todos los campos son requeridos'])->setStatusCode(400);
+        }
+
+        $model = new \App\Models\NovedadIndividualModel();
+        $model->insert([
+            'id_usuario'      => $idUsuario,
+            'fecha'           => $fecha,
+            'horas_reduccion' => $horasReduccion,
+            'motivo'          => $motivo,
+            'created_by'      => (int) session()->get('id_users'),
+        ]);
+
+        return $this->response->setJSON(['ok' => true, 'id' => $model->getInsertID()]);
+    }
+
+    /**
+     * Eliminar novedad individual — POST AJAX
+     */
+    public function eliminarNovedadIndividual($id)
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $model = new \App\Models\NovedadIndividualModel();
+        $model->delete($id);
+        return $this->response->setJSON(['ok' => true]);
+    }
+
+    // ========================================
+    // MÓDULO DE CORRECCIONES
+    // ========================================
+
+    /**
+     * Solicitar corrección de hora_fin — POST AJAX (autenticado)
+     */
+    public function solicitarCorreccion()
+    {
+        if (!$this->verificarAcceso()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $idBitacora = (int) $this->request->getPost('id_bitacora');
+        $horaFinNueva = $this->request->getPost('hora_fin_nueva');
+        $motivo = $this->request->getPost('motivo') ?? '';
+
+        if (!$idBitacora || !$horaFinNueva) {
+            return $this->response->setJSON(['error' => 'Datos incompletos'])->setStatusCode(400);
+        }
+
+        // Verificar que la actividad exista, sea del usuario y esté finalizada
+        $actividad = $this->bitacoraModel
+            ->select('bitacora_actividades.*, centros_costo.nombre AS centro_costo_nombre')
+            ->join('centros_costo', 'centros_costo.id_centro_costo = bitacora_actividades.id_centro_costo', 'left')
+            ->find($idBitacora);
+        if (!$actividad) {
+            return $this->response->setJSON(['error' => 'Actividad no encontrada'])->setStatusCode(404);
+        }
+
+        $idUsuario = (int) session()->get('id_users');
+        $esAdmin = $this->esAdminBitacora();
+
+        if ((int) $actividad['id_usuario'] !== $idUsuario && !$esAdmin) {
+            return $this->response->setJSON(['error' => 'No tienes permiso'])->setStatusCode(403);
+        }
+
+        if ($actividad['estado'] !== 'finalizada') {
+            return $this->response->setJSON(['error' => 'Solo se pueden corregir actividades finalizadas'])->setStatusCode(400);
+        }
+
+        $correccionModel = new \App\Models\BitacoraCorreccionModel();
+
+        if ($correccionModel->tienePendiente($idBitacora)) {
+            return $this->response->setJSON(['error' => 'Ya existe una corrección pendiente para esta actividad'])->setStatusCode(400);
+        }
+
+        // Construir la hora_fin completa (misma fecha que la actividad + hora nueva)
+        // Si la hora nueva es tipo "18:15" la combinamos con la fecha
+        $valorAnterior = $actividad['hora_fin'];
+        $fechaBase = $actividad['fecha'];
+
+        // Aceptar formato "HH:MM" o datetime completo
+        if (strlen($horaFinNueva) <= 5) {
+            $valorNuevo = $fechaBase . ' ' . $horaFinNueva . ':00';
+        } else {
+            $valorNuevo = $horaFinNueva;
+        }
+
+        // Validar que la nueva hora sea posterior a hora_inicio
+        if (strtotime($valorNuevo) <= strtotime($actividad['hora_inicio'])) {
+            return $this->response->setJSON(['error' => 'La hora de fin debe ser posterior a la hora de inicio'])->setStatusCode(400);
+        }
+
+        $token = bin2hex(random_bytes(32));
+
+        $correccionModel->insert([
+            'id_bitacora'    => $idBitacora,
+            'id_usuario'     => (int) $actividad['id_usuario'],
+            'campo'          => 'hora_fin',
+            'valor_anterior' => $valorAnterior,
+            'valor_nuevo'    => $valorNuevo,
+            'motivo'         => $motivo,
+            'token'          => $token,
+            'token_expira'   => date('Y-m-d H:i:s', strtotime('+48 hours')),
+        ]);
+
+        // Enviar email al admin
+        $this->enviarEmailCorreccion($actividad, $valorAnterior, $valorNuevo, $motivo, $token);
+
+        return $this->response->setJSON(['ok' => true, 'mensaje' => 'Solicitud enviada para aprobación']);
+    }
+
+    /**
+     * Ver corrección pendiente por token — GET público (sin login)
+     */
+    public function verCorreccion(string $token)
+    {
+        $correccionModel = new \App\Models\BitacoraCorreccionModel();
+        $correccion = $correccionModel->getByToken($token);
+
+        if (!$correccion) {
+            return view('bitacora/correcciones/error', [
+                'mensaje' => 'El enlace de corrección es inválido, ya fue procesado o ha expirado.'
+            ]);
+        }
+
+        $detalle = $correccionModel->getDetalleConActividad((int) $correccion['id_correccion']);
+
+        // Calcular duraciones
+        $duracionAnterior = round((strtotime($detalle['valor_anterior']) - strtotime($detalle['hora_inicio'])) / 60, 2);
+        $duracionNueva = round((strtotime($detalle['valor_nuevo']) - strtotime($detalle['hora_inicio'])) / 60, 2);
+        $diferencia = $duracionNueva - $duracionAnterior;
+
+        return view('bitacora/correcciones/ver', [
+            'correccion'       => $detalle,
+            'token'            => $token,
+            'duracion_anterior' => $duracionAnterior,
+            'duracion_nueva'   => $duracionNueva,
+            'diferencia'       => $diferencia,
+        ]);
+    }
+
+    /**
+     * Aprobar corrección — POST público (token)
+     */
+    public function aprobarCorreccion(string $token)
+    {
+        $correccionModel = new \App\Models\BitacoraCorreccionModel();
+        $correccion = $correccionModel->getByToken($token);
+
+        if (!$correccion) {
+            return view('bitacora/correcciones/error', [
+                'mensaje' => 'El enlace es inválido, ya fue procesado o ha expirado.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $actividad = $this->bitacoraModel->find((int) $correccion['id_bitacora']);
+
+        // 1. Actualizar la actividad
+        $nuevaHoraFin = $correccion['valor_nuevo'];
+        $nuevaDuracion = round((strtotime($nuevaHoraFin) - strtotime($actividad['hora_inicio'])) / 60, 2);
+
+        $this->bitacoraModel->update($correccion['id_bitacora'], [
+            'hora_fin'         => $nuevaHoraFin,
+            'duracion_minutos' => $nuevaDuracion,
+        ]);
+
+        // 2. Marcar corrección como aprobada
+        $correccionModel->update($correccion['id_correccion'], [
+            'estado'           => 'aprobada',
+            'aprobado_por'     => 'token',
+            'fecha_resolucion' => date('Y-m-d H:i:s'),
+        ]);
+
+        // 3. Re-liquidar si la actividad cae en un periodo ya liquidado
+        $this->reliquidarSiNecesario($actividad);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return view('bitacora/correcciones/error', [
+                'mensaje' => 'Error al procesar la corrección. Intente de nuevo.'
+            ]);
+        }
+
+        $detalle = $correccionModel->getDetalleConActividad((int) $correccion['id_correccion']);
+
+        return view('bitacora/correcciones/resultado', [
+            'tipo'       => 'aprobada',
+            'correccion' => $detalle,
+            'duracion_nueva' => $nuevaDuracion,
+        ]);
+    }
+
+    /**
+     * Rechazar corrección — POST público (token)
+     */
+    public function rechazarCorreccion(string $token)
+    {
+        $correccionModel = new \App\Models\BitacoraCorreccionModel();
+        $correccion = $correccionModel->getByToken($token);
+
+        if (!$correccion) {
+            return view('bitacora/correcciones/error', [
+                'mensaje' => 'El enlace es inválido, ya fue procesado o ha expirado.'
+            ]);
+        }
+
+        $correccionModel->update($correccion['id_correccion'], [
+            'estado'           => 'rechazada',
+            'aprobado_por'     => 'token',
+            'fecha_resolucion' => date('Y-m-d H:i:s'),
+        ]);
+
+        $detalle = $correccionModel->getDetalleConActividad((int) $correccion['id_correccion']);
+
+        return view('bitacora/correcciones/resultado', [
+            'tipo'       => 'rechazada',
+            'correccion' => $detalle,
+        ]);
+    }
+
+    /**
+     * Re-liquida el detalle de un usuario si la actividad cae en un periodo ya liquidado
+     */
+    protected function reliquidarSiNecesario(array $actividad): void
+    {
+        $db = \Config\Database::connect();
+
+        // Buscar liquidación que contenga esta actividad
+        $liquidacion = $db->query("
+            SELECT * FROM liquidaciones_bitacora
+            WHERE fecha_inicio <= ? AND fecha_corte >= ?
+            ORDER BY id_liquidacion DESC LIMIT 1
+        ", [$actividad['hora_inicio'], $actividad['hora_inicio']])->getRowArray();
+
+        if (!$liquidacion) return;
+
+        $userModel = new \App\Models\UserModel();
+        $novedadColModel = new \App\Models\NovedadColectivaModel();
+        $novedadIndModel = new \App\Models\NovedadIndividualModel();
+
+        $usuario = $userModel->find((int) $actividad['id_usuario']);
+        if (!$usuario) return;
+
+        // Recalcular horas trabajadas del usuario en ese periodo
+        $minutos = $this->bitacoraModel->getTotalMinutosRango(
+            (int) $actividad['id_usuario'],
+            $liquidacion['fecha_inicio'],
+            $liquidacion['fecha_corte']
+        );
+        $horasTrabajadas = round($minutos / 60, 2);
+
+        // Recalcular meta con novedades de tiempo
+        $jornada = $usuario['jornada'] ?? 'completa';
+        $fechaFinQ = date('Y-m-d', strtotime(substr($liquidacion['fecha_inicio'], 0, 10) . ' +14 days'));
+        $horasColectivas = $novedadColModel->getHorasColectivasRango($liquidacion['fecha_inicio'], $fechaFinQ);
+        $horasIndividuales = $novedadIndModel->getHorasIndividualesRango((int) $actividad['id_usuario'], $liquidacion['fecha_inicio'], $fechaFinQ);
+        $horasMeta = calcularMetaHoras((int) $liquidacion['dias_habiles'], $jornada, $horasColectivas, $horasIndividuales);
+        $porcentaje = $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 2) : 0;
+
+        // Actualizar el detalle de liquidación
+        $db->query("
+            UPDATE detalle_liquidacion
+            SET horas_trabajadas = ?, porcentaje_cumplimiento = ?
+            WHERE id_liquidacion = ? AND id_usuario = ?
+        ", [$horasTrabajadas, $porcentaje, $liquidacion['id_liquidacion'], $actividad['id_usuario']]);
+    }
+
+    /**
+     * Envía email de solicitud de corrección al admin
+     */
+    protected function enviarEmailCorreccion(array $actividad, string $valorAnterior, string $valorNuevo, string $motivo, string $token): void
+    {
+        $userModel = new \App\Models\UserModel();
+        $usuario = $userModel->find((int) $actividad['id_usuario']);
+
+        $durAnterior = round((strtotime($valorAnterior) - strtotime($actividad['hora_inicio'])) / 60);
+        $durNueva = round((strtotime($valorNuevo) - strtotime($actividad['hora_inicio'])) / 60);
+
+        $hAnterior = floor($durAnterior / 60) . 'h ' . ($durAnterior % 60) . 'min';
+        $hNueva = floor($durNueva / 60) . 'h ' . ($durNueva % 60) . 'min';
+
+        $enlace = base_url("bitacora-correccion/{$token}");
+        $motivoHTML = $motivo ? '<p style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px;"><strong>Motivo:</strong> ' . htmlspecialchars($motivo) . '</p>' : '';
+
+        $cc = htmlspecialchars($actividad['centro_costo_nombre'] ?? $actividad['id_centro_costo'] ?? '-');
+
+        $html = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <div style='background: #2c3e50; padding: 20px; text-align: center;'>
+                <h1 style='color: white; margin: 0; font-size: 20px;'>Solicitud de Corrección</h1>
+                <p style='color: rgba(255,255,255,0.7); margin: 5px 0 0 0; font-size: 13px;'>Bitácora Cycloid</p>
+            </div>
+
+            <div style='padding: 25px; background: #f8f9fa;'>
+                <div style='background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px;'>
+                    <table style='width: 100%; font-size: 14px;'>
+                        <tr>
+                            <td style='color: #6c757d; padding: 4px 0;'>Usuario:</td>
+                            <td style='font-weight: bold;'>{$usuario['nombre_completo']}</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d; padding: 4px 0;'>Actividad:</td>
+                            <td>" . htmlspecialchars($actividad['descripcion']) . "</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d; padding: 4px 0;'>Centro de costo:</td>
+                            <td>{$cc}</td>
+                        </tr>
+                        <tr>
+                            <td style='color: #6c757d; padding: 4px 0;'>Fecha:</td>
+                            <td>" . date('d/m/Y', strtotime($actividad['fecha'])) . "</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style='background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px;'>
+                    <h3 style='margin: 0 0 10px 0; font-size: 15px; color: #2c3e50;'>Cambio solicitado</h3>
+                    <table style='width: 100%; font-size: 14px; border-collapse: collapse;'>
+                        <tr style='background: #f1f3f5;'>
+                            <th style='padding: 8px; text-align: left;'></th>
+                            <th style='padding: 8px; text-align: center;'>Hora Fin</th>
+                            <th style='padding: 8px; text-align: center;'>Duración</th>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px; font-weight: bold; color: #dc3545;'>Antes</td>
+                            <td style='padding: 8px; text-align: center;'>" . date('h:i A', strtotime($valorAnterior)) . "</td>
+                            <td style='padding: 8px; text-align: center;'>{$hAnterior}</td>
+                        </tr>
+                        <tr style='background: #d4edda;'>
+                            <td style='padding: 8px; font-weight: bold; color: #198754;'>Después</td>
+                            <td style='padding: 8px; text-align: center; font-weight: bold;'>" . date('h:i A', strtotime($valorNuevo)) . "</td>
+                            <td style='padding: 8px; text-align: center; font-weight: bold;'>{$hNueva}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                {$motivoHTML}
+
+                <div style='text-align: center; margin-top: 20px;'>
+                    <a href='{$enlace}' style='display: inline-block; background: #198754; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;'>
+                        Revisar y Aprobar
+                    </a>
+                </div>
+
+                <p style='text-align: center; color: #6c757d; font-size: 12px; margin-top: 15px;'>
+                    Este enlace expira en 48 horas.
+                </p>
+            </div>
+
+            <div style='padding: 15px; background: #e9ecef; text-align: center; font-size: 11px; color: #6c757d;'>
+                <p style='margin: 0;'>Bitácora Cycloid — Módulo de Correcciones</p>
+            </div>
+        </div>";
+
+        $adminEmail = env('BITACORA_ADMIN_CORRECCIONES', 'edison.cuervo@cycloidtalent.com');
+        $notificador = new \App\Libraries\NotificadorBitacora();
+        $notificador->enviarEmail(
+            $adminEmail,
+            'Edison Cuervo',
+            "Corrección solicitada — {$usuario['nombre_completo']} — " . date('d/m/Y', strtotime($actividad['fecha'])),
+            $html
+        );
     }
 }
