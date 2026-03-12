@@ -620,12 +620,21 @@ $tieneActiva = !empty($actividadActiva);
         return nombre.split(' ').map(function(p) { return p[0]; }).join('').substring(0, 2).toUpperCase();
     }
 
-    function formatTimerEquipo(seg) {
+    function formatHace(seg) {
         if (seg < 0) seg = 0;
         const h = Math.floor(seg / 3600);
         const m = Math.floor((seg % 3600) / 60);
-        const s = seg % 60;
-        return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        if (h > 0) return h + 'h ' + m + 'min';
+        return m + ' min';
+    }
+
+    function formatHoraInicio(horaISO) {
+        var d = new Date(horaISO);
+        var h = d.getHours();
+        var m = d.getMinutes();
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return h + ':' + String(m).padStart(2,'0') + ' ' + ampm;
     }
 
     function renderEquipo() {
@@ -649,8 +658,13 @@ $tieneActiva = !empty($actividadActiva);
                     '<div class="text-muted" style="font-size:0.75rem"><i class="bi bi-lightning-charge-fill text-warning"></i> ' + item.descripcion + '</div>' +
                     (item.centro_costo_nombre ? '<div class="text-muted" style="font-size:0.7rem"><i class="bi bi-building"></i> ' + item.centro_costo_nombre + '</div>' : '') +
                 '</div>' +
-                '<div class="equipo-timer" data-seg="' + item.segundos_transcurridos + '">' +
-                    formatTimerEquipo(parseInt(item.segundos_transcurridos)) +
+                '<div class="text-end" style="min-width:70px">' +
+                    '<div class="equipo-timer" data-seg="' + item.segundos_transcurridos + '">' +
+                        formatHace(parseInt(item.segundos_transcurridos)) +
+                    '</div>' +
+                    '<div class="text-muted" style="font-size:0.65rem">' +
+                        '<i class="bi bi-clock"></i> ' + formatHoraInicio(item.hora_inicio) +
+                    '</div>' +
                 '</div>' +
             '</div>';
         }).join('');
@@ -668,14 +682,14 @@ $tieneActiva = !empty($actividadActiva);
             .catch(function() {});
     }
 
-    // Actualizar timers del equipo cada segundo
+    // Actualizar timers del equipo cada 30 segundos
     setInterval(function() {
         document.querySelectorAll('.equipo-timer[data-seg]').forEach(function(el) {
-            var seg = parseInt(el.getAttribute('data-seg')) + 1;
+            var seg = parseInt(el.getAttribute('data-seg')) + 30;
             el.setAttribute('data-seg', seg);
-            el.textContent = formatTimerEquipo(seg);
+            el.textContent = formatHace(seg);
         });
-    }, 1000);
+    }, 30000);
 
     // Cargar al inicio y refrescar cada 30 segundos
     cargarEquipoProgreso();
