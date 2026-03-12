@@ -245,6 +245,27 @@ class NotificadorBitacora
         $desde = date('d/m/Y', strtotime($progreso['fecha_inicio']));
         $jornadaLabel = $progreso['jornada'] === 'media' ? 'Media jornada' : 'Jornada completa';
 
+        // Calcular diferencia entre meta y horas trabajadas
+        $diferencia = abs($progreso['horas_meta'] - $progreso['horas_trabajadas']);
+        $diffHoras = floor($diferencia);
+        $diffMin = round(($diferencia - $diffHoras) * 60);
+        $diffTexto = "{$diffHoras}h {$diffMin}min";
+
+        if ($progreso['porcentaje'] >= 100) {
+            $diferenciaHtml = "
+                    <div style='margin-top: 10px; padding: 10px; background: #d1e7dd; border-radius: 6px; font-size: 13px; color: #0f5132;'>
+                        <strong>✅ Meta alcanzada — Excedente: {$diffTexto}</strong>
+                        <p style='margin: 8px 0 0 0; font-size: 12px; color: #495057; line-height: 1.4;'>
+                            Cycloid Talent agradece tu esfuerzo y dedicación al proyecto. Ten en cuenta que haber superado el 100% de la meta no implica una remuneración adicional.
+                        </p>
+                    </div>";
+        } else {
+            $diferenciaHtml = "
+                    <div style='margin-top: 10px; padding: 8px 10px; background: #f8f9fa; border-radius: 6px; font-size: 13px; color: #495057;'>
+                        ⏳ <strong>Faltan {$diffTexto}</strong> para alcanzar la meta ({$progreso['horas_meta']}h)
+                    </div>";
+        }
+
         return "
                 <div style='background: white; border-radius: 8px; padding: 15px; margin-top: 20px;'>
                     <h3 style='margin: 0 0 10px 0; font-size: 15px; color: #2c3e50;'>Progreso Quincenal</h3>
@@ -267,6 +288,7 @@ class NotificadorBitacora
                             {$progreso['porcentaje']}%
                         </div>
                     </div>
+                    {$diferenciaHtml}
                     {$this->generarTablaDetalleDias($progreso['dias_detalle'] ?? [])}
                 </div>";
     }
