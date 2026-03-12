@@ -178,20 +178,27 @@ class BitacoraActividadModel extends Model
     public function getEquipoEnProgreso(): array
     {
         $db = \Config\Database::connect();
-        return $db->query("
+        $rows = $db->query("
             SELECT
                 ba.id_bitacora,
                 ba.descripcion,
                 ba.hora_inicio,
                 ba.id_centro_costo,
                 u.nombre_completo,
-                cc.nombre AS centro_costo_nombre,
-                TIMESTAMPDIFF(SECOND, ba.hora_inicio, NOW()) AS segundos_transcurridos
+                cc.nombre AS centro_costo_nombre
             FROM bitacora_actividades ba
             INNER JOIN users u ON u.id_users = ba.id_usuario
             LEFT JOIN centros_costo cc ON cc.id_centro_costo = ba.id_centro_costo
             WHERE ba.estado = 'en_progreso'
             ORDER BY ba.hora_inicio ASC
         ")->getResultArray();
+
+        $ahora = time();
+        foreach ($rows as &$row) {
+            $seg = $ahora - strtotime($row['hora_inicio']);
+            $row['segundos_transcurridos'] = max(0, $seg);
+        }
+
+        return $rows;
     }
 }
