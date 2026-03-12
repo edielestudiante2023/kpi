@@ -86,6 +86,22 @@ $tieneActiva = !empty($actividadActiva);
     Total hoy: <strong id="totalHoras"><?= formatMinutosHoras($totalMinutos) ?></strong>
 </div>
 
+<!-- Tablero: ¿En qué está trabajando el equipo? -->
+<div class="card shadow-sm mb-3" id="cardEquipoProgreso">
+    <div class="card-body py-2">
+        <h6 class="card-title mb-2 d-flex align-items-center gap-2">
+            <i class="bi bi-people-fill text-success"></i>
+            <span>Equipo trabajando ahora</span>
+            <span class="badge bg-success rounded-pill ms-auto" id="conteoEquipo">0</span>
+        </h6>
+        <div id="listaEquipoProgreso">
+            <div class="text-center text-muted small py-2">
+                <span class="spinner-border spinner-border-sm me-1"></span> Cargando...
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Lista de actividades del día -->
 <h6 class="text-muted mb-2">
     <i class="bi bi-list-check me-1"></i>
@@ -597,6 +613,74 @@ $tieneActiva = !empty($actividadActiva);
                 });
         });
     }
+    // ---- TABLERO EQUIPO EN PROGRESO ----
+    let equipoData = [];
+
+    function getIniciales(nombre) {
+        return nombre.split(' ').map(function(p) { return p[0]; }).join('').substring(0, 2).toUpperCase();
+    }
+
+    function formatTimerEquipo(seg) {
+        if (seg < 0) seg = 0;
+        const h = Math.floor(seg / 3600);
+        const m = Math.floor((seg % 3600) / 60);
+        const s = seg % 60;
+        return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+
+    function renderEquipo() {
+        const container = document.getElementById('listaEquipoProgreso');
+        const conteo = document.getElementById('conteoEquipo');
+        if (!container) return;
+
+        if (equipoData.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted small py-2">' +
+                '<i class="bi bi-emoji-sunglasses fs-5 d-block mb-1"></i>Nadie trabajando en este momento</div>';
+            conteo.textContent = '0';
+            return;
+        }
+
+        conteo.textContent = equipoData.length;
+        container.innerHTML = equipoData.map(function(item) {
+            return '<div class="equipo-item">' +
+                '<div class="equipo-avatar">' + getIniciales(item.nombre_completo) + '</div>' +
+                '<div class="flex-grow-1">' +
+                    '<div class="fw-bold small" style="line-height:1.2">' + item.nombre_completo + '</div>' +
+                    '<div class="text-muted" style="font-size:0.75rem"><i class="bi bi-lightning-charge-fill text-warning"></i> ' + item.descripcion + '</div>' +
+                    (item.centro_costo_nombre ? '<div class="text-muted" style="font-size:0.7rem"><i class="bi bi-building"></i> ' + item.centro_costo_nombre + '</div>' : '') +
+                '</div>' +
+                '<div class="equipo-timer" data-seg="' + item.segundos_transcurridos + '">' +
+                    formatTimerEquipo(parseInt(item.segundos_transcurridos)) +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    function cargarEquipoProgreso() {
+        fetch(BASE + 'bitacora/equipo-en-progreso')
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.ok) {
+                    equipoData = resp.actividades;
+                    renderEquipo();
+                }
+            })
+            .catch(function() {});
+    }
+
+    // Actualizar timers del equipo cada segundo
+    setInterval(function() {
+        document.querySelectorAll('.equipo-timer[data-seg]').forEach(function(el) {
+            var seg = parseInt(el.getAttribute('data-seg')) + 1;
+            el.setAttribute('data-seg', seg);
+            el.textContent = formatTimerEquipo(seg);
+        });
+    }, 1000);
+
+    // Cargar al inicio y refrescar cada 30 segundos
+    cargarEquipoProgreso();
+    setInterval(cargarEquipoProgreso, 30000);
+
 })();
 </script>
 <?= $this->endSection() ?>

@@ -149,6 +149,32 @@
         .offline-banner.visible { display: block; }
         body.is-offline { padding-top: 80px; }
 
+        /* Tablero equipo en progreso */
+        .equipo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .equipo-item:last-child { border-bottom: none; }
+        .equipo-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: #198754;
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .equipo-timer {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #198754;
+        }
+
         /* Toast offline guardado */
         .offline-toast {
             position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 9999;

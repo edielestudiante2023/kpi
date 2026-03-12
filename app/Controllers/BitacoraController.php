@@ -318,6 +318,23 @@ class BitacoraController extends BaseController
     }
 
     /**
+     * Actividades en progreso de todo el equipo (AJAX)
+     */
+    public function equipoEnProgreso()
+    {
+        if (!$this->verificarAcceso()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $actividades = $this->bitacoraModel->getEquipoEnProgreso();
+
+        return $this->response->setJSON([
+            'ok'           => true,
+            'actividades'  => $actividades,
+        ]);
+    }
+
+    /**
      * Lista de actividades de hoy (AJAX)
      */
     public function actividadesHoy()

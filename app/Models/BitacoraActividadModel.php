@@ -171,4 +171,27 @@ class BitacoraActividadModel extends Model
     {
         return $this->where('estado', 'en_progreso')->findAll();
     }
+
+    /**
+     * Actividades en progreso de todo el equipo con datos del usuario
+     */
+    public function getEquipoEnProgreso(): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                ba.id_bitacora,
+                ba.descripcion,
+                ba.hora_inicio,
+                ba.id_centro_costo,
+                u.nombre_completo,
+                cc.nombre AS centro_costo_nombre,
+                TIMESTAMPDIFF(SECOND, ba.hora_inicio, NOW()) AS segundos_transcurridos
+            FROM bitacora_actividades ba
+            INNER JOIN users u ON u.id_users = ba.id_usuario
+            LEFT JOIN centros_costo cc ON cc.id_centro_costo = ba.id_centro_costo
+            WHERE ba.estado = 'en_progreso'
+            ORDER BY ba.hora_inicio ASC
+        ")->getResultArray();
+    }
 }
