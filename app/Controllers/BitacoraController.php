@@ -530,8 +530,12 @@ PROMPT;
         // Días hábiles transcurridos (hasta hoy)
         $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $fechaHoy);
 
-        // Meta fija: días hábiles de la quincena completa (14 días calendario)
-        $fechaFinQuincena = date('Y-m-d', strtotime(substr($fechaInicio, 0, 10) . ' +14 days'));
+        // Meta fija: días hábiles de la quincena completa (fin real: día 15 o último día del mes)
+        $inicioSolo = substr($fechaInicio, 0, 10);
+        $diaInicio  = (int) date('j', strtotime($inicioSolo));
+        $fechaFinQuincena = $diaInicio <= 15
+            ? date('Y-m-t', strtotime($inicioSolo))        // segunda quincena → último día del mes
+            : date('Y-m-15', strtotime($inicioSolo . ' +1 month')); // primera quincena → día 15 del mes siguiente
         $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
 
         // Novedades de tiempo
@@ -630,7 +634,11 @@ PROMPT;
 
         // 2. Calcular días hábiles (transcurridos y meta quincenal)
         $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
-        $fechaFinQuincena = date('Y-m-d', strtotime(substr($fechaInicio, 0, 10) . ' +14 days'));
+        $inicioSolo = substr($fechaInicio, 0, 10);
+        $diaInicio  = (int) date('j', strtotime($inicioSolo));
+        $fechaFinQuincena = $diaInicio <= 15
+            ? date('Y-m-t', strtotime($inicioSolo))
+            : date('Y-m-15', strtotime($inicioSolo . ' +1 month'));
         $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
 
         // 3. Crear registro de liquidación
@@ -1202,7 +1210,11 @@ PROMPT;
 
         // Recalcular meta con novedades de tiempo
         $jornada = $usuario['jornada'] ?? 'completa';
-        $fechaFinQ = date('Y-m-d', strtotime(substr($liquidacion['fecha_inicio'], 0, 10) . ' +14 days'));
+        $inicioSoloQ = substr($liquidacion['fecha_inicio'], 0, 10);
+        $diaInicioQ  = (int) date('j', strtotime($inicioSoloQ));
+        $fechaFinQ = $diaInicioQ <= 15
+            ? date('Y-m-t', strtotime($inicioSoloQ))
+            : date('Y-m-15', strtotime($inicioSoloQ . ' +1 month'));
         $horasColectivas = $novedadColModel->getHorasColectivasRango($liquidacion['fecha_inicio'], $fechaFinQ);
         $horasIndividuales = $novedadIndModel->getHorasIndividualesRango((int) $actividad['id_usuario'], $liquidacion['fecha_inicio'], $fechaFinQ);
         $horasMeta = calcularMetaHoras((int) $liquidacion['dias_habiles'], $jornada, $horasColectivas, $horasIndividuales);
