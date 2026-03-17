@@ -80,17 +80,37 @@ class SesionUsuarioModel extends Model
     }
 
     /**
-     * Cierra todas las sesiones activas de un usuario
+     * Cierra todas las sesiones activas de un usuario.
+     *
+     * Usa fecha_ultimo_latido como fecha_fin cuando el último latido fue hace
+     * más de 10 minutos, para evitar inflar la duración con el tiempo transcurrido
+     * hasta el nuevo login.
      */
     public function cerrarSesionesUsuario($idUsuario): bool
     {
-        return $this->where('id_usuario', $idUsuario)
-                    ->where('activa', 1)
-                    ->set([
-                        'activa'    => 0,
-                        'fecha_fin' => date('Y-m-d H:i:s')
-                    ])
-                    ->update();
+        $sesiones = $this->where('id_usuario', $idUsuario)
+                         ->where('activa', 1)
+                         ->findAll();
+
+        if (empty($sesiones)) {
+            return true;
+        }
+
+        $limite = date('Y-m-d H:i:s', strtotime('-10 minutes'));
+
+        foreach ($sesiones as $sesion) {
+            // Si el último latido fue hace > 10 min, el cierre real fue ese latido
+            $fechaFin = ($sesion['fecha_ultimo_latido'] < $limite)
+                ? $sesion['fecha_ultimo_latido']
+                : date('Y-m-d H:i:s');
+
+            $this->update($sesion['id_sesion'], [
+                'activa'    => 0,
+                'fecha_fin' => $fechaFin,
+            ]);
+        }
+
+        return true;
     }
 
     /**
