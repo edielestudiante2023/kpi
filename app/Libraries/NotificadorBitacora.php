@@ -101,8 +101,12 @@ class NotificadorBitacora
             // Días hábiles transcurridos (solo para mostrar avance)
             $diasTranscurridos = $festivoModel->contarDiasHabiles($fechaInicio, $ahora);
 
-            // Meta fija: días hábiles de la quincena completa (14 días calendario = 2 semanas)
-            $fechaFinQuincena = date('Y-m-d', strtotime(substr($fechaInicio, 0, 10) . ' +14 days'));
+            // Fin real de quincena (igual lógica que BitacoraController)
+            $inicioSolo = substr($fechaInicio, 0, 10);
+            $diaInicio  = (int) date('j', strtotime($inicioSolo));
+            $fechaFinQuincena = $diaInicio <= 15
+                ? date('Y-m-t', strtotime($inicioSolo))
+                : date('Y-m-15', strtotime($inicioSolo . ' +1 month'));
             $diasHabilesMeta  = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
             if ($diasHabilesMeta <= 0) return null;
 
