@@ -128,6 +128,38 @@ class BitacoraActividadModel extends Model
     }
 
     /**
+     * Dataset granular por (fecha, cc, descripcion) con week_num — para segmentadores JS
+     * $userId = null → todos los usuarios (admin)
+     */
+    public function getActividadesGranuladas(?int $userId, int $anio, int $mes): array
+    {
+        $db = \Config\Database::connect();
+        $params = [$anio, $mes];
+        $userFilter = '';
+        if ($userId !== null) {
+            $userFilter = 'AND ba.id_usuario = ?';
+            $params[] = $userId;
+        }
+        return $db->query("
+            SELECT
+                ba.fecha,
+                DAY(ba.fecha)                     AS dia_num,
+                WEEK(ba.fecha, 1)                 AS week_num,
+                COALESCE(cc.nombre, 'Sin centro') AS centro_costo_nombre,
+                ba.descripcion,
+                SUM(CASE WHEN ba.estado = 'finalizada' THEN ba.duracion_minutos ELSE 0 END) AS total_minutos,
+                COUNT(*) AS num_actividades
+            FROM bitacora_actividades ba
+            LEFT JOIN centros_costo cc ON cc.id_centro_costo = ba.id_centro_costo
+            WHERE YEAR(ba.fecha) = ?
+              AND MONTH(ba.fecha) = ?
+              {$userFilter}
+            GROUP BY ba.fecha, ba.id_centro_costo, cc.nombre, ba.descripcion, WEEK(ba.fecha, 1)
+            ORDER BY ba.fecha ASC
+        ", $params)->getResultArray();
+    }
+
+    /**
      * Resumen diario de TODOS los usuarios para un mes (admin sin filtro de usuario)
      */
     public function getResumenMensualTodos(int $anio, int $mes): array

@@ -144,71 +144,58 @@ class BitacoraController extends BaseController
             $filtroUsuario = $sessionUserId;
         }
 
-        // Resumen diario (stat cards + chart barras por día)
-        $resumenDiario = ($esAdmin && $filtroUsuario === null)
-            ? $this->bitacoraModel->getResumenMensualTodos($anio, $mes)
-            : $this->bitacoraModel->getResumenMensual($filtroUsuario ?? $sessionUserId, $anio, $mes);
+        // Query granular — JS agrega según filtros activos (semana, CC, actividad)
+        $granular = $this->bitacoraModel->getActividadesGranuladas($filtroUsuario, $anio, $mes);
 
-        // Datos para las 3 gráficas analíticas
-        $centroCosto    = $this->bitacoraModel->getResumenPorCentroCosto($filtroUsuario, $anio, $mes);
-        $semanal        = $this->bitacoraModel->getResumenSemanal($filtroUsuario, $anio, $mes);
-        $topActividades = $this->bitacoraModel->getTopDescripciones($filtroUsuario, $anio, $mes, 10);
-
-        // Totales para stat cards
+        // Totales iniciales (sin filtro)
         $totalMinutos     = 0;
         $totalActividades = 0;
-        foreach ($resumenDiario as $r) {
+        $fechasUnicas     = [];
+        foreach ($granular as $r) {
             $totalMinutos     += (float)$r['total_minutos'];
             $totalActividades += (int)$r['num_actividades'];
+            $fechasUnicas[$r['fecha']] = true;
         }
-        $totalDias = count($resumenDiario);
+        $totalDias = count($fechasUnicas);
 
-        // Chart 1: horas por cada día del mes (incluye días sin registro como 0)
-        $diasDelMes  = (int)date('t', mktime(0, 0, 0, $mes, 1, $anio));
-        $horasPorDia = array_fill(1, $diasDelMes, 0.0);
-        foreach ($resumenDiario as $r) {
-            $diaNum = (int)date('j', strtotime($r['fecha']));
-            $horasPorDia[$diaNum] = round((float)$r['total_minutos'] / 60, 2);
+        // Opciones de semana con etiquetas legibles
+        $mesesCortos  = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        $semanaLabels = [];
+        foreach ($granular as $r) {
+            $wk = $r['week_num'];
+            if (!isset($semanaLabels[$wk])) {
+                $semanaLabels[$wk] = ['min' => $r['fecha'], 'max' => $r['fecha']];
+            }
+            if ($r['fecha'] < $semanaLabels[$wk]['min']) $semanaLabels[$wk]['min'] = $r['fecha'];
+            if ($r['fecha'] > $semanaLabels[$wk]['max']) $semanaLabels[$wk]['max'] = $r['fecha'];
+        }
+        $semanasOpciones = [];
+        $semIdx = 1;
+        foreach ($semanaLabels as $wk => $rango) {
+            $d1 = (int)date('j', strtotime($rango['min']));
+            $d2 = (int)date('j', strtotime($rango['max']));
+            $semanasOpciones[] = [
+                'week_num' => (string)$wk,
+                'label'    => 'Sem ' . $semIdx . ' (' . $d1 . '–' . $d2 . ' ' . $mesesCortos[$mes] . ')',
+            ];
+            $semIdx++;
         }
 
-        // Chart 2: centro de costo — top 8 + "Otros"
-        $ccLabels   = [];
-        $ccData     = [];
-        $ccTotal    = array_sum(array_column($centroCosto, 'total_minutos'));
-        $ccMostrado = 0;
-        foreach ($centroCosto as $i => $cc) {
-            if ($i < 8) {
-                $ccLabels[]  = $cc['centro_costo_nombre'];
-                $ccData[]    = round((float)$cc['total_minutos'] / 60, 2);
-                $ccMostrado += (float)$cc['total_minutos'];
+        // Opciones únicas de Centro de Costo
+        $ccSet = [];
+        foreach ($granular as $r) {
+            $cc = $r['centro_costo_nombre'];
+            if (!in_array($cc, $ccSet)) $ccSet[] = $cc;
+        }
+
+        // Opciones únicas de Descripción ordenadas
+        $descSet = [];
+        foreach ($granular as $r) {
+            if ($r['descripcion'] && !in_array($r['descripcion'], $descSet)) {
+                $descSet[] = $r['descripcion'];
             }
         }
-        if (count($centroCosto) > 8) {
-            $ccLabels[] = 'Otros';
-            $ccData[]   = round(($ccTotal - $ccMostrado) / 60, 2);
-        }
-
-        // Chart 3: horas por semana con etiquetas legibles
-        $mesesCortos = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        $semLabels   = [];
-        $semData     = [];
-        foreach ($semanal as $i => $s) {
-            $diaInicio   = (int)date('j', strtotime($s['fecha_inicio']));
-            $diaFin      = (int)date('j', strtotime($s['fecha_fin']));
-            $semLabels[] = 'Sem ' . ($i + 1) . ' (' . $diaInicio . '–' . $diaFin . ' ' . $mesesCortos[$mes] . ')';
-            $semData[]   = round((float)$s['total_minutos'] / 60, 2);
-        }
-
-        // Chart 4: top actividades truncadas
-        $topLabels = [];
-        $topData   = [];
-        foreach ($topActividades as $t) {
-            $desc        = mb_strlen($t['descripcion']) > 35
-                         ? mb_substr($t['descripcion'], 0, 35) . '…'
-                         : $t['descripcion'];
-            $topLabels[] = $desc;
-            $topData[]   = round((float)$t['total_minutos'] / 60, 2);
-        }
+        sort($descSet);
 
         $data = [
             'tab'             => 'analisis',
@@ -220,14 +207,11 @@ class BitacoraController extends BaseController
             'totalMinutos'    => $totalMinutos,
             'totalDias'       => $totalDias,
             'totalActividades'=> $totalActividades,
-            'chartDiasLabels' => json_encode(array_keys($horasPorDia)),
-            'chartDiasData'   => json_encode(array_values($horasPorDia)),
-            'chartCCLabels'   => json_encode($ccLabels),
-            'chartCCData'     => json_encode($ccData),
-            'chartSemLabels'  => json_encode($semLabels),
-            'chartSemData'    => json_encode($semData),
-            'chartTopLabels'  => json_encode($topLabels),
-            'chartTopData'    => json_encode($topData),
+            'diasDelMes'      => (int)date('t', mktime(0, 0, 0, $mes, 1, $anio)),
+            'chartRawData'    => json_encode($granular),
+            'semanasOpciones' => json_encode($semanasOpciones),
+            'ccOpciones'      => json_encode(array_values($ccSet)),
+            'descOpciones'    => json_encode(array_values($descSet)),
         ];
 
         return view('bitacora/analisis', $data);
