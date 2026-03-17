@@ -113,6 +113,127 @@ class BitacoraController extends BaseController
     }
 
     /**
+     * Vista análisis — gráficas de productividad personal o del equipo (admin)
+     */
+    public function analisis($anio = null, $mes = null)
+    {
+        if (!$this->verificarAcceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo de bitácora.');
+        }
+
+        $sessionUserId = (int) session()->get('id_users');
+        $rolId         = (int) session()->get('id_roles');
+        $esAdmin       = in_array($rolId, [1, 2]);
+
+        $anio = $anio ? (int)$anio : (int)date('Y');
+        $mes  = $mes  ? (int)$mes  : (int)date('n');
+
+        // Admin puede filtrar por usuario con GET ?usuario=N
+        $filtroUsuario = null;
+        $usuariosLista = [];
+        if ($esAdmin) {
+            $userModel     = new UserModel();
+            $usuariosLista = $userModel->where('bitacora_habilitada', 1)
+                                       ->orderBy('nombre_completo', 'ASC')
+                                       ->findAll();
+            $getUsuario    = $this->request->getGet('usuario');
+            if ($getUsuario && (int)$getUsuario > 0) {
+                $filtroUsuario = (int)$getUsuario;
+            }
+        } else {
+            $filtroUsuario = $sessionUserId;
+        }
+
+        // Resumen diario (stat cards + chart barras por día)
+        $resumenDiario = ($esAdmin && $filtroUsuario === null)
+            ? $this->bitacoraModel->getResumenMensualTodos($anio, $mes)
+            : $this->bitacoraModel->getResumenMensual($filtroUsuario ?? $sessionUserId, $anio, $mes);
+
+        // Datos para las 3 gráficas analíticas
+        $centroCosto    = $this->bitacoraModel->getResumenPorCentroCosto($filtroUsuario, $anio, $mes);
+        $semanal        = $this->bitacoraModel->getResumenSemanal($filtroUsuario, $anio, $mes);
+        $topActividades = $this->bitacoraModel->getTopDescripciones($filtroUsuario, $anio, $mes, 10);
+
+        // Totales para stat cards
+        $totalMinutos     = 0;
+        $totalActividades = 0;
+        foreach ($resumenDiario as $r) {
+            $totalMinutos     += (float)$r['total_minutos'];
+            $totalActividades += (int)$r['num_actividades'];
+        }
+        $totalDias = count($resumenDiario);
+
+        // Chart 1: horas por cada día del mes (incluye días sin registro como 0)
+        $diasDelMes  = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+        $horasPorDia = array_fill(1, $diasDelMes, 0.0);
+        foreach ($resumenDiario as $r) {
+            $diaNum = (int)date('j', strtotime($r['fecha']));
+            $horasPorDia[$diaNum] = round((float)$r['total_minutos'] / 60, 2);
+        }
+
+        // Chart 2: centro de costo — top 8 + "Otros"
+        $ccLabels   = [];
+        $ccData     = [];
+        $ccTotal    = array_sum(array_column($centroCosto, 'total_minutos'));
+        $ccMostrado = 0;
+        foreach ($centroCosto as $i => $cc) {
+            if ($i < 8) {
+                $ccLabels[]  = $cc['centro_costo_nombre'];
+                $ccData[]    = round((float)$cc['total_minutos'] / 60, 2);
+                $ccMostrado += (float)$cc['total_minutos'];
+            }
+        }
+        if (count($centroCosto) > 8) {
+            $ccLabels[] = 'Otros';
+            $ccData[]   = round(($ccTotal - $ccMostrado) / 60, 2);
+        }
+
+        // Chart 3: horas por semana con etiquetas legibles
+        $mesesCortos = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        $semLabels   = [];
+        $semData     = [];
+        foreach ($semanal as $i => $s) {
+            $diaInicio   = (int)date('j', strtotime($s['fecha_inicio']));
+            $diaFin      = (int)date('j', strtotime($s['fecha_fin']));
+            $semLabels[] = 'Sem ' . ($i + 1) . ' (' . $diaInicio . '–' . $diaFin . ' ' . $mesesCortos[$mes] . ')';
+            $semData[]   = round((float)$s['total_minutos'] / 60, 2);
+        }
+
+        // Chart 4: top actividades truncadas
+        $topLabels = [];
+        $topData   = [];
+        foreach ($topActividades as $t) {
+            $desc        = mb_strlen($t['descripcion']) > 35
+                         ? mb_substr($t['descripcion'], 0, 35) . '…'
+                         : $t['descripcion'];
+            $topLabels[] = $desc;
+            $topData[]   = round((float)$t['total_minutos'] / 60, 2);
+        }
+
+        $data = [
+            'tab'             => 'analisis',
+            'anio'            => $anio,
+            'mes'             => $mes,
+            'esAdmin'         => $esAdmin,
+            'filtroUsuario'   => $filtroUsuario,
+            'usuariosLista'   => $usuariosLista,
+            'totalMinutos'    => $totalMinutos,
+            'totalDias'       => $totalDias,
+            'totalActividades'=> $totalActividades,
+            'chartDiasLabels' => json_encode(array_keys($horasPorDia)),
+            'chartDiasData'   => json_encode(array_values($horasPorDia)),
+            'chartCCLabels'   => json_encode($ccLabels),
+            'chartCCData'     => json_encode($ccData),
+            'chartSemLabels'  => json_encode($semLabels),
+            'chartSemData'    => json_encode($semData),
+            'chartTopLabels'  => json_encode($topLabels),
+            'chartTopData'    => json_encode($topData),
+        ];
+
+        return view('bitacora/analisis', $data);
+    }
+
+    /**
      * Vista equipo — resumen mensual de todos los usuarios (jefe/superadmin)
      */
     public function equipo($anio = null, $mes = null)

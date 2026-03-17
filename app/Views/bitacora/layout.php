@@ -235,6 +235,10 @@
             <i class="bi bi-graph-up"></i>
             Resumen
         </a>
+        <a href="<?= base_url('bitacora/analisis') ?>" class="<?= ($tab ?? '') === 'analisis' ? 'active' : '' ?>">
+            <i class="bi bi-bar-chart-line"></i>
+            Análisis
+        </a>
         <?php if (in_array($rolId, [1, 2, 3])): ?>
         <a href="<?= base_url('bitacora/equipo') ?>" class="<?= ($tab ?? '') === 'equipo' ? 'active' : '' ?>">
             <i class="bi bi-people"></i>

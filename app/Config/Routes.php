@@ -302,6 +302,8 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->get('historial/(:segment)', 'BitacoraController::historial/$1');
     $routes->get('resumen', 'BitacoraController::resumen');
     $routes->get('resumen/(:num)/(:num)', 'BitacoraController::resumen/$1/$2');
+    $routes->get('analisis', 'BitacoraController::analisis');
+    $routes->get('analisis/(:num)/(:num)', 'BitacoraController::analisis/$1/$2');
     $routes->get('equipo', 'BitacoraController::equipo');
     $routes->get('equipo/(:num)/(:num)', 'BitacoraController::equipo/$1/$2');
     $routes->get('equipo/detalle/(:num)/(:num)/(:num)', 'BitacoraController::equipoDetalle/$1/$2/$3');

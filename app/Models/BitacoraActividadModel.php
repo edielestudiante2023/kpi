@@ -128,6 +128,111 @@ class BitacoraActividadModel extends Model
     }
 
     /**
+     * Resumen diario de TODOS los usuarios para un mes (admin sin filtro de usuario)
+     */
+    public function getResumenMensualTodos(int $anio, int $mes): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                fecha,
+                SUM(CASE WHEN estado = 'finalizada' THEN duracion_minutos ELSE 0 END) AS total_minutos,
+                COUNT(*) AS num_actividades,
+                MIN(hora_inicio) AS primera_entrada,
+                MAX(COALESCE(hora_fin, hora_inicio)) AS ultima_salida
+            FROM bitacora_actividades
+            WHERE YEAR(fecha) = ?
+              AND MONTH(fecha) = ?
+            GROUP BY fecha
+            ORDER BY fecha DESC
+        ", [$anio, $mes])->getResultArray();
+    }
+
+    /**
+     * Minutos por centro de costo en un mes (para gráfico torta)
+     * $userId = null → todos los usuarios (admin)
+     */
+    public function getResumenPorCentroCosto(?int $userId, int $anio, int $mes): array
+    {
+        $db = \Config\Database::connect();
+        $params = [$anio, $mes];
+        $userFilter = '';
+        if ($userId !== null) {
+            $userFilter = 'AND ba.id_usuario = ?';
+            $params[] = $userId;
+        }
+        return $db->query("
+            SELECT
+                COALESCE(cc.nombre, 'Sin centro') AS centro_costo_nombre,
+                SUM(CASE WHEN ba.estado = 'finalizada' THEN ba.duracion_minutos ELSE 0 END) AS total_minutos
+            FROM bitacora_actividades ba
+            LEFT JOIN centros_costo cc ON cc.id_centro_costo = ba.id_centro_costo
+            WHERE YEAR(ba.fecha) = ?
+              AND MONTH(ba.fecha) = ?
+              {$userFilter}
+            GROUP BY ba.id_centro_costo, cc.nombre
+            ORDER BY total_minutos DESC
+        ", $params)->getResultArray();
+    }
+
+    /**
+     * Minutos por semana del mes (para gráfico barras semanal)
+     * $userId = null → todos los usuarios (admin)
+     */
+    public function getResumenSemanal(?int $userId, int $anio, int $mes): array
+    {
+        $db = \Config\Database::connect();
+        $params = [$anio, $mes];
+        $userFilter = '';
+        if ($userId !== null) {
+            $userFilter = 'AND id_usuario = ?';
+            $params[] = $userId;
+        }
+        return $db->query("
+            SELECT
+                WEEK(fecha, 1) AS week_num,
+                MIN(fecha)     AS fecha_inicio,
+                MAX(fecha)     AS fecha_fin,
+                SUM(CASE WHEN estado = 'finalizada' THEN duracion_minutos ELSE 0 END) AS total_minutos,
+                COUNT(DISTINCT fecha) AS dias_con_registro
+            FROM bitacora_actividades
+            WHERE YEAR(fecha) = ?
+              AND MONTH(fecha) = ?
+              {$userFilter}
+            GROUP BY WEEK(fecha, 1)
+            ORDER BY week_num ASC
+        ", $params)->getResultArray();
+    }
+
+    /**
+     * Top N actividades por tiempo consumido en un mes (para gráfico horizontal)
+     * $userId = null → todos los usuarios (admin)
+     */
+    public function getTopDescripciones(?int $userId, int $anio, int $mes, int $limit = 10): array
+    {
+        $db = \Config\Database::connect();
+        $params = [$anio, $mes];
+        $userFilter = '';
+        if ($userId !== null) {
+            $userFilter = 'AND id_usuario = ?';
+            $params[] = $userId;
+        }
+        return $db->query("
+            SELECT
+                descripcion,
+                SUM(CASE WHEN estado = 'finalizada' THEN duracion_minutos ELSE 0 END) AS total_minutos,
+                COUNT(*) AS num_veces
+            FROM bitacora_actividades
+            WHERE YEAR(fecha) = ?
+              AND MONTH(fecha) = ?
+              {$userFilter}
+            GROUP BY descripcion
+            ORDER BY total_minutos DESC
+            LIMIT {$limit}
+        ", $params)->getResultArray();
+    }
+
+    /**
      * Total minutos finalizados en un rango de fechas (para liquidación)
      */
     public function getTotalMinutosRango(int $idUsuario, string $desde, string $hasta): float
