@@ -132,14 +132,17 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
 
 <?php if ($totalMinutos > 0): ?>
 
-<!-- Chart 1: Horas por día -->
+<!-- Chart 1: Horas por día (barras clickeables) -->
 <div class="card shadow-sm mb-3">
     <div class="card-body">
         <h6 class="card-title small text-muted mb-2">
             <i class="bi bi-bar-chart me-1"></i>
             <span id="titleDias">Horas por día</span>
+            <span class="text-muted fw-normal" style="font-size:0.65rem; margin-left:4px;">
+                <i class="bi bi-hand-index me-1"></i>Toca un día para filtrar
+            </span>
         </h6>
-        <div style="position:relative; height:180px;">
+        <div style="position:relative; height:180px; cursor:pointer;">
             <canvas id="chartDias"></canvas>
         </div>
     </div>
@@ -213,6 +216,10 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     var DESC     = <?= $descOpciones ?>;
     var DIAS_MES = <?= $diasDelMes ?>;
 
+    // Mapa dia_num → week_num (para filtrar por semana al clickear un día)
+    var DIA_A_SEMANA = {};
+    RAW.forEach(function(r) { DIA_A_SEMANA[r.dia_num] = String(r.week_num); });
+
     var COLORS = ['#0d6efd','#198754','#ffc107','#dc3545',
                   '#0dcaf0','#6f42c1','#fd7e14','#20c997','#6c757d'];
 
@@ -270,14 +277,25 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     /* ── Crear instancias Chart.js ────────────────────── */
     var charts = {};
 
-    // Chart 1: barras diarias
+    // Chart 1: barras diarias — clickeables por semana
     charts.dias = new Chart(document.getElementById('chartDias'), {
         type: 'bar',
         data: { labels: [], datasets: [{ label: 'Horas', data: [],
-            backgroundColor: 'rgba(13,110,253,0.7)', borderColor: '#0d6efd',
-            borderWidth: 1, borderRadius: 3 }] },
+            backgroundColor: [], borderColor: [], borderWidth: 1, borderRadius: 3 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
+            onClick: function(evt, elements) {
+                if (!elements.length) return;
+                var diaLabel = charts.dias.data.labels[elements[0].index];
+                var wk = DIA_A_SEMANA[diaLabel];
+                if (!wk) return;
+                var actual = $('#filtroSemana').val();
+                if (actual === wk) {
+                    $('#filtroSemana').val(null).trigger('change');
+                } else {
+                    $('#filtroSemana').val(wk).trigger('change');
+                }
+            },
             plugins: { legend: { display: false },
                 tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1)+'h'; } } } },
             scales: {
@@ -400,9 +418,10 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     /* ── Actualizar chart barras diarias ─────────────── */
     function actualizarChartDias(datos, semanaFiltro) {
         var labels, valores;
+        var semActiva = $('#filtroSemana').val();
 
         if (semanaFiltro !== '') {
-            // Zoom a la semana: solo los días con datos
+            // Zoom: solo días de la semana filtrada
             var map = agruparPor(datos, 'dia_num');
             var dias = Object.keys(map).map(Number).sort(function(a,b){ return a-b; });
             labels  = dias.map(function(d){ return d; });
@@ -420,8 +439,22 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
             document.getElementById('titleDias').textContent = 'Horas por día';
         }
 
+        // Colores: resaltar días de la semana activa, opacar el resto
+        var bgColors = labels.map(function(diaNum) {
+            if (!semActiva) return 'rgba(13,110,253,0.7)';
+            return DIA_A_SEMANA[diaNum] === semActiva
+                ? 'rgba(13,110,253,0.9)'
+                : 'rgba(13,110,253,0.15)';
+        });
+        var bdColors = labels.map(function(diaNum) {
+            if (!semActiva) return '#0d6efd';
+            return DIA_A_SEMANA[diaNum] === semActiva ? '#0d6efd' : 'rgba(13,110,253,0.3)';
+        });
+
         charts.dias.data.labels = labels;
         charts.dias.data.datasets[0].data = valores;
+        charts.dias.data.datasets[0].backgroundColor = bgColors;
+        charts.dias.data.datasets[0].borderColor = bdColors;
         charts.dias.update('active');
     }
 
