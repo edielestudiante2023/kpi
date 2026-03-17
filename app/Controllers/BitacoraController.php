@@ -164,7 +164,7 @@ class BitacoraController extends BaseController
         $totalDias = count($resumenDiario);
 
         // Chart 1: horas por cada día del mes (incluye días sin registro como 0)
-        $diasDelMes  = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+        $diasDelMes  = (int)date('t', mktime(0, 0, 0, $mes, 1, $anio));
         $horasPorDia = array_fill(1, $diasDelMes, 0.0);
         foreach ($resumenDiario as $r) {
             $diaNum = (int)date('j', strtotime($r['fecha']));
