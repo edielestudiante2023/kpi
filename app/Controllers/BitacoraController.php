@@ -181,12 +181,13 @@ class BitacoraController extends BaseController
             $semIdx++;
         }
 
-        // Opciones únicas de Centro de Costo
+        // Opciones únicas de Centro de Costo — ordenadas A-Z
         $ccSet = [];
         foreach ($granular as $r) {
             $cc = $r['centro_costo_nombre'];
             if (!in_array($cc, $ccSet)) $ccSet[] = $cc;
         }
+        sort($ccSet);
 
         // Opciones únicas de Descripción ordenadas
         $descSet = [];

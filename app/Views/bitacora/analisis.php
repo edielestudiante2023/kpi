@@ -480,16 +480,27 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         charts.top.update('active');
     }
 
-    /* ── Listeners ───────────────────────────────────── */
-    elSemana.addEventListener('change', filtrar);
-    elCC.addEventListener('change', filtrar);
-    elDesc.addEventListener('change', filtrar);
+    /* ── Select2 ─────────────────────────────────────── */
+    var s2opts = {
+        theme: 'bootstrap-5',
+        width: '100%',
+        allowClear: true,
+        language: {
+            noResults: function() { return 'Sin resultados'; },
+            searching:  function() { return 'Buscando…'; }
+        }
+    };
+    $('#filtroSemana').select2(Object.assign({}, s2opts, { placeholder: 'Todas' }));
+    $('#filtroCC').select2(Object.assign({}, s2opts,     { placeholder: 'Todos' }));
+    $('#filtroDesc').select2(Object.assign({}, s2opts,   { placeholder: 'Todas' }));
+
+    /* ── Listeners (jQuery — requerido por Select2) ──── */
+    $('#filtroSemana, #filtroCC, #filtroDesc').on('change', filtrar);
 
     document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
-        elSemana.value = '';
-        elCC.value     = '';
-        elDesc.value   = '';
-        filtrar();
+        $('#filtroSemana').val(null).trigger('change');
+        $('#filtroCC').val(null).trigger('change');
+        $('#filtroDesc').val(null).trigger('change');
     });
 
     /* ── Render inicial (sin filtros) ────────────────── */
