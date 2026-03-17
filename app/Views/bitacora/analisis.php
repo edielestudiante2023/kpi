@@ -149,9 +149,9 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
 <div class="card shadow-sm mb-3" id="cardCC">
     <div class="card-body">
         <h6 class="card-title small text-muted mb-2">
-            <i class="bi bi-pie-chart me-1"></i> Tiempo por Centro de Costo
+            <i class="bi bi-building me-1"></i> Tiempo por Centro de Costo
         </h6>
-        <div style="position:relative; height:220px;">
+        <div style="position:relative; height:200px;">
             <canvas id="chartCC"></canvas>
         </div>
     </div>
@@ -284,19 +284,25 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         }
     });
 
-    // Chart 2: doughnut CC
+    // Chart 2: horizontal bar CC
     charts.cc = new Chart(document.getElementById('chartCC'), {
-        type: 'doughnut',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2, borderColor: '#fff' }] },
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Horas', data: [],
+            backgroundColor: [], borderColor: [], borderWidth: 1, borderRadius: 3 }] },
         options: {
+            indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { padding: 8, font: { size: 10 } } },
+                legend: { display: false },
                 tooltip: { callbacks: { label: function(c) {
                     var total = c.dataset.data.reduce(function(a,b){ return a+b; }, 0);
-                    var pct = total > 0 ? ((c.parsed / total) * 100).toFixed(1) : 0;
-                    return c.label + ': ' + c.parsed.toFixed(1) + 'h (' + pct + '%)';
+                    var pct = total > 0 ? ((c.parsed.x / total) * 100).toFixed(1) : 0;
+                    return c.parsed.x.toFixed(1) + 'h (' + pct + '%)';
                 }}}
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { callback: function(v){ return v+'h'; }, font: { size: 10 } } },
+                y: { ticks: { font: { size: 10 } } }
             }
         }
     });
@@ -404,27 +410,29 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         charts.dias.update('active');
     }
 
-    /* ── Actualizar doughnut CC ──────────────────────── */
+    /* ── Actualizar barras horizontales CC ──────────── */
     function actualizarChartCC(datos) {
         var map  = agruparPor(datos, 'centro_costo_nombre');
         var top8 = topN(map, 8);
         var resto = 0;
-        var allKeys = Object.keys(map);
-        if (allKeys.length > 8) {
-            allKeys.forEach(function(k, i) {
-                if (!top8.find(function(e){ return e.key === k; })) {
-                    resto += map[k];
-                }
-            });
-        }
+        Object.keys(map).forEach(function(k) {
+            if (!top8.find(function(e){ return e.key === k; })) resto += map[k];
+        });
 
         var labels = top8.map(function(e){ return e.key; });
         var values = top8.map(function(e){ return minToH(e.val); });
         if (resto > 0) { labels.push('Otros'); values.push(minToH(resto)); }
 
+        var colors = labels.map(function(_, i){ return COLORS[i % COLORS.length]; });
+
+        // Ajustar altura según cantidad de barras
+        var h = Math.max(100, labels.length * 30 + 20);
+        document.getElementById('chartCC').parentElement.style.height = h + 'px';
+
         charts.cc.data.labels = labels;
         charts.cc.data.datasets[0].data = values;
-        charts.cc.data.datasets[0].backgroundColor = COLORS.slice(0, labels.length);
+        charts.cc.data.datasets[0].backgroundColor = colors.map(function(c){ return c + 'BF'; });
+        charts.cc.data.datasets[0].borderColor = colors;
         charts.cc.update('active');
     }
 
