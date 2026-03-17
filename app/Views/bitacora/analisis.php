@@ -145,13 +145,16 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     </div>
 </div>
 
-<!-- Chart 2: Tiempo por Centro de Costo -->
+<!-- Chart 2: Tiempo por Centro de Costo (barras clickeables) -->
 <div class="card shadow-sm mb-3" id="cardCC">
     <div class="card-body">
         <h6 class="card-title small text-muted mb-2">
             <i class="bi bi-building me-1"></i> Tiempo por Centro de Costo
+            <span class="text-muted fw-normal" style="font-size:0.65rem; margin-left:4px;">
+                <i class="bi bi-hand-index me-1"></i>Toca una barra para filtrar
+            </span>
         </h6>
-        <div style="position:relative; height:200px;">
+        <div style="position:relative; height:200px; cursor:pointer;">
             <canvas id="chartCC"></canvas>
         </div>
     </div>
@@ -284,7 +287,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         }
     });
 
-    // Chart 2: horizontal bar CC
+    // Chart 2: horizontal bar CC — barras clickeables como filtro
     charts.cc = new Chart(document.getElementById('chartCC'), {
         type: 'bar',
         data: { labels: [], datasets: [{ label: 'Horas', data: [],
@@ -292,6 +295,18 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         options: {
             indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
+            onClick: function(evt, elements) {
+                if (!elements.length) return;
+                var label = charts.cc.data.labels[elements[0].index];
+                if (label === 'Otros') return; // "Otros" no es filtrable
+                var actual = $('#filtroCC').val();
+                if (actual === label) {
+                    // segundo click → deseleccionar
+                    $('#filtroCC').val(null).trigger('change');
+                } else {
+                    $('#filtroCC').val(label).trigger('change');
+                }
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: { callbacks: { label: function(c) {
@@ -424,6 +439,16 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         if (resto > 0) { labels.push('Otros'); values.push(minToH(resto)); }
 
         var colors = labels.map(function(_, i){ return COLORS[i % COLORS.length]; });
+        var ccActivo = $('#filtroCC').val();
+
+        // Resaltar barra activa; opacar las demás si hay filtro
+        var bgColors = labels.map(function(lbl, i) {
+            if (!ccActivo) return colors[i] + 'BF';
+            return lbl === ccActivo ? colors[i] : colors[i] + '40';
+        });
+        var bdColors = labels.map(function(lbl, i) {
+            return lbl === ccActivo ? colors[i] : colors[i] + '80';
+        });
 
         // Ajustar altura según cantidad de barras
         var h = Math.max(100, labels.length * 30 + 20);
@@ -431,8 +456,8 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
 
         charts.cc.data.labels = labels;
         charts.cc.data.datasets[0].data = values;
-        charts.cc.data.datasets[0].backgroundColor = colors.map(function(c){ return c + 'BF'; });
-        charts.cc.data.datasets[0].borderColor = colors;
+        charts.cc.data.datasets[0].backgroundColor = bgColors;
+        charts.cc.data.datasets[0].borderColor = bdColors;
         charts.cc.update('active');
     }
 
