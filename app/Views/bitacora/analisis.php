@@ -216,9 +216,8 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     var DESC     = <?= $descOpciones ?>;
     var DIAS_MES = <?= $diasDelMes ?>;
 
-    // Mapa dia_num → week_num (para filtrar por semana al clickear un día)
-    var DIA_A_SEMANA = {};
-    RAW.forEach(function(r) { DIA_A_SEMANA[r.dia_num] = String(r.week_num); });
+    // Filtro de día seleccionado (sin dropdown — solo click en barra)
+    var filtroDia = null;
 
     var COLORS = ['#0d6efd','#198754','#ffc107','#dc3545',
                   '#0dcaf0','#6f42c1','#fd7e14','#20c997','#6c757d'];
@@ -277,7 +276,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     /* ── Crear instancias Chart.js ────────────────────── */
     var charts = {};
 
-    // Chart 1: barras diarias — clickeables por semana
+    // Chart 1: barras diarias — clic filtra por ese día exacto
     charts.dias = new Chart(document.getElementById('chartDias'), {
         type: 'bar',
         data: { labels: [], datasets: [{ label: 'Horas', data: [],
@@ -286,15 +285,13 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
             responsive: true, maintainAspectRatio: false,
             onClick: function(evt, elements) {
                 if (!elements.length) return;
-                var diaLabel = charts.dias.data.labels[elements[0].index];
-                var wk = DIA_A_SEMANA[diaLabel];
-                if (!wk) return;
-                var actual = $('#filtroSemana').val();
-                if (actual === wk) {
-                    $('#filtroSemana').val(null).trigger('change');
+                var diaNum = Number(charts.dias.data.labels[elements[0].index]);
+                if (filtroDia === diaNum) {
+                    filtroDia = null; // segundo clic = deseleccionar
                 } else {
-                    $('#filtroSemana').val(wk).trigger('change');
+                    filtroDia = diaNum;
                 }
+                filtrar();
             },
             plugins: { legend: { display: false },
                 tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1)+'h'; } } } },
@@ -382,10 +379,11 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
             if (semana !== '' && String(r.week_num) !== semana) return false;
             if (cc     !== '' && r.centro_costo_nombre !== cc)  return false;
             if (desc   !== '' && r.descripcion !== desc)        return false;
+            if (filtroDia !== null && Number(r.dia_num) !== filtroDia) return false;
             return true;
         });
 
-        var hayFiltro = semana !== '' || cc !== '' || desc !== '';
+        var hayFiltro = semana !== '' || cc !== '' || desc !== '' || filtroDia !== null;
         var hayDatos  = datos.length > 0;
 
         // Stat cards
@@ -418,37 +416,40 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     /* ── Actualizar chart barras diarias ─────────────── */
     function actualizarChartDias(datos, semanaFiltro) {
         var labels, valores;
-        var semActiva = $('#filtroSemana').val();
+
+        // Usar SIEMPRE RAW para el eje de días (para ver todos los días aunque haya filtro de día)
+        var baseRaw = RAW.filter(function(r) {
+            if (elSemana.value !== '' && String(r.week_num) !== elSemana.value) return false;
+            if (elCC.value     !== '' && r.centro_costo_nombre !== elCC.value)  return false;
+            if (elDesc.value   !== '' && r.descripcion !== elDesc.value)        return false;
+            return true;
+        });
 
         if (semanaFiltro !== '') {
-            // Zoom: solo días de la semana filtrada
-            var map = agruparPor(datos, 'dia_num');
+            var map = agruparPor(baseRaw, 'dia_num');
             var dias = Object.keys(map).map(Number).sort(function(a,b){ return a-b; });
             labels  = dias.map(function(d){ return d; });
             valores = dias.map(function(d){ return minToH(map[d] || 0); });
             document.getElementById('titleDias').textContent = 'Horas por día (semana filtrada)';
         } else {
-            // Mes completo con ceros
-            var mapDia = agruparPor(datos, 'dia_num');
-            labels  = [];
-            valores = [];
+            var mapDia = agruparPor(baseRaw, 'dia_num');
+            labels = []; valores = [];
             for (var d = 1; d <= DIAS_MES; d++) {
                 labels.push(d);
                 valores.push(minToH(mapDia[d] || 0));
             }
-            document.getElementById('titleDias').textContent = 'Horas por día';
+            document.getElementById('titleDias').textContent =
+                filtroDia ? 'Horas por día — día ' + filtroDia + ' seleccionado' : 'Horas por día';
         }
 
-        // Colores: resaltar días de la semana activa, opacar el resto
+        // Colores: resaltar día seleccionado, opacar resto
         var bgColors = labels.map(function(diaNum) {
-            if (!semActiva) return 'rgba(13,110,253,0.7)';
-            return DIA_A_SEMANA[diaNum] === semActiva
-                ? 'rgba(13,110,253,0.9)'
-                : 'rgba(13,110,253,0.15)';
+            if (filtroDia === null) return 'rgba(13,110,253,0.7)';
+            return Number(diaNum) === filtroDia ? 'rgba(13,110,253,1)' : 'rgba(13,110,253,0.15)';
         });
         var bdColors = labels.map(function(diaNum) {
-            if (!semActiva) return '#0d6efd';
-            return DIA_A_SEMANA[diaNum] === semActiva ? '#0d6efd' : 'rgba(13,110,253,0.3)';
+            if (filtroDia === null) return '#0d6efd';
+            return Number(diaNum) === filtroDia ? '#0d6efd' : 'rgba(13,110,253,0.2)';
         });
 
         charts.dias.data.labels = labels;
@@ -564,6 +565,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     $('#filtroSemana, #filtroCC, #filtroDesc').on('change', filtrar);
 
     document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
+        filtroDia = null;
         $('#filtroSemana').val(null).trigger('change');
         $('#filtroCC').val(null).trigger('change');
         $('#filtroDesc').val(null).trigger('change');
