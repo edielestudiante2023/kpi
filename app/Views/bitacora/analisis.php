@@ -163,6 +163,23 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     </div>
 </div>
 
+<!-- Chart Personas: Participación por persona (solo admin viendo todos) -->
+<?php if ($esAdminTodos): ?>
+<div class="card shadow-sm mb-3" id="cardPersonas">
+    <div class="card-body">
+        <h6 class="card-title small text-muted mb-2">
+            <i class="bi bi-people me-1"></i> Participación por persona
+            <span class="text-muted fw-normal" style="font-size:0.65rem; margin-left:4px;">
+                <i class="bi bi-hand-index me-1"></i>Toca un segmento para filtrar
+            </span>
+        </h6>
+        <div style="position:relative; height:240px; cursor:pointer;">
+            <canvas id="chartPersonas"></canvas>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Chart 3: Horas por semana -->
 <div class="card shadow-sm mb-3" id="cardSemanal">
     <div class="card-body">
@@ -216,8 +233,10 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     var DESC     = <?= $descOpciones ?>;
     var DIAS_MES = <?= $diasDelMes ?>;
 
-    // Filtro de día seleccionado (sin dropdown — solo click en barra)
-    var filtroDia = null;
+    // Filtros por interacción directa en charts (sin dropdown)
+    var filtroDia     = null;
+    var filtroPersona = null;
+    var ES_ADMIN_TODOS = <?= $esAdminTodos ? 'true' : 'false' ?>;
 
     var COLORS = ['#0d6efd','#198754','#ffc107','#dc3545',
                   '#0dcaf0','#6f42c1','#fd7e14','#20c997','#6c757d'];
@@ -369,6 +388,31 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         }
     });
 
+    // Chart Personas: doughnut de participación (solo admin todos)
+    if (ES_ADMIN_TODOS && document.getElementById('chartPersonas')) {
+        charts.personas = new Chart(document.getElementById('chartPersonas'), {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2, borderColor: '#fff' }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                onClick: function(evt, elements) {
+                    if (!elements.length) return;
+                    var nombre = charts.personas.data.labels[elements[0].index];
+                    filtroPersona = (filtroPersona === nombre) ? null : nombre;
+                    filtrar();
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 8, font: { size: 10 }, boxWidth: 10 } },
+                    tooltip: { callbacks: { label: function(c) {
+                        var total = c.dataset.data.reduce(function(a,b){ return a+b; }, 0);
+                        var pct   = total > 0 ? ((c.parsed / total) * 100).toFixed(1) : 0;
+                        return c.label + ': ' + c.parsed.toFixed(1) + 'h (' + pct + '%)';
+                    }}}
+                }
+            }
+        });
+    }
+
     /* ── Función principal de filtrado ───────────────── */
     function filtrar() {
         var semana = elSemana.value;
@@ -376,14 +420,15 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         var desc   = elDesc.value;
 
         var datos = RAW.filter(function(r) {
-            if (semana !== '' && String(r.week_num) !== semana) return false;
-            if (cc     !== '' && r.centro_costo_nombre !== cc)  return false;
-            if (desc   !== '' && r.descripcion !== desc)        return false;
-            if (filtroDia !== null && Number(r.dia_num) !== filtroDia) return false;
+            if (semana        !== '' && String(r.week_num) !== semana)          return false;
+            if (cc            !== '' && r.centro_costo_nombre !== cc)           return false;
+            if (desc          !== '' && r.descripcion !== desc)                 return false;
+            if (filtroDia     !== null && Number(r.dia_num) !== filtroDia)      return false;
+            if (filtroPersona !== null && r.nombre_completo !== filtroPersona)  return false;
             return true;
         });
 
-        var hayFiltro = semana !== '' || cc !== '' || desc !== '' || filtroDia !== null;
+        var hayFiltro = semana !== '' || cc !== '' || desc !== '' || filtroDia !== null || filtroPersona !== null;
         var hayDatos  = datos.length > 0;
 
         // Stat cards
@@ -395,8 +440,9 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
 
         // Mostrar/ocultar empty state y charts
         document.getElementById('emptyFiltro').classList.toggle('d-none', !hayFiltro || hayDatos);
-        ['cardCC','cardSemanal','cardTop'].forEach(function(id) {
-            document.getElementById(id).style.display = hayDatos ? '' : 'none';
+        ['cardCC','cardSemanal','cardTop','cardPersonas'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = hayDatos ? '' : 'none';
         });
 
         // Botón limpiar
@@ -411,6 +457,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         actualizarChartCC(datos);
         actualizarChartSemanal(datos);
         actualizarChartTop(datos, desc);
+        if (ES_ADMIN_TODOS && charts.personas) actualizarChartPersonas(datos);
     }
 
     /* ── Actualizar chart barras diarias ─────────────── */
@@ -547,6 +594,26 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         charts.top.update('active');
     }
 
+    /* ── Actualizar doughnut personas ───────────────── */
+    function actualizarChartPersonas(datos) {
+        var map = agruparPor(datos, 'nombre_completo');
+        var entries = topN(map, 12);
+
+        var labels = entries.map(function(e){ return e.key; });
+        var values = entries.map(function(e){ return minToH(e.val); });
+
+        // Colores: resaltar persona activa, opacar resto
+        var bgColors = labels.map(function(nombre, i) {
+            if (!filtroPersona) return COLORS[i % COLORS.length];
+            return nombre === filtroPersona ? COLORS[i % COLORS.length] : COLORS[i % COLORS.length] + '40';
+        });
+
+        charts.personas.data.labels = labels;
+        charts.personas.data.datasets[0].data = values;
+        charts.personas.data.datasets[0].backgroundColor = bgColors;
+        charts.personas.update('active');
+    }
+
     /* ── Select2 ─────────────────────────────────────── */
     var s2opts = {
         theme: 'bootstrap-5',
@@ -565,7 +632,8 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     $('#filtroSemana, #filtroCC, #filtroDesc').on('change', filtrar);
 
     document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
-        filtroDia = null;
+        filtroDia     = null;
+        filtroPersona = null;
         $('#filtroSemana').val(null).trigger('change');
         $('#filtroCC').val(null).trigger('change');
         $('#filtroDesc').val(null).trigger('change');

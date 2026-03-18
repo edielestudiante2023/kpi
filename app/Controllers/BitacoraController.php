@@ -198,11 +198,15 @@ class BitacoraController extends BaseController
         }
         sort($descSet);
 
+        // Admin viendo TODOS → habilitar anillo de participación por persona
+        $esAdminTodos = $esAdmin && $filtroUsuario === null;
+
         $data = [
             'tab'             => 'analisis',
             'anio'            => $anio,
             'mes'             => $mes,
             'esAdmin'         => $esAdmin,
+            'esAdminTodos'    => $esAdminTodos,
             'filtroUsuario'   => $filtroUsuario,
             'usuariosLista'   => $usuariosLista,
             'totalMinutos'    => $totalMinutos,

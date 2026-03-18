@@ -142,6 +142,8 @@ class BitacoraActividadModel extends Model
         }
         return $db->query("
             SELECT
+                ba.id_usuario,
+                u.nombre_completo,
                 ba.fecha,
                 DAY(ba.fecha)                     AS dia_num,
                 WEEK(ba.fecha, 1)                 AS week_num,
@@ -151,10 +153,11 @@ class BitacoraActividadModel extends Model
                 COUNT(*) AS num_actividades
             FROM bitacora_actividades ba
             LEFT JOIN centros_costo cc ON cc.id_centro_costo = ba.id_centro_costo
+            LEFT JOIN users u ON u.id_users = ba.id_usuario
             WHERE YEAR(ba.fecha) = ?
               AND MONTH(ba.fecha) = ?
               {$userFilter}
-            GROUP BY ba.fecha, ba.id_centro_costo, cc.nombre, ba.descripcion, WEEK(ba.fecha, 1)
+            GROUP BY ba.id_usuario, u.nombre_completo, ba.fecha, ba.id_centro_costo, cc.nombre, ba.descripcion, WEEK(ba.fecha, 1)
             ORDER BY ba.fecha ASC
         ", $params)->getResultArray();
     }
