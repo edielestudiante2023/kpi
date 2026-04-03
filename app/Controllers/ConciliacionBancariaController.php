@@ -3,7 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\ConciliacionBancariaModel;
-use App\Models\CentroCostoModel;
+use App\Models\CentroCostoConciliacionModel;
 use App\Models\CuentaBancoModel;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -25,7 +25,7 @@ class ConciliacionBancariaController extends BaseController
         parent::initController($request, $response, $logger);
         helper(['url', 'form']);
         $this->conciliacionModel = new ConciliacionBancariaModel();
-        $this->centroCostoModel  = new CentroCostoModel();
+        $this->centroCostoModel  = new CentroCostoConciliacionModel();
         $this->cuentaBancoModel  = new CuentaBancoModel();
     }
 

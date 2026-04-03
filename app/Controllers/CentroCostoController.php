@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-use App\Models\CentroCostoModel;
+use App\Models\CentroCostoConciliacionModel;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -19,7 +19,7 @@ class CentroCostoController extends BaseController
     ) {
         parent::initController($request, $response, $logger);
         helper(['url', 'form']);
-        $this->centroCostoModel = new CentroCostoModel();
+        $this->centroCostoModel = new CentroCostoConciliacionModel();
     }
 
     public function listCentroCosto()
