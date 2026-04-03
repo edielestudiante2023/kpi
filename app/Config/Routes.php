@@ -340,4 +340,57 @@ $routes->get('bitacora-correccion/(:segment)', 'BitacoraController::verCorreccio
 $routes->post('bitacora-correccion/aprobar/(:segment)', 'BitacoraController::aprobarCorreccion/$1');
 $routes->post('bitacora-correccion/rechazar/(:segment)', 'BitacoraController::rechazarCorreccion/$1');
 
+// ====================================
+// MÓDULO CONCILIACIONES
+// ====================================
+$routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($routes) {
+    // Portafolios
+    $routes->get('portafolios', 'PortafolioController::listPortafolio');
+    $routes->get('portafolios/add', 'PortafolioController::addPortafolio');
+    $routes->post('portafolios/add', 'PortafolioController::addPortafolioPost');
+    $routes->get('portafolios/edit/(:num)', 'PortafolioController::editPortafolio/$1');
+    $routes->post('portafolios/edit/(:num)', 'PortafolioController::editPortafolioPost/$1');
+    $routes->get('portafolios/delete/(:num)', 'PortafolioController::deletePortafolio/$1');
+
+    // Facturación — carga e historial
+    $routes->get('facturacion', 'FacturacionController::listFacturacion');
+    $routes->get('facturacion/upload', 'FacturacionController::uploadForm');
+    $routes->post('facturacion/upload', 'FacturacionController::uploadPost');
+    $routes->get('facturacion/truncar', 'FacturacionController::truncar');
+
+    // Centros de Costo
+    $routes->get('centros-costo', 'CentroCostoController::listCentroCosto');
+    $routes->get('centros-costo/add', 'CentroCostoController::addCentroCosto');
+    $routes->post('centros-costo/add', 'CentroCostoController::addCentroCostoPost');
+    $routes->get('centros-costo/edit/(:num)', 'CentroCostoController::editCentroCosto/$1');
+    $routes->post('centros-costo/edit/(:num)', 'CentroCostoController::editCentroCostoPost/$1');
+    $routes->get('centros-costo/delete/(:num)', 'CentroCostoController::deleteCentroCosto/$1');
+
+    // Carga Cruda — Facturación (CSV)
+    $routes->get('cruda/facturacion', 'CargaCrudaController::uploadFacturacion');
+    $routes->post('cruda/facturacion', 'CargaCrudaController::uploadFacturacionPost');
+    $routes->get('cruda/facturacion/list', 'CargaCrudaController::listFacturacionCruda');
+    $routes->get('cruda/facturacion/truncar', 'CargaCrudaController::truncarFacturacion');
+
+    // Carga Cruda — Movimiento Bancario (CSV)
+    $routes->get('cruda/bancario', 'CargaCrudaController::uploadBancario');
+    $routes->post('cruda/bancario', 'CargaCrudaController::uploadBancarioPost');
+    $routes->get('cruda/bancario/list', 'CargaCrudaController::listBancarioCrudo');
+    $routes->get('cruda/bancario/truncar/(:num)', 'CargaCrudaController::truncarBancario/$1');
+
+    // Cuentas de Banco
+    $routes->get('cuentas-banco', 'CuentaBancoController::listCuentaBanco');
+    $routes->get('cuentas-banco/add', 'CuentaBancoController::addCuentaBanco');
+    $routes->post('cuentas-banco/add', 'CuentaBancoController::addCuentaBancoPost');
+    $routes->get('cuentas-banco/edit/(:num)', 'CuentaBancoController::editCuentaBanco/$1');
+    $routes->post('cuentas-banco/edit/(:num)', 'CuentaBancoController::editCuentaBancoPost/$1');
+    $routes->get('cuentas-banco/delete/(:num)', 'CuentaBancoController::deleteCuentaBanco/$1');
+
+    // Conciliación Bancaria — carga e historial
+    $routes->get('bancaria', 'ConciliacionBancariaController::listConciliacion');
+    $routes->get('bancaria/upload', 'ConciliacionBancariaController::uploadForm');
+    $routes->post('bancaria/upload', 'ConciliacionBancariaController::uploadPost');
+    $routes->get('bancaria/truncar/(:num)', 'ConciliacionBancariaController::truncar/$1');
+});
+
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario
