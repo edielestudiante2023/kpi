@@ -195,6 +195,40 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         </ul>
                     </li>
                     <?php if ($rolId == 1): // Solo Superadmin ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <?= strpos($currentUrl, 'conciliaciones') !== false ? 'active fw-bold' : '' ?>"
+                           href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-bank me-1"></i>Conciliaciones
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-header">Operativo (CSV)</li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cruda/facturacion') ?>">
+                                <i class="bi bi-file-earmark-arrow-up me-2"></i>Subir Facturación
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cruda/bancario') ?>">
+                                <i class="bi bi-file-earmark-arrow-up me-2"></i>Subir Mov. Bancario
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header">Histórico</li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/facturacion') ?>">
+                                <i class="bi bi-table me-2"></i>Facturación
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/bancaria') ?>">
+                                <i class="bi bi-bank me-2"></i>Conciliación Bancaria
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header">Maestras</li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/portafolios') ?>">
+                                <i class="bi bi-folder me-2"></i>Portafolios
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/centros-costo') ?>">
+                                <i class="bi bi-tags me-2"></i>Centros de Costo
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cuentas-banco') ?>">
+                                <i class="bi bi-credit-card me-2"></i>Cuentas de Banco
+                            </a></li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link <?= strpos($currentUrl, 'sesiones') !== false ? 'active fw-bold' : '' ?>"
                            href="<?= base_url('sesiones/dashboard') ?>" target="_blank">

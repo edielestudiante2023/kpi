@@ -2,13 +2,13 @@
 
 use CodeIgniter\Model;
 
-class CentroCostoModel extends Model
+class CuentaBancoModel extends Model
 {
-    protected $table      = 'tbl_centros_costo';
-    protected $primaryKey = 'id_centro_costo';
+    protected $table      = 'tbl_cuentas_banco';
+    protected $primaryKey = 'id_cuenta_banco';
 
     protected $allowedFields = [
-        'centro_costo',
+        'nombre_cuenta',
     ];
 
     protected $returnType    = 'array';
