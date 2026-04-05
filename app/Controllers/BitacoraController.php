@@ -644,8 +644,8 @@ PROMPT;
         $inicioSolo = substr($fechaInicio, 0, 10);
         $diaInicio  = (int) date('j', strtotime($inicioSolo));
         $fechaFinQuincena = $diaInicio <= 15
-            ? date('Y-m-t', strtotime($inicioSolo))        // segunda quincena → último día del mes
-            : date('Y-m-15', strtotime($inicioSolo . ' +1 month')); // primera quincena → día 15 del mes siguiente
+            ? date('Y-m-15', strtotime($inicioSolo))        // primera quincena → día 15 del mes
+            : date('Y-m-t', strtotime($inicioSolo));         // segunda quincena → último día del mes
         $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
 
         // Novedades de tiempo
@@ -747,8 +747,8 @@ PROMPT;
         $inicioSolo = substr($fechaInicio, 0, 10);
         $diaInicio  = (int) date('j', strtotime($inicioSolo));
         $fechaFinQuincena = $diaInicio <= 15
-            ? date('Y-m-t', strtotime($inicioSolo))
-            : date('Y-m-15', strtotime($inicioSolo . ' +1 month'));
+            ? date('Y-m-15', strtotime($inicioSolo))
+            : date('Y-m-t', strtotime($inicioSolo));
         $diasHabiles = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
 
         // 3. Crear registro de liquidación

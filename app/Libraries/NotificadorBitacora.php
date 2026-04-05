@@ -105,8 +105,8 @@ class NotificadorBitacora
             $inicioSolo = substr($fechaInicio, 0, 10);
             $diaInicio  = (int) date('j', strtotime($inicioSolo));
             $fechaFinQuincena = $diaInicio <= 15
-                ? date('Y-m-t', strtotime($inicioSolo))
-                : date('Y-m-15', strtotime($inicioSolo . ' +1 month'));
+                ? date('Y-m-15', strtotime($inicioSolo))
+                : date('Y-m-t', strtotime($inicioSolo));
             $diasHabilesMeta  = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
             if ($diasHabilesMeta <= 0) return null;
 
