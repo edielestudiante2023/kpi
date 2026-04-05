@@ -21,7 +21,7 @@ $diasSemana = ['L','M','X','J','V','S','D'];
 ?>
 
 <?php for ($mes = 1; $mes <= 12; $mes++):
-    $diasEnMes = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+    $diasEnMes = (int) date('t', mktime(0, 0, 0, $mes, 1, $anio));
     $diasConfig = $config[$mes] ?? [];
     $tieneConfig = !empty($diasConfig);
 

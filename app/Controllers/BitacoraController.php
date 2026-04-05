@@ -1017,7 +1017,7 @@ PROMPT;
         }
 
         // Validar que los días estén dentro del rango del mes
-        $diasEnMes = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+        $diasEnMes = (int) date('t', mktime(0, 0, 0, $mes, 1, $anio));
         $dias = array_filter($dias, fn($d) => $d >= 1 && $d <= $diasEnMes);
 
         $model = new \App\Models\DiaHabilConfigModel();
