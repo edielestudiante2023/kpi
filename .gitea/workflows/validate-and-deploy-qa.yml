@@ -1,0 +1,130 @@
+# Pipeline Dev/QA — Validacion + Deploy
+# Trigger: push/PR a develop o feature/*
+#
+# git push → Gitea → Runner → Tests + Trivy + Semgrep → Deploy SSH → LXC (Dev/QA)
+
+name: Validate and Deploy QA
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature/*'
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  # ─── Job 1: Validacion de sintaxis PHP ───
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Verificar sintaxis PHP
+        run: |
+          echo "=== Verificando sintaxis PHP ==="
+          find app/ -name "*.php" -print0 | xargs -0 -n1 php -l 2>&1 | grep -v "No syntax errors" || true
+          find app/ -name "*.php" -print0 | xargs -0 -n1 php -l > /dev/null
+          echo "Sintaxis OK"
+
+  # ─── Job 2: Escaneo de vulnerabilidades en dependencias ───
+  trivy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          ignore-unfixed: true
+
+  # ─── Job 3: Analisis estatico de seguridad ───
+  semgrep:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/php
+            p/secrets
+            p/security-audit
+
+  # ─── Job 4: Busqueda de credenciales hardcodeadas ───
+  secrets-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Buscar API Keys hardcodeadas
+        run: |
+          echo "=== Buscando credenciales hardcodeadas ==="
+          FOUND=0
+
+          # SendGrid
+          if grep -rn "SG\.[a-zA-Z0-9_-]\{20,\}" app/ --include="*.php" | grep -v "getenv\|env(" ; then
+            echo "ALERTA: SendGrid API Key hardcodeada"
+            FOUND=1
+          fi
+
+          # OpenAI
+          if grep -rn "sk-[a-zA-Z0-9]\{20,\}" app/ --include="*.php" | grep -v "getenv\|env(" ; then
+            echo "ALERTA: OpenAI API Key hardcodeada"
+            FOUND=1
+          fi
+
+          # Passwords de BD
+          if grep -rn "AVNS_[a-zA-Z0-9]\{10,\}" app/ migrations/ --include="*.php" ; then
+            echo "ALERTA: Password de BD hardcodeado"
+            FOUND=1
+          fi
+
+          # Tokens genericos
+          if grep -rn "password.*=.*['\"][a-zA-Z0-9]\{15,\}['\"]" app/ --include="*.php" | grep -v "getenv\|env(\|input\|post\|validation\|rules\|label" ; then
+            echo "ALERTA: Posible password hardcodeado"
+            FOUND=1
+          fi
+
+          if [ $FOUND -eq 1 ]; then
+            echo "FALLO: Se encontraron credenciales hardcodeadas"
+            exit 1
+          fi
+
+          echo "OK: No se encontraron credenciales hardcodeadas"
+
+  # ─── Job 5: Deploy a Dev/QA (solo en push a develop) ───
+  deploy-qa:
+    runs-on: ubuntu-latest
+    needs: [trivy, semgrep, secrets-scan]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.QA_HOST }}
+          username: ${{ secrets.QA_USER }}
+          key: ${{ secrets.QA_SSH_KEY }}
+          script: |
+            cd ${{ secrets.QA_PATH }}
+            git pull origin develop
+            composer install --no-dev --optimize-autoloader
+            echo "Deploy QA completado: $(date)"

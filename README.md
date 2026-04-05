@@ -1,68 +1,153 @@
-# CodeIgniter 4 Application Starter
+# KPI — Sistema de Gestion de Indicadores de Desempeno
 
-## What is CodeIgniter?
+**Empresa:** Cycloid Talent
+**Stack:** PHP 8.4 + CodeIgniter 4.7 + MySQL 8 + PWA
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+Plataforma interna para definir, medir y evaluar indicadores clave de rendimiento (KPIs) por equipo, area y cargo. Incluye modulos de actividades/tickets, bitacora de tiempo (PWA), conciliacion bancaria, y asistente de IA.
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+---
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Stack tecnologico
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+| Componente | Tecnologia |
+|------------|-----------|
+| Backend | PHP 8.4 + CodeIgniter 4.7.2 |
+| Base de datos | MySQL 8 (DigitalOcean Managed, SSL required) |
+| Servidor web | Nginx (Ubuntu 24.04, Hetzner LXC) |
+| Email | SendGrid API v3 |
+| IA | OpenAI GPT-3.5-turbo (generacion de indicadores y actividades) |
+| PWA | Bitacora de tiempo (manifest + service worker + push notifications) |
+| Push | Web Push API (minishlink/web-push) |
+| Excel | PhpSpreadsheet (importacion CSV, exportaciones) |
 
-## Installation & updates
+---
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## Modulos principales (10)
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+| Modulo | Descripcion |
+|--------|-------------|
+| Indicadores KPI | Definir, asignar, diligenciar y evaluar indicadores por perfil de cargo con formulas personalizadas |
+| Actividades/Tickets | Tablero Kanban por estado y responsable, comentarios, archivos adjuntos, dashboard |
+| Bitacora (PWA) | Registro de tiempo por actividad, analisis diario/semanal/mensual, centros de costo, liquidacion quincenal |
+| Conciliaciones | Portafolios, facturacion, cuentas bancarias, conciliacion bancaria, carga masiva CSV |
+| Usuarios y Roles | CRUD completo con perfiles de cargo, equipos, areas, jerarquias jefe-subordinado |
+| Dashboards | Vistas diferenciadas por rol: superadmin, admin, jefatura, trabajador |
+| Auditoria | Historial de cambios en indicadores, ediciones, trazabilidad completa |
+| Sesiones | Monitoreo de tiempo de uso por usuario, sesiones activas, exportacion |
+| Notificaciones | Email (SendGrid) + Push (Web Push API) + preferencias por usuario |
+| IA (OpenAI) | Generacion automatica de indicadores y actividades con GPT-3.5-turbo |
 
-## Setup
+---
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## Roles de usuario
 
-## Important Change with index.php
+| Rol | Acceso |
+|-----|--------|
+| superadmin | Todo el sistema + gestion de usuarios + configuracion global |
+| admin | Dashboard administrativo + gestion de equipos y areas |
+| jefatura | Indicadores de equipo + aprobacion de formulas + historial jerarquico |
+| trabajador | Mis indicadores + diligenciar formulas + bitacora de tiempo |
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+---
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+## Estructura del proyecto
 
-**Please** read the user guide for a better explanation of how CI4 works!
+```
+kpi/
+├── app/
+│   ├── Commands/          # 5 comandos spark (cron jobs)
+│   ├── Config/            # Routes.php, Database.php, OpenAI.php, Filters.php
+│   ├── Controllers/       # 35 controladores
+│   ├── Filters/           # Auth, SesionTrackingFilter
+│   ├── Helpers/           # bitacora_helper
+│   ├── Libraries/         # 5 librerias (Evaluador, Notificadores, OpenAI, Push)
+│   ├── Models/            # 37 modelos
+│   └── Views/             # 124 vistas (17 subdirectorios por modulo)
+├── docs/                  # Documentacion tecnica
+├── migrations/            # 23 migraciones SQL
+├── public/                # Punto de entrada web (index.php) + PWA assets
+├── tests/                 # Tests PHPUnit
+├── writable/              # Logs, cache, sesiones, uploads
+├── .env                   # Variables de entorno (NO commitear)
+├── .env.example           # Template de variables
+├── CONTRIBUTING.md        # Guia de contribucion
+├── composer.json          # Dependencias PHP
+└── spark                  # CLI de CodeIgniter
+```
 
-## Repository Management
+---
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+## Requisitos previos
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+- PHP >= 8.4 con extensiones: intl, mbstring, mysqlnd, curl, json
+- MySQL 8+
+- Composer 2+
+- Servidor web: Nginx o Apache (apuntar a `public/`)
 
-## Server Requirements
+---
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+## Instalacion local
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/edielestudiante2023/kpi.git
+cd kpi
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+# 2. Instalar dependencias
+composer install
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+# 3. Configurar entorno
+cp .env.example .env
+# Editar .env con credenciales locales
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+# 4. Crear la base de datos
+mysql -u root -e "CREATE DATABASE kpicycloid"
+
+# 5. Ejecutar migraciones (en orden cronologico desde migrations/)
+
+# 6. Iniciar servidor de desarrollo
+php spark serve
+```
+
+---
+
+## Variables de entorno
+
+Ver `.env.example` para la lista completa. Las principales:
+
+| Variable | Descripcion |
+|----------|-------------|
+| `database.default.*` | Conexion MySQL principal |
+| `SENDGRID_API_KEY` | API Key de SendGrid para emails |
+| `OPENAI_API_KEY` | API Key de OpenAI para generacion IA |
+| `OPENAI_MODEL` | Modelo de OpenAI (default: gpt-3.5-turbo) |
+| `BITACORA_REPORT_EMAILS` | Destinatarios del reporte diario de bitacora |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Claves para push notifications |
+
+---
+
+## Cron jobs (tareas programadas)
+
+| Comando | Frecuencia | Descripcion |
+|---------|-----------|-------------|
+| `php spark bitacora:resumen-diario` | Diario | Envia reporte diario de actividades de bitacora |
+| `php spark bitacora:notificar-activas` | Cada 30 min | Notifica actividades activas o vencidas |
+| `php spark actividades:recordatorio-revision` | Diario | Recuerda items en revision a creadores (max 2/dia) |
+| `php spark resumen-diario` | Diario | Resumen diario general |
+
+---
+
+## Deploy
+
+El proyecto se despliega en un LXC en Hetzner via SSH:
+
+- **Servidor:** server1.cycloidtalent.com (66.29.154.174)
+- **Ruta:** `/www/wwwroot/kpi/`
+- **BD produccion:** DigitalOcean Managed MySQL (SSL required)
+
+---
+
+## Documentacion adicional
+
+- [docs/liquidacion-quincenal.md](docs/liquidacion-quincenal.md) — Logica de liquidacion quincenal de bitacora
+- [docs/HARDENING-kpi.md](docs/HARDENING-kpi.md) — Documento de hardening del repositorio

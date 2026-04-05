@@ -128,3 +128,14 @@ _modules/*
 /phpunit*.xml
 .claude/
 .claude/settings.local.json
+
+#-------------------------
+# Archivos de datos / dumps
+#-------------------------
+*.stackdump
+public/backupdb.sql
+
+#-------------------------
+# Archivos temporales del proyecto
+#-------------------------
+info.txt

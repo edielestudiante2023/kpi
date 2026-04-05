@@ -1,0 +1,110 @@
+# Pipeline Produccion — Validacion + Deploy + Verificacion
+# Trigger: push a main (merge de PR desde develop)
+#
+# PR develop → main → Validacion → Trivy + Semgrep → Deploy SSH → LXC Produccion (Hetzner)
+#                                                                → Verificacion post-deploy
+
+name: Cutover Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # ─── Job 1: Validacion de sintaxis + credenciales ───
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Verificar sintaxis PHP
+        run: |
+          find app/ -name "*.php" -print0 | xargs -0 -n1 php -l > /dev/null
+          echo "Sintaxis OK"
+
+      - name: Buscar credenciales hardcodeadas
+        run: |
+          FOUND=0
+          if grep -rn "SG\.[a-zA-Z0-9_-]\{20,\}" app/ --include="*.php" | grep -v "getenv\|env(" ; then
+            FOUND=1
+          fi
+          if grep -rn "sk-[a-zA-Z0-9]\{20,\}" app/ --include="*.php" | grep -v "getenv\|env(" ; then
+            FOUND=1
+          fi
+          if grep -rn "AVNS_[a-zA-Z0-9]\{10,\}" app/ migrations/ --include="*.php" ; then
+            FOUND=1
+          fi
+          if [ $FOUND -eq 1 ]; then
+            echo "FALLO: Credenciales hardcodeadas detectadas. No se puede deployar."
+            exit 1
+          fi
+          echo "OK: Sin credenciales hardcodeadas"
+
+  # ─── Job 2: Escaneo de vulnerabilidades (paralelo con semgrep) ───
+  trivy:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          ignore-unfixed: true
+
+  # ─── Job 3: Analisis estatico de seguridad (paralelo con trivy) ───
+  semgrep:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/php
+            p/secrets
+            p/security-audit
+
+  # ─── Job 4: Deploy a Produccion + Verificacion HTTP ───
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [trivy, semgrep]
+    steps:
+      - name: Deploy via SSH a Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd ${{ secrets.PROD_PATH }}
+            git pull origin main
+            composer install --no-dev --optimize-autoloader
+            echo "Deploy produccion completado: $(date)"
+
+      - name: Verificacion post-deploy
+        run: |
+          echo "Verificando que el sitio responda..."
+          sleep 5
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://kpi.cycloidtalent.com/login || echo "000")
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 302 ]; then
+            echo "Sitio respondiendo correctamente (HTTP $HTTP_STATUS)"
+          else
+            echo "ALERTA: Sitio no responde como esperado (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
