@@ -128,15 +128,68 @@ class NotificadorBitacora
                 (int) $usuario['id_users'], $fechaInicio, $ahora
             );
 
+            // Datos para desglose de meta en email
+            $horasDia   = $jornada === 'media' ? 4 : 8;
+            $eficiencia = $jornada === 'media' ? 0.90 : 0.80;
+            $metaBase   = $diasHabilesMeta * $horasDia * $eficiencia;
+
+            // Lista de días hábiles de la quincena (desde config manual o cálculo)
+            $db = \Config\Database::connect();
+            $mesInicio = (int) date('n', strtotime($inicioSolo));
+            $anioInicio = (int) date('Y', strtotime($inicioSolo));
+            $diasHabilesLista = [];
+
+            $rowConfig = $db->query(
+                "SELECT COUNT(*) AS c FROM dias_habiles_config WHERE anio = ? AND mes = ?",
+                [$anioInicio, $mesInicio]
+            )->getRowArray();
+
+            if (((int) ($rowConfig['c'] ?? 0)) > 0) {
+                // Desde config manual
+                $rowsDias = $db->query(
+                    "SELECT dia FROM dias_habiles_config WHERE anio = ? AND mes = ? ORDER BY dia",
+                    [$anioInicio, $mesInicio]
+                )->getResultArray();
+                $diaMin = ($diaInicio <= 15) ? 1 : 16;
+                $diaMax = ($diaInicio <= 15) ? 15 : (int) date('t', strtotime($inicioSolo));
+                foreach ($rowsDias as $r) {
+                    $d = (int) $r['dia'];
+                    if ($d >= $diaMin && $d <= $diaMax) {
+                        $diasHabilesLista[] = $d;
+                    }
+                }
+            }
+
+            // Novedades colectivas detalladas
+            $novedadesColDetalle = $db->query(
+                "SELECT fecha, descripcion, horas_reduccion FROM novedades_colectivas WHERE fecha >= ? AND fecha <= ?",
+                [substr($fechaInicio, 0, 10), $fechaFinQuincena]
+            )->getResultArray();
+
+            // Novedades individuales detalladas
+            $novedadesIndDetalle = $db->query(
+                "SELECT fecha, motivo, horas_reduccion FROM novedades_individuales WHERE id_usuario = ? AND fecha >= ? AND fecha <= ?",
+                [(int) $usuario['id_users'], substr($fechaInicio, 0, 10), $fechaFinQuincena]
+            )->getResultArray();
+
             return [
-                'fecha_inicio'       => $fechaInicio,
-                'dias_habiles'       => $diasHabilesMeta,
-                'dias_transcurridos' => $diasTranscurridos,
-                'horas_trabajadas'   => $horasTrabajadas,
-                'horas_meta'         => $horasMeta,
-                'porcentaje'         => $porcentaje,
-                'jornada'            => $jornada,
-                'dias_detalle'       => $diasDetalle,
+                'fecha_inicio'        => $fechaInicio,
+                'fecha_fin_quincena'  => $fechaFinQuincena,
+                'dias_habiles'        => $diasHabilesMeta,
+                'dias_transcurridos'  => $diasTranscurridos,
+                'dias_habiles_lista'  => $diasHabilesLista,
+                'horas_trabajadas'    => $horasTrabajadas,
+                'horas_meta'          => $horasMeta,
+                'meta_base'           => $metaBase,
+                'horas_dia'           => $horasDia,
+                'eficiencia'          => $eficiencia,
+                'horas_colectivas'    => $horasColectivas,
+                'horas_individuales'  => $horasIndividuales,
+                'novedades_col'       => $novedadesColDetalle,
+                'novedades_ind'       => $novedadesIndDetalle,
+                'porcentaje'          => $porcentaje,
+                'jornada'             => $jornada,
+                'dias_detalle'        => $diasDetalle,
             ];
         } catch (\Exception $e) {
             log_message('error', 'NotificadorBitacora: Error progreso quincenal - ' . $e->getMessage());
@@ -270,6 +323,9 @@ class NotificadorBitacora
                     </div>";
         }
 
+        // Desglose de la meta
+        $desgloseHtml = $this->generarDesgloseMeta($progreso);
+
         return "
                 <div style='background: white; border-radius: 8px; padding: 15px; margin-top: 20px;'>
                     <h3 style='margin: 0 0 10px 0; font-size: 15px; color: #2c3e50;'>Progreso Quincenal</h3>
@@ -279,7 +335,7 @@ class NotificadorBitacora
                             <td>{$desde} — Hoy</td>
                         </tr>
                         <tr>
-                            <td style='color: #6c757d;'>Días hábiles:</td>
+                            <td style='color: #6c757d;'>Dias habiles:</td>
                             <td>{$progreso['dias_transcurridos']} de {$progreso['dias_habiles']} ({$jornadaLabel})</td>
                         </tr>
                         <tr>
@@ -293,8 +349,99 @@ class NotificadorBitacora
                         </div>
                     </div>
                     {$diferenciaHtml}
+                    {$desgloseHtml}
                     {$this->generarTablaDetalleDias($progreso['dias_detalle'] ?? [])}
                 </div>";
+    }
+
+    /**
+     * Genera el desglose visual de como se calcula la meta
+     */
+    protected function generarDesgloseMeta(array $progreso): string
+    {
+        $diasHabiles   = $progreso['dias_habiles'] ?? 0;
+        $horasDia      = $progreso['horas_dia'] ?? 8;
+        $eficiencia    = $progreso['eficiencia'] ?? 0.80;
+        $efPct         = (int) ($eficiencia * 100);
+        $metaBase      = $progreso['meta_base'] ?? 0;
+        $horasCol      = $progreso['horas_colectivas'] ?? 0;
+        $horasInd      = $progreso['horas_individuales'] ?? 0;
+        $horasMeta     = $progreso['horas_meta'] ?? 0;
+        $diasLista     = $progreso['dias_habiles_lista'] ?? [];
+        $novedadesCol  = $progreso['novedades_col'] ?? [];
+        $novedadesInd  = $progreso['novedades_ind'] ?? [];
+
+        // Lista de dias habiles
+        $diasTexto = '';
+        if (!empty($diasLista)) {
+            $diasTexto = implode(', ', $diasLista);
+        }
+
+        // Filas de novedades
+        $novedadesHtml = '';
+        foreach ($novedadesCol as $n) {
+            $fechaFmt = date('d/m', strtotime($n['fecha']));
+            $desc = htmlspecialchars($n['descripcion']);
+            $hrs = $n['horas_reduccion'];
+            $descuento = round($hrs * $eficiencia, 2);
+            $novedadesHtml .= "
+                            <tr>
+                                <td style='padding: 4px 8px; font-size: 12px; color: #856404;'>
+                                    {$fechaFmt} — {$desc}
+                                </td>
+                                <td style='padding: 4px 8px; font-size: 12px; text-align: right; color: #dc3545; font-weight: 600;'>
+                                    -{$descuento}h
+                                </td>
+                            </tr>";
+        }
+        foreach ($novedadesInd as $n) {
+            $fechaFmt = date('d/m', strtotime($n['fecha']));
+            $desc = htmlspecialchars($n['motivo']);
+            $hrs = $n['horas_reduccion'];
+            $descuento = round($hrs * $eficiencia, 2);
+            $novedadesHtml .= "
+                            <tr>
+                                <td style='padding: 4px 8px; font-size: 12px; color: #856404;'>
+                                    {$fechaFmt} — {$desc} (individual)
+                                </td>
+                                <td style='padding: 4px 8px; font-size: 12px; text-align: right; color: #dc3545; font-weight: 600;'>
+                                    -{$descuento}h
+                                </td>
+                            </tr>";
+        }
+
+        $novedadesSeccion = '';
+        if (!empty($novedadesHtml)) {
+            $novedadesSeccion = "
+                        <table style='width: 100%; border-collapse: collapse; margin-top: 4px;'>
+                            {$novedadesHtml}
+                        </table>";
+        }
+
+        $diasListaHtml = '';
+        if (!empty($diasTexto)) {
+            $diasListaHtml = "
+                            <tr>
+                                <td style='padding: 4px 8px; font-size: 12px; color: #6c757d;'>Dias habiles:</td>
+                                <td style='padding: 4px 8px; font-size: 12px; font-weight: 600;'>{$diasTexto}</td>
+                            </tr>";
+        }
+
+        return "
+                    <div style='margin-top: 12px; padding: 10px; background: #f0f4f8; border-radius: 6px; border-left: 3px solid #0d6efd;'>
+                        <div style='font-size: 13px; font-weight: 700; color: #2c3e50; margin-bottom: 6px;'>Calculo de la meta</div>
+                        <table style='width: 100%; border-collapse: collapse;'>
+                            {$diasListaHtml}
+                            <tr>
+                                <td style='padding: 4px 8px; font-size: 12px; color: #6c757d;'>Operacion:</td>
+                                <td style='padding: 4px 8px; font-size: 12px; font-weight: 600;'>{$diasHabiles} dias x {$horasDia}h x {$efPct}% = {$metaBase}h</td>
+                            </tr>
+                        </table>
+                        {$novedadesSeccion}
+                        <div style='margin-top: 6px; padding-top: 6px; border-top: 1px solid #dee2e6; font-size: 13px; font-weight: 700; color: #198754;'>
+                            Meta final: {$horasMeta}h
+                        </div>
+                    </div>";
     }
 
     /**
