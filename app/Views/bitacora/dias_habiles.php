@@ -44,25 +44,18 @@ $diasSemana = ['L','M','X','J','V','S','D'];
             </div>
         </div>
 
-        <!-- Leyenda dias de la semana -->
-        <div class="d-flex mb-1" style="gap:4px;">
-            <?php
-            // Calcular padding para alinear con el primer dia del mes
-            $primerDiaSemana = (int) date('N', mktime(0, 0, 0, $mes, 1, $anio)); // 1=Lun
-            ?>
-            <?php for ($ds = 1; $ds <= 7; $ds++): ?>
-            <div style="width:32px;height:16px;text-align:center;font-size:0.55rem;color:#999;font-weight:600;">
-                <?= $diasSemana[$ds - 1] ?>
-            </div>
-            <?php endfor; ?>
-        </div>
+        <?php $primerDiaSemana = (int) date('N', mktime(0, 0, 0, $mes, 1, $anio)); ?>
 
-        <!-- Circulos de dias -->
-        <div class="d-flex flex-wrap" style="gap:4px;" data-mes="<?= $mes ?>">
-            <?php
-            // Espacios vacios antes del dia 1
-            for ($s = 1; $s < $primerDiaSemana; $s++): ?>
-            <div style="width:32px;height:32px;"></div>
+        <!-- Grid calendario 7 columnas -->
+        <div class="grid-calendario" data-mes="<?= $mes ?>">
+            <!-- Header dias de la semana -->
+            <?php for ($ds = 0; $ds < 7; $ds++): ?>
+            <div class="grid-header"><?= $diasSemana[$ds] ?></div>
+            <?php endfor; ?>
+
+            <!-- Espacios vacios antes del dia 1 -->
+            <?php for ($s = 1; $s < $primerDiaSemana; $s++): ?>
+            <div></div>
             <?php endfor; ?>
 
             <?php for ($dia = 1; $dia <= $diasEnMes; $dia++):
@@ -86,12 +79,9 @@ $diasSemana = ['L','M','X','J','V','S','D'];
             <div class="<?= $clase ?>"
                  data-dia="<?= $dia ?>"
                  data-mes="<?= $mes ?>"
-                 title="<?= $dia ?>/<?= $mes ?>/<?= $anio ?><?= $esFestivo ? ' (Festivo)' : '' ?><?= $esFinDeSemana ? ' (Fin de semana)' : '' ?>"
-                 style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;cursor:pointer;user-select:none;transition:all 0.15s;">
+                 title="<?= $dia ?>/<?= $mes ?>/<?= $anio ?><?= $esFestivo ? ' (Festivo)' : '' ?><?= $esFinDeSemana ? ' (Fin de semana)' : '' ?>">
                 <?= $dia ?>
             </div>
-            <?php if ($esSeparador && $primerDiaSemana + 14 <= 7 * ceil(($primerDiaSemana + 14) / 7)): ?>
-            <?php endif; ?>
             <?php endfor; ?>
         </div>
 
@@ -125,7 +115,32 @@ $diasSemana = ['L','M','X','J','V','S','D'];
 </a>
 
 <style>
+.grid-calendario {
+    display: grid;
+    grid-template-columns: repeat(7, 36px);
+    gap: 4px;
+    justify-content: center;
+}
+.grid-header {
+    text-align: center;
+    font-size: 0.6rem;
+    color: #999;
+    font-weight: 700;
+    height: 18px;
+    line-height: 18px;
+}
 .dia-circulo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
     border: 2px solid #dee2e6;
     background: #fff;
     color: #333;
