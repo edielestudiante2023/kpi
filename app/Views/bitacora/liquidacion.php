@@ -93,9 +93,14 @@
     </div>
 </div>
 
+<!-- Dias Habiles -->
+<a href="<?= base_url('bitacora/dias-habiles') ?>" class="btn btn-outline-primary btn-sm w-100 mb-2">
+    <i class="bi bi-calendar-check me-1"></i> Configurar Dias Habiles
+</a>
+
 <!-- Link a festivos -->
 <a href="<?= base_url('bitacora/festivos') ?>" class="btn btn-outline-secondary btn-sm w-100 mb-2">
-    <i class="bi bi-calendar-event me-1"></i> Gestionar Días Festivos
+    <i class="bi bi-calendar-event me-1"></i> Gestionar Dias Festivos
 </a>
 
 <!-- Novedades de Tiempo -->

@@ -318,6 +318,10 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->get('liquidacion', 'BitacoraController::liquidacion');
     $routes->post('liquidacion/ejecutar', 'BitacoraController::ejecutarLiquidacion');
     $routes->get('liquidacion/detalle/(:num)', 'BitacoraController::detalleLiquidacion/$1');
+    // Dias Habiles — configuracion manual
+    $routes->get('dias-habiles', 'BitacoraController::diasHabiles');
+    $routes->get('dias-habiles/(:num)', 'BitacoraController::diasHabiles/$1');
+    $routes->post('dias-habiles/guardar', 'BitacoraController::guardarDiasHabiles');
     // Festivos
     $routes->get('festivos', 'BitacoraController::festivos');
     $routes->get('festivos/(:num)', 'BitacoraController::festivos/$1');

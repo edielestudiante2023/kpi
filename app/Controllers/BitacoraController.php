@@ -961,6 +961,76 @@ PROMPT;
     }
 
     // ========================================
+    // DIAS HABILES — CONFIGURACION MANUAL
+    // ========================================
+
+    /**
+     * Vista de gestión de días hábiles por año (círculos clickeables)
+     */
+    public function diasHabiles($anio = null)
+    {
+        if (!$this->verificarAcceso()) return redirect()->to('/login');
+        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
+
+        $anio = $anio ?: (int) date('Y');
+        $diaHabilModel = new \App\Models\DiaHabilConfigModel();
+        $festivoModel  = new \App\Models\DiaFestivoModel();
+
+        // Cargar configuración de cada mes
+        $config = [];
+        for ($mes = 1; $mes <= 12; $mes++) {
+            $config[$mes] = $diaHabilModel->getDiasHabiles($anio, $mes);
+        }
+
+        // Cargar festivos del año como array de fechas 'Y-m-d'
+        $festivosRaw = $festivoModel->getFestivosAnio($anio);
+        $festivos = array_column($festivosRaw, 'fecha');
+
+        return view('bitacora/dias_habiles', [
+            'tab'      => 'liquidacion',
+            'anio'     => $anio,
+            'config'   => $config,
+            'festivos' => $festivos,
+        ]);
+    }
+
+    /**
+     * Guardar días hábiles de un mes — AJAX POST
+     */
+    public function guardarDiasHabiles()
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $anio = (int) $this->request->getPost('anio');
+        $mes  = (int) $this->request->getPost('mes');
+        $diasJson = $this->request->getPost('dias');
+
+        if (!$anio || !$mes || $mes < 1 || $mes > 12) {
+            return $this->response->setJSON(['error' => 'Parámetros inválidos'])->setStatusCode(400);
+        }
+
+        $dias = json_decode($diasJson, true);
+        if (!is_array($dias)) {
+            return $this->response->setJSON(['error' => 'Formato de días inválido'])->setStatusCode(400);
+        }
+
+        // Validar que los días estén dentro del rango del mes
+        $diasEnMes = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+        $dias = array_filter($dias, fn($d) => $d >= 1 && $d <= $diasEnMes);
+
+        $model = new \App\Models\DiaHabilConfigModel();
+        $model->guardarMes($anio, $mes, $dias, (int) session()->get('id_users'));
+
+        return $this->response->setJSON([
+            'ok'         => true,
+            'dias_count' => count($dias),
+            'csrf_token' => csrf_hash(),
+        ]);
+    }
+
+    // ========================================
     // NOVEDADES DE TIEMPO
     // ========================================
 

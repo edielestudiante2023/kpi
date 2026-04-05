@@ -21,15 +21,23 @@ class DiaFestivoModel extends Model
     }
 
     /**
-     * Cuenta días hábiles (lunes a viernes, excluyendo festivos) en un rango.
+     * Cuenta días hábiles en un rango.
+     * Prioridad: configuración manual (dias_habiles_config) > cálculo automático (L-V menos festivos).
      * $desde y $hasta son strings 'Y-m-d' o 'Y-m-d H:i:s'. Se usan solo las fechas.
      */
     public function contarDiasHabiles(string $desde, string $hasta): int
     {
+        // Intentar con configuración manual primero
+        $configModel = new DiaHabilConfigModel();
+        $resultado = $configModel->contarDiasHabilesRango($desde, $hasta);
+        if ($resultado !== null) {
+            return $resultado;
+        }
+
+        // Fallback: cálculo automático (L-V excluyendo festivos)
         $inicio = new \DateTime(substr($desde, 0, 10));
         $fin    = new \DateTime(substr($hasta, 0, 10));
 
-        // Obtener festivos en el rango
         $festivos = $this->where('fecha >=', $inicio->format('Y-m-d'))
                          ->where('fecha <=', $fin->format('Y-m-d'))
                          ->findAll();
