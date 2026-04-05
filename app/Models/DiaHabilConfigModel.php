@@ -31,7 +31,12 @@ class DiaHabilConfigModel extends Model
      */
     public function tieneConfiguracion(int $anio, int $mes): bool
     {
-        return $this->where('anio', $anio)->where('mes', $mes)->countAllResults() > 0;
+        $db = \Config\Database::connect();
+        $row = $db->query(
+            "SELECT COUNT(*) AS c FROM {$this->table} WHERE anio = ? AND mes = ?",
+            [$anio, $mes]
+        )->getRowArray();
+        return ((int) ($row['c'] ?? 0)) > 0;
     }
 
     /**
@@ -40,10 +45,9 @@ class DiaHabilConfigModel extends Model
      */
     public function guardarMes(int $anio, int $mes, array $dias, ?int $createdBy = null): void
     {
-        // Eliminar configuración anterior del mes
-        $this->where('anio', $anio)->where('mes', $mes)->delete();
+        $db = \Config\Database::connect();
+        $db->query("DELETE FROM {$this->table} WHERE anio = ? AND mes = ?", [$anio, $mes]);
 
-        // Insertar nuevos días
         foreach ($dias as $d) {
             $this->insert([
                 'anio'       => $anio,
@@ -62,12 +66,13 @@ class DiaHabilConfigModel extends Model
     {
         $inicio = new \DateTime(substr($desde, 0, 10));
         $fin    = new \DateTime(substr($hasta, 0, 10));
+        $db     = \Config\Database::connect();
 
         // Recopilar todos los meses involucrados
         $meses = [];
         $tmp = clone $inicio;
         while ($tmp <= $fin) {
-            $key = $tmp->format('Y-n'); // "2026-4"
+            $key = $tmp->format('Y-n');
             $meses[$key] = ['anio' => (int) $tmp->format('Y'), 'mes' => (int) $tmp->format('n')];
             $tmp->modify('first day of next month');
         }
@@ -75,23 +80,28 @@ class DiaHabilConfigModel extends Model
         // Verificar que todos los meses tengan configuración
         foreach ($meses as $m) {
             if (!$this->tieneConfiguracion($m['anio'], $m['mes'])) {
-                return null; // Fallback a lógica automática
+                return null;
             }
         }
 
-        // Contar días configurados que caigan en el rango
+        // Precargar todos los días configurados del rango en un set PHP
+        $diasHabiles = [];
+        foreach ($meses as $m) {
+            $rows = $db->query(
+                "SELECT dia FROM {$this->table} WHERE anio = ? AND mes = ?",
+                [$m['anio'], $m['mes']]
+            )->getResultArray();
+            foreach ($rows as $r) {
+                $fecha = sprintf('%04d-%02d-%02d', $m['anio'], $m['mes'], $r['dia']);
+                $diasHabiles[$fecha] = true;
+            }
+        }
+
+        // Contar días del rango que estén en el set
         $count = 0;
         $actual = clone $inicio;
         while ($actual <= $fin) {
-            $anio = (int) $actual->format('Y');
-            $mes  = (int) $actual->format('n');
-            $dia  = (int) $actual->format('j');
-
-            $existe = $this->where('anio', $anio)
-                           ->where('mes', $mes)
-                           ->where('dia', $dia)
-                           ->countAllResults() > 0;
-            if ($existe) {
+            if (isset($diasHabiles[$actual->format('Y-m-d')])) {
                 $count++;
             }
             $actual->modify('+1 day');
