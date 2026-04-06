@@ -530,18 +530,41 @@ $tieneActiva = !empty($actividadActiva);
                 denyButtonColor: '#198754',
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    // Mostrar segundo modal con textarea para editar descripción
+                    // Mostrar segundo modal con textarea y centro de costo
+                    var ccActualId = <?= json_encode($actividadActiva['id_centro_costo'] ?? '') ?>;
+                    var opcionesCC = '';
+                    <?php if (!empty($centrosCosto)): ?>
+                    <?php foreach ($centrosCosto as $cc): ?>
+                    opcionesCC += '<option value="<?= $cc['id_centro_costo'] ?>"><?= esc($cc['nombre']) ?></option>';
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+
                     Swal.fire({
-                        title: 'Editar descripción',
-                        input: 'textarea',
-                        inputLabel: 'Descripción de la actividad',
-                        inputValue: descActual,
-                        inputAttributes: {
-                            rows: 5,
-                            style: 'font-size: 0.95rem;'
+                        title: 'Editar actividad',
+                        html:
+                            '<label class="form-label small fw-bold text-start d-block mb-1">Descripción</label>' +
+                            '<textarea id="swalDescripcion" class="swal2-textarea" rows="4" style="font-size:0.95rem;display:block;">' + descActual.replace(/</g,'&lt;') + '</textarea>' +
+                            '<label class="form-label small fw-bold text-start d-block mb-1 mt-2">Centro de Costo</label>' +
+                            '<select id="swalCentroCosto" class="swal2-select" style="display:block;">' +
+                            '<option value="">Selecciona...</option>' +
+                            opcionesCC +
+                            '</select>',
+                        didOpen: function() {
+                            var sel = document.getElementById('swalCentroCosto');
+                            if (sel && ccActualId) sel.value = ccActualId;
                         },
-                        inputValidator: function(value) {
-                            if (!value || !value.trim()) return 'La descripción no puede estar vacía';
+                        preConfirm: function() {
+                            var desc = document.getElementById('swalDescripcion').value;
+                            var cc = document.getElementById('swalCentroCosto').value;
+                            if (!desc || !desc.trim()) {
+                                Swal.showValidationMessage('La descripción no puede estar vacía');
+                                return false;
+                            }
+                            if (!cc) {
+                                Swal.showValidationMessage('Debes seleccionar un centro de costo');
+                                return false;
+                            }
+                            return { descripcion: desc, id_centro_costo: cc };
                         },
                         showCancelButton: true,
                         confirmButtonText: '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad',
@@ -549,7 +572,7 @@ $tieneActiva = !empty($actividadActiva);
                         confirmButtonColor: '#dc3545',
                     }).then(function(result2) {
                         if (result2.isConfirmed) {
-                            finalizarActividad(id, result2.value);
+                            finalizarActividad(id, result2.value.descripcion, result2.value.id_centro_costo);
                         }
                     });
                 } else if (result.isDenied) {
@@ -560,7 +583,7 @@ $tieneActiva = !empty($actividadActiva);
         });
     }
 
-    function finalizarActividad(id, nuevaDescripcion) {
+    function finalizarActividad(id, nuevaDescripcion, nuevoCentroCosto) {
         btnTerminar.disabled = true;
         btnTerminar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Finalizando...';
         detenerCronometro();
@@ -568,6 +591,9 @@ $tieneActiva = !empty($actividadActiva);
         var datos = {};
         if (nuevaDescripcion !== null) {
             datos.descripcion = nuevaDescripcion;
+        }
+        if (nuevoCentroCosto) {
+            datos.id_centro_costo = nuevoCentroCosto;
         }
 
         ajax('POST', 'bitacora/terminar/' + id, datos)

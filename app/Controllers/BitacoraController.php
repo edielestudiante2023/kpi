@@ -372,6 +372,12 @@ class BitacoraController extends BaseController
             $updateData['descripcion'] = trim($nuevaDescripcion);
         }
 
+        // Actualizar centro de costo si el usuario lo cambió al terminar
+        $nuevoCentroCosto = $this->request->getPost('id_centro_costo');
+        if ($nuevoCentroCosto !== null && $nuevoCentroCosto !== '') {
+            $updateData['id_centro_costo'] = (int) $nuevoCentroCosto;
+        }
+
         $this->bitacoraModel->update($id, $updateData);
 
         $totalMinutos = $this->bitacoraModel->getTotalMinutosDia($userId, $actividad['fecha']);
