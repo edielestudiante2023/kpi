@@ -116,6 +116,7 @@ class DashboardFinancieroController extends BaseController
             $saldoActual = $saldoInicial + $totalMov;
 
             $data['cuentasBanco'][] = [
+                'id'            => $idCuenta,
                 'nombre'        => $cuenta['nombre_cuenta'],
                 'saldo_inicial' => $saldoInicial,
                 'movimientos'   => $totalMov,

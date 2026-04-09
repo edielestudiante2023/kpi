@@ -46,28 +46,34 @@
     <!-- Estado de Resultados -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-success">
+            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&tipo=ingreso') ?>" class="text-decoration-none">
+            <div class="card border-success" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Ingresos</h6>
                     <p class="h4 fw-bold text-success">$<?= number_format($ingresos, 0, ',', '.') ?></p>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card border-primary">
+            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&tipo=fijo') ?>" class="text-decoration-none">
+            <div class="card border-primary" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Costos Fijos</h6>
                     <p class="h4 fw-bold text-primary">-$<?= number_format($costosFijos, 0, ',', '.') ?></p>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card border-warning">
+            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&tipo=variable') ?>" class="text-decoration-none">
+            <div class="card border-warning" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Costos Variables</h6>
                     <p class="h4 fw-bold text-warning">-$<?= number_format($costosVariables, 0, ',', '.') ?></p>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-md-3">
             <div class="card <?= $utilidadOperativa >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>">
@@ -85,7 +91,8 @@
     <div class="row mb-4">
         <?php foreach ($cuentasBanco as $cb): ?>
         <div class="col-md-<?= count($cuentasBanco) > 2 ? '4' : '6' ?>">
-            <div class="card border-dark">
+            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&cuenta='.$cb['id']) ?>" class="text-decoration-none">
+            <div class="card border-dark" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Banco <?= esc($cb['nombre']) ?></h6>
                     <p class="h4 fw-bold <?= $cb['saldo_actual'] >= 0 ? 'text-dark' : 'text-danger' ?>">
@@ -97,6 +104,7 @@
                     </small>
                 </div>
             </div>
+            </a>
         </div>
         <?php endforeach; ?>
     </div>
@@ -112,22 +120,26 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-info">
+            <a href="<?= base_url('conciliaciones/facturacion?anio=todos&pagado=0') ?>" class="text-decoration-none">
+            <div class="card border-info" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Cartera por Cobrar</h6>
                     <p class="h4 fw-bold text-info">$<?= number_format($cartera, 0, ',', '.') ?></p>
                     <small class="text-muted"><?= $facturasPendientes ?> facturas pendientes</small>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card border-danger">
+            <a href="<?= base_url('conciliaciones/deudas') ?>" class="text-decoration-none">
+            <div class="card border-danger" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Deudas (pasivo)</h6>
                     <p class="h4 fw-bold text-danger">-$<?= number_format($deudaSaldo, 0, ',', '.') ?></p>
                     <small class="text-muted"><?= $totalObligaciones ?> obligaciones activas</small>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-md-3">
             <div class="card <?= $posicionNeta >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>">

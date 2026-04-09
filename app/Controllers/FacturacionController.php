@@ -170,12 +170,31 @@ class FacturacionController extends BaseController
     public function listFacturacion()
     {
         $db = \Config\Database::connect();
+
+        $anio = $this->request->getGet('anio') ?: date('Y');
+
+        $data['anios'] = $db->table('tbl_facturacion')
+            ->select('anio')->distinct()->orderBy('anio', 'DESC')
+            ->get()->getResultArray();
+        $data['anioActual'] = $anio;
+
         $builder = $db->table('tbl_facturacion f')
             ->select('f.*, p.portafolio')
             ->join('tbl_portafolios p', 'p.id_portafolio = f.id_portafolio', 'left')
             ->orderBy('f.anio', 'DESC')
             ->orderBy('f.mes', 'DESC')
             ->orderBy('f.numero_factura', 'DESC');
+
+        if ($anio !== 'todos') {
+            $builder->where('f.anio', (int) $anio);
+        }
+
+        // Filtro cartera (pagado=NO) desde dashboard
+        $pagado = $this->request->getGet('pagado');
+        if ($pagado !== null && $pagado !== '') {
+            $builder->where('f.pagado', (int) $pagado);
+        }
+        $data['filtroPagado'] = $pagado;
 
         $data['registros']   = $builder->get()->getResultArray();
         $data['portafolios'] = $this->portafolioModel->orderBy('portafolio', 'ASC')->findAll();

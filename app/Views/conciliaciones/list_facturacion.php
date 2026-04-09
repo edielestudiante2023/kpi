@@ -20,9 +20,19 @@
             </a>
             <h1 class="h3 mb-0">Facturación (<?= number_format(count($registros), 0, ',', '.') ?> registros)</h1>
         </div>
-        <a href="<?= base_url('conciliaciones/facturacion/upload') ?>" class="btn btn-primary">
-            <i class="bi bi-upload me-1"></i> Cargar Excel
-        </a>
+        <div class="d-flex gap-2 align-items-center">
+            <form method="get" class="d-flex gap-2">
+                <select name="anio" class="form-select form-select-sm" style="width:120px;" onchange="this.form.submit()">
+                    <option value="todos" <?= ($anioActual ?? '') === 'todos' ? 'selected' : '' ?>>Todos</option>
+                    <?php foreach ($anios as $a): ?>
+                        <option value="<?= $a['anio'] ?>" <?= ($anioActual ?? '') == $a['anio'] ? 'selected' : '' ?>><?= $a['anio'] ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+            <a href="<?= base_url('conciliaciones/facturacion/upload') ?>" class="btn btn-primary btn-sm">
+                <i class="bi bi-upload me-1"></i> Cargar Excel
+            </a>
+        </div>
     </div>
 
     <table id="facturacionTable" class="table table-striped table-hover nowrap" style="width:100%; font-size:0.85rem;">

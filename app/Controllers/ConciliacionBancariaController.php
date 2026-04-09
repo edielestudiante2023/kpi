@@ -176,11 +176,37 @@ class ConciliacionBancariaController extends BaseController
     public function listConciliacion()
     {
         $db = \Config\Database::connect();
+
+        $anio = $this->request->getGet('anio') ?: date('Y');
+
+        // Años disponibles
+        $data['anios'] = $db->table('tbl_conciliacion_bancaria')
+            ->select('anio')->distinct()->orderBy('anio', 'DESC')
+            ->get()->getResultArray();
+        $data['anioActual'] = $anio;
+
         $builder = $db->table('tbl_conciliacion_bancaria cb')
             ->select('cb.*, cc.centro_costo, cu.nombre_cuenta')
             ->join('tbl_centros_costo cc', 'cc.id_centro_costo = cb.id_centro_costo', 'left')
             ->join('tbl_cuentas_banco cu', 'cu.id_cuenta_banco = cb.id_cuenta_banco', 'left')
             ->orderBy('cb.fecha_sistema', 'DESC');
+
+        if ($anio !== 'todos') {
+            $builder->where('cb.anio', (int) $anio);
+        }
+
+        // Filtros adicionales desde dashboard
+        $tipo = $this->request->getGet('tipo');
+        $cuenta = $this->request->getGet('cuenta');
+        if ($tipo) {
+            $builder->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left')
+                    ->where('ccl.tipo', $tipo);
+        }
+        if ($cuenta) {
+            $builder->where('cb.id_cuenta_banco', (int) $cuenta);
+        }
+        $data['filtroTipo']   = $tipo;
+        $data['filtroCuenta'] = $cuenta;
 
         $data['registros'] = $builder->get()->getResultArray();
         $data['cuentas']   = $this->cuentaBancoModel->findAll();
