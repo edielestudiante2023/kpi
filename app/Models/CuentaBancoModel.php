@@ -8,7 +8,7 @@ class CuentaBancoModel extends Model
     protected $primaryKey = 'id_cuenta_banco';
 
     protected $allowedFields = [
-        'nombre_cuenta',
+        'nombre_cuenta', 'saldo_inicial', 'fecha_saldo_inicial',
     ];
 
     protected $returnType    = 'array';

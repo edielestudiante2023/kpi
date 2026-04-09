@@ -28,6 +28,16 @@
             <label class="form-label">Nombre de la Cuenta</label>
             <input type="text" name="nombre_cuenta" class="form-control" value="<?= old('nombre_cuenta', esc($cuenta['nombre_cuenta'])) ?>" required>
         </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Saldo Inicial ($)</label>
+                <input type="number" step="0.01" name="saldo_inicial" class="form-control" value="<?= old('saldo_inicial', $cuenta['saldo_inicial']) ?>">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Fecha del Saldo Inicial</label>
+                <input type="date" name="fecha_saldo_inicial" class="form-control" value="<?= old('fecha_saldo_inicial', $cuenta['fecha_saldo_inicial']) ?>">
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">Actualizar</button>
     </form>
 </div>

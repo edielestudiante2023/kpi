@@ -31,6 +31,8 @@
             <tr>
                 <th>ID</th>
                 <th>Nombre Cuenta</th>
+                <th class="text-end">Saldo Inicial</th>
+                <th>Fecha Saldo</th>
                 <th class="text-center">Acciones</th>
             </tr>
         </thead>
@@ -39,6 +41,8 @@
             <tr>
                 <td><?= esc($c['id_cuenta_banco']) ?></td>
                 <td><?= esc($c['nombre_cuenta']) ?></td>
+                <td class="text-end">$<?= number_format((float)$c['saldo_inicial'], 0, ',', '.') ?></td>
+                <td><?= $c['fecha_saldo_inicial'] ? date('d/m/Y', strtotime($c['fecha_saldo_inicial'])) : '' ?></td>
                 <td class="text-center">
                     <a href="<?= base_url('conciliaciones/cuentas-banco/edit/'.$c['id_cuenta_banco']) ?>" class="btn btn-sm btn-warning me-1">Editar</a>
                     <a href="<?= base_url('conciliaciones/cuentas-banco/delete/'.$c['id_cuenta_banco']) ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar esta cuenta?')">Eliminar</a>

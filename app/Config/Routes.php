@@ -370,6 +370,28 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('centros-costo/edit/(:num)', 'CentroCostoController::editCentroCostoPost/$1');
     $routes->get('centros-costo/delete/(:num)', 'CentroCostoController::deleteCentroCosto/$1');
 
+    // Dashboard Financiero
+    $routes->get('dashboard', 'DashboardFinancieroController::index');
+
+    // Clasificación de Costos
+    $routes->get('clasificacion', 'ClasificacionCostosController::listClasificacion');
+    $routes->get('clasificacion/add', 'ClasificacionCostosController::addClasificacion');
+    $routes->post('clasificacion/add', 'ClasificacionCostosController::addClasificacionPost');
+    $routes->get('clasificacion/edit/(:num)', 'ClasificacionCostosController::editClasificacion/$1');
+    $routes->post('clasificacion/edit/(:num)', 'ClasificacionCostosController::editClasificacionPost/$1');
+    $routes->get('clasificacion/delete/(:num)', 'ClasificacionCostosController::deleteClasificacion/$1');
+
+    // Deudas / Obligaciones
+    $routes->get('deudas', 'DeudaController::listDeudas');
+    $routes->get('deudas/add', 'DeudaController::addDeuda');
+    $routes->post('deudas/add', 'DeudaController::addDeudaPost');
+    $routes->get('deudas/edit/(:num)', 'DeudaController::editDeuda/$1');
+    $routes->post('deudas/edit/(:num)', 'DeudaController::editDeudaPost/$1');
+    $routes->get('deudas/delete/(:num)', 'DeudaController::deleteDeuda/$1');
+    $routes->get('deudas/ver/(:num)', 'DeudaController::viewDeuda/$1');
+    $routes->post('deudas/abono/(:num)', 'DeudaController::addAbonoPost/$1');
+    $routes->get('deudas/abono/delete/(:num)/(:num)', 'DeudaController::deleteAbono/$1/$2');
+
     // Carga Cruda — Facturación (CSV)
     $routes->get('cruda/facturacion', 'CargaCrudaController::uploadFacturacion');
     $routes->post('cruda/facturacion', 'CargaCrudaController::uploadFacturacionPost');

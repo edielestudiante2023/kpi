@@ -210,6 +210,10 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <i class="bi bi-bank me-1"></i>Conciliaciones
                     </a>
                     <ul class="dropdown-menu">
+                        <li><a class="dropdown-item fw-bold" href="<?= base_url('conciliaciones/dashboard') ?>">
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard Financiero
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Operativo (CSV)</li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cruda/facturacion') ?>">
                             <i class="bi bi-file-earmark-arrow-up me-2"></i>Subir Facturación
@@ -226,7 +230,15 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                             <i class="bi bi-bank me-2"></i>Conciliación Bancaria
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">Obligaciones</li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/deudas') ?>">
+                            <i class="bi bi-cash-stack me-2"></i>Deudas
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Maestras</li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/clasificacion') ?>">
+                            <i class="bi bi-diagram-3 me-2"></i>Clasificación Costos
+                        </a></li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/portafolios') ?>">
                             <i class="bi bi-folder me-2"></i>Portafolios
                         </a></li>

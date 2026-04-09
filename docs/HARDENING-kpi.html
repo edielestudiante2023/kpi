@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>HARDENING DE REPOSITORIO &mdash; kpi</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="hardening-de-repositorio--kpi">HARDENING DE REPOSITORIO — kpi</h1>
+<p><strong>Fecha:</strong> 2026-04-05
+<strong>Aplicativo:</strong> kpi — Sistema de Gestion de Indicadores de Desempeno
+<strong>Empresa:</strong> Cycloid Talent
+<strong>Preparado para:</strong> Edwin Lopez (consultor de infraestructura)</p>
+<hr>
+<h2 id="tabla-de-contenido">TABLA DE CONTENIDO</h2>
+<ol>
+<li>Descripcion del aplicativo</li>
+<li>Mapa de base de datos</li>
+<li>Inventario de API Keys y servicios externos</li>
+<li>Documentacion del proyecto (README, CONTRIBUTING, .env.example)</li>
+<li>Ramas de trabajo</li>
+<li>Pipelines CI/CD (Gitea)</li>
+<li>Organizacion del repositorio</li>
+<li>Hallazgos criticos y acciones pendientes</li>
+</ol>
+<hr>
+<h2 id="1-descripcion-del-aplicativo">1. DESCRIPCION DEL APLICATIVO</h2>
+<h3 id="stack-tecnologico">Stack tecnologico</h3>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Tecnologia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend</td>
+<td>PHP 8.4 + CodeIgniter 4.7.2</td>
+</tr>
+<tr>
+<td>Base de datos</td>
+<td>MySQL 8.0.45 (DigitalOcean Managed, SSL required)</td>
+</tr>
+<tr>
+<td>Servidor web</td>
+<td>Nginx (Ubuntu 24.04, Hetzner LXC)</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>SendGrid API v3</td>
+</tr>
+<tr>
+<td>IA</td>
+<td>OpenAI GPT-3.5-turbo (generacion de indicadores y actividades)</td>
+</tr>
+<tr>
+<td>PWA</td>
+<td>Bitacora de tiempo (manifest + service worker + push notifications)</td>
+</tr>
+<tr>
+<td>Push</td>
+<td>Web Push API (minishlink/web-push ^10.0)</td>
+</tr>
+<tr>
+<td>Excel</td>
+<td>PhpSpreadsheet (importacion CSV, exportaciones)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="modulos-principales-10">Modulos principales (10)</h3>
+<table>
+<thead>
+<tr>
+<th>Modulo</th>
+<th>Descripcion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Indicadores KPI</td>
+<td>Definir, asignar, diligenciar y evaluar indicadores por perfil de cargo con formulas personalizadas</td>
+</tr>
+<tr>
+<td>Actividades/Tickets</td>
+<td>Tablero Kanban por estado y responsable, comentarios, archivos adjuntos, dashboard</td>
+</tr>
+<tr>
+<td>Bitacora (PWA)</td>
+<td>Registro de tiempo por actividad, analisis diario/semanal/mensual, centros de costo, liquidacion quincenal</td>
+</tr>
+<tr>
+<td>Conciliaciones</td>
+<td>Portafolios, facturacion, cuentas bancarias, conciliacion bancaria, carga masiva CSV</td>
+</tr>
+<tr>
+<td>Usuarios y Roles</td>
+<td>CRUD completo con perfiles de cargo, equipos, areas, jerarquias jefe-subordinado</td>
+</tr>
+<tr>
+<td>Dashboards</td>
+<td>Vistas diferenciadas por rol: superadmin, admin, jefatura, trabajador</td>
+</tr>
+<tr>
+<td>Auditoria</td>
+<td>Historial de cambios en indicadores, ediciones, trazabilidad completa</td>
+</tr>
+<tr>
+<td>Sesiones</td>
+<td>Monitoreo de tiempo de uso por usuario, sesiones activas, exportacion</td>
+</tr>
+<tr>
+<td>Notificaciones</td>
+<td>Email (SendGrid) + Push (Web Push API) + preferencias por usuario</td>
+</tr>
+<tr>
+<td>IA (OpenAI)</td>
+<td>Generacion automatica de indicadores y actividades con GPT-3.5-turbo</td>
+</tr>
+</tbody>
+</table>
+<h3 id="roles-de-usuario">Roles de usuario</h3>
+<table>
+<thead>
+<tr>
+<th>Rol</th>
+<th>Acceso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>superadmin</td>
+<td>Todo el sistema + gestion de usuarios + configuracion global</td>
+</tr>
+<tr>
+<td>admin</td>
+<td>Dashboard administrativo + gestion de equipos y areas</td>
+</tr>
+<tr>
+<td>jefatura</td>
+<td>Indicadores de equipo + aprobacion de formulas + historial jerarquico</td>
+</tr>
+<tr>
+<td>trabajador</td>
+<td>Mis indicadores + diligenciar formulas + bitacora de tiempo</td>
+</tr>
+</tbody>
+</table>
+<h3 id="estructura-del-proyecto">Estructura del proyecto</h3>
+<pre><code>kpi/
+├── app/
+│   ├── Commands/          # 5 comandos spark (cron jobs)
+│   ├── Config/            # Routes.php, Database.php, OpenAI.php, Filters.php (42 archivos)
+│   ├── Controllers/       # 35 controladores
+│   ├── Filters/           # Auth, SesionTrackingFilter
+│   ├── Helpers/           # bitacora_helper
+│   ├── Libraries/         # 5 librerias (Evaluador, Notificadores, OpenAI, Push)
+│   ├── Models/            # 37 modelos
+│   └── Views/             # 124 vistas (17 subdirectorios por modulo)
+├── docs/                  # Documentacion tecnica
+├── migrations/            # 23 migraciones SQL
+├── public/                # Punto de entrada web + PWA assets
+├── tests/                 # Tests PHPUnit
+├── writable/              # Logs, cache, sesiones, uploads
+├── .env                   # Variables de entorno (NO commitear)
+├── .env.example           # Template de variables
+├── CONTRIBUTING.md        # Guia de contribucion
+├── composer.json          # Dependencias PHP
+└── spark                  # CLI de CodeIgniter
+</code></pre>
+<h3 id="cron-jobs-4-tareas-programadas">Cron jobs (4 tareas programadas)</h3>
+<table>
+<thead>
+<tr>
+<th>Comando</th>
+<th>Frecuencia</th>
+<th>Descripcion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>php spark bitacora:resumen-diario</code></td>
+<td>Diario</td>
+<td>Envia reporte diario de actividades de bitacora</td>
+</tr>
+<tr>
+<td><code>php spark bitacora:notificar-activas</code></td>
+<td>Cada 30 min</td>
+<td>Notifica actividades activas o vencidas</td>
+</tr>
+<tr>
+<td><code>php spark actividades:recordatorio-revision</code></td>
+<td>Diario</td>
+<td>Recuerda items en revision a creadores (max 2/dia)</td>
+</tr>
+<tr>
+<td><code>php spark resumen-diario</code></td>
+<td>Diario</td>
+<td>Resumen diario general</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-mapa-de-base-de-datos">2. MAPA DE BASE DE DATOS</h2>
+<p><strong>Motor:</strong> MySQL 8.0.45 (DigitalOcean Managed)
+<strong>Base de datos:</strong> kpicycloid
+<strong>Tamano total:</strong> 5.03 MB
+<strong>SSL:</strong> Required</p>
+<h3 id="usuarios-de-base-de-datos">Usuarios de base de datos</h3>
+<table>
+<thead>
+<tr>
+<th>Usuario</th>
+<th>Permisos</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cycloid_userdb</td>
+<td>Full access (SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX, etc.)</td>
+<td>Aplicacion principal (CRUD) + migraciones</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nota:</strong> No existe un usuario readonly. Se recomienda crear uno para consultas de dashboards/reportes.</p>
+<h3 id="resumen">Resumen</h3>
+<ul>
+<li><strong>39 tablas</strong> (BASE TABLE)</li>
+<li><strong>5 vistas</strong> (VIEW)</li>
+<li><strong>38 foreign keys</strong> definidas</li>
+<li><strong>8 tablas vacias</strong> (21%) — modulos pendientes o nuevos</li>
+</ul>
+<h3 id="tablas-por-modulo-funcional">Tablas por modulo funcional</h3>
+<p><strong>Nucleo — Usuarios y roles (6 tablas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>users</td>
+<td>8</td>
+<td>80 KB</td>
+</tr>
+<tr>
+<td>roles</td>
+<td>4</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>accesos_rol</td>
+<td>18</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>perfiles_cargo</td>
+<td>6</td>
+<td>16 KB</td>
+</tr>
+<tr>
+<td>equipos</td>
+<td>4</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>areas</td>
+<td>6</td>
+<td>32 KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Indicadores KPI (5 tablas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>indicadores</td>
+<td>12</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>indicadores_perfil</td>
+<td>5</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>indicadores_area</td>
+<td>0</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>partes_formula_indicador</td>
+<td>78</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>historial_indicadores</td>
+<td>18</td>
+<td>48 KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Actividades/Tickets (6 tablas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>actividades</td>
+<td>83</td>
+<td>192 KB</td>
+</tr>
+<tr>
+<td>actividad_comentarios</td>
+<td>26</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>actividad_historial</td>
+<td>137</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>actividad_archivos</td>
+<td>6</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>actividad_paginas</td>
+<td>0</td>
+<td>64 KB</td>
+</tr>
+<tr>
+<td>categorias_actividad</td>
+<td>6</td>
+<td>16 KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bitacora de tiempo (8 tablas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bitacora_actividades</td>
+<td>680</td>
+<td>144 KB</td>
+</tr>
+<tr>
+<td>centros_costo</td>
+<td>15</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>liquidaciones_bitacora</td>
+<td>0</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>detalle_liquidacion</td>
+<td>16</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>bitacora_correcciones</td>
+<td>4</td>
+<td>64 KB</td>
+</tr>
+<tr>
+<td>dias_festivos</td>
+<td>18</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>dias_habiles_config</td>
+<td>178</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>novedades_individuales</td>
+<td>2</td>
+<td>32 KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conciliaciones bancarias (7 tablas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tbl_conciliacion_bancaria</td>
+<td>3,103</td>
+<td>2,624 KB</td>
+</tr>
+<tr>
+<td>tbl_facturacion</td>
+<td>1,245</td>
+<td>672 KB</td>
+</tr>
+<tr>
+<td>tbl_portafolios</td>
+<td>2</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>tbl_cuentas_banco</td>
+<td>2</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>tbl_centros_costo</td>
+<td>13</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>tbl_facturacion_cruda</td>
+<td>0</td>
+<td>64 KB</td>
+</tr>
+<tr>
+<td>tbl_movimiento_bancario_crudo</td>
+<td>0</td>
+<td>64 KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Otros (7 tablas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sesiones_usuario</td>
+<td>41</td>
+<td>80 KB</td>
+</tr>
+<tr>
+<td>push_subscriptions</td>
+<td>10</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>indicador_auditoria</td>
+<td>0</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>novedades_colectivas</td>
+<td>0</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>preferencias_notificacion</td>
+<td>0</td>
+<td>32 KB</td>
+</tr>
+<tr>
+<td>resumen_uso_diario</td>
+<td>0</td>
+<td>48 KB</td>
+</tr>
+<tr>
+<td>actividades_historial</td>
+<td>0</td>
+<td>32 KB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="vistas-5">Vistas (5)</h3>
+<table>
+<thead>
+<tr>
+<th>Vista</th>
+<th>Proposito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vw_auditoria_indicadores</td>
+<td>Historial de cambios en indicadores</td>
+</tr>
+<tr>
+<td>vw_estadisticas_actividades</td>
+<td>Estadisticas agregadas de actividades</td>
+</tr>
+<tr>
+<td>vw_resumen_uso_usuario</td>
+<td>Resumen de tiempo de uso por usuario</td>
+</tr>
+<tr>
+<td>vw_sesiones_usuario</td>
+<td>Detalle de sesiones de usuario</td>
+</tr>
+<tr>
+<td>vw_tablero_actividades</td>
+<td>Datos para tablero Kanban de actividades</td>
+</tr>
+</tbody>
+</table>
+<h3 id="foreign-keys-38-relaciones">Foreign Keys (38 relaciones)</h3>
+<p><strong>Tabla central: <code>users</code></strong> — 14 tablas dependen de <code>users.id_users</code> via FK:</p>
+<ul>
+<li>actividad_archivos, actividad_comentarios, actividad_historial, actividades (creador + asignado), bitacora_actividades, centros_costo, detalle_liquidacion, indicador_auditoria, liquidaciones_bitacora, preferencias_notificacion, push_subscriptions, resumen_uso_diario, sesiones_usuario, users (autorreferencia: id_jefe)</li>
+</ul>
+<p><strong>Otras dependencias importantes:</strong></p>
+<ul>
+<li><code>actividades</code> → areas, categorias_actividad, users (creador y asignado)</li>
+<li><code>bitacora_actividades</code> → users, centros_costo</li>
+<li><code>indicadores_perfil</code> → indicadores, perfiles_cargo</li>
+<li><code>partes_formula_indicador</code> → indicadores</li>
+<li><code>tbl_conciliacion_bancaria</code> → tbl_centros_costo, tbl_cuentas_banco</li>
+<li><code>tbl_facturacion</code> → tbl_portafolios</li>
+</ul>
+<h3 id="tablas-mas-grandes-por-peso">Tablas mas grandes por peso</h3>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Registros</th>
+<th>Tamano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tbl_conciliacion_bancaria</td>
+<td>3,103</td>
+<td>2,624 KB</td>
+</tr>
+<tr>
+<td>tbl_facturacion</td>
+<td>1,245</td>
+<td>672 KB</td>
+</tr>
+<tr>
+<td>actividades</td>
+<td>83</td>
+<td>192 KB</td>
+</tr>
+<tr>
+<td>bitacora_actividades</td>
+<td>680</td>
+<td>144 KB</td>
+</tr>
+<tr>
+<td>sesiones_usuario</td>
+<td>41</td>
+<td>80 KB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tablas-vacias-8">Tablas vacias (8)</h3>
+<p>actividad_paginas, actividades_historial, indicador_auditoria, indicadores_area, liquidaciones_bitacora, novedades_colectivas, preferencias_notificacion, resumen_uso_diario, tbl_facturacion_cruda, tbl_movimiento_bancario_crudo</p>
+<p><strong>Observacion:</strong> Algunas son modulos nuevos (conciliacion cruda), otras posiblemente por implementar (resumen_uso_diario, indicadores_area).</p>
+<hr>
+<h2 id="3-inventario-de-api-keys-y-servicios-externos">3. INVENTARIO DE API KEYS Y SERVICIOS EXTERNOS</h2>
+<h3 id="resumen-1">Resumen</h3>
+<table>
+<thead>
+<tr>
+<th>Servicio</th>
+<th>Variable</th>
+<th>Archivos</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SendGrid</td>
+<td><code>SENDGRID_API_KEY</code></td>
+<td>3</td>
+<td>Activa</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td><code>OPENAI_API_KEY</code></td>
+<td>3</td>
+<td>Activa</td>
+</tr>
+<tr>
+<td>Web Push</td>
+<td>VAPID keys locales</td>
+<td>1</td>
+<td>Activa (sin API key externa)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sendgrid">SendGrid</h3>
+<p>Usado en 3 archivos para email transaccional: recuperacion de password, notificaciones de actividades, reportes diarios de bitacora.</p>
+<p><strong>Patron:</strong> <code>$apiKey = env('SENDGRID_API_KEY');</code> → <code>new \SendGrid($apiKey)</code></p>
+<p><strong>Archivos:</strong></p>
+<ul>
+<li><code>app/Controllers/AuthController.php:222</code> — Recuperacion de password</li>
+<li><code>app/Libraries/NotificadorBitacora.php:500</code> — Reporte diario de bitacora</li>
+<li><code>app/Libraries/NotificadorActividades.php:623</code> — Notificaciones de actividades</li>
+</ul>
+<p><strong>From hardcodeado:</strong> <code>notificacion.cycloidtalent@cycloidtalent.com</code> en los 3 archivos.</p>
+<h3 id="openai">OpenAI</h3>
+<p>Usado en 3 archivos para IA generativa: generacion de indicadores KPI y generacion de actividades.</p>
+<p><strong>Patron:</strong> cURL directo a <code>https://api.openai.com/v1/chat/completions</code>
+<strong>Modelo:</strong> gpt-3.5-turbo (configurable via <code>OPENAI_MODEL</code>)</p>
+<p><strong>Archivos:</strong></p>
+<ul>
+<li><code>app/Config/OpenAI.php:45</code> — Configuracion centralizada</li>
+<li><code>app/Libraries/OpenAIService.php:24</code> — Servicio de IA</li>
+<li><code>app/Controllers/OpenAIController.php</code> — Endpoints <code>/ia/generar-indicador</code> y <code>/ia/generar-actividad</code></li>
+</ul>
+<h3 id="web-push-minishlinkweb-push">Web Push (minishlink/web-push)</h3>
+<ul>
+<li><code>app/Libraries/PushNotifier.php</code> — Notificaciones push para bitacora</li>
+<li>Usa VAPID keys (public/private) desde <code>.env</code></li>
+<li>No requiere API key externa</li>
+</ul>
+<h3 id="hallazgos-criticos-de-seguridad">HALLAZGOS CRITICOS DE SEGURIDAD</h3>
+<p><strong>CRITICO — <code>.env.production</code> en el repositorio:</strong></p>
+<p>El archivo <code>.env.production</code> esta trackeado en git y contiene credenciales de produccion:</p>
+<ul>
+<li>Host de BD DigitalOcean</li>
+<li>Usuario y password de BD</li>
+<li>Todas las API keys</li>
+</ul>
+<p><strong>CRITICO — Credenciales hardcodeadas en migraciones:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Archivo</th>
+<th>Problema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>migrations/2026_03_17_truncate_sesiones.php:12-15</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_03_17_fix_sesiones_fecha_fin.php:24-27</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_03_17_diagnostico_sesiones.php:14-17</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_03_11_novedades_tiempo_pro.php:9-12</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_03_11_fix_duplicados_checklist.php:9-12</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_03_10_bitacora_correcciones_pro.php:9-12</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_02_19_habilitar_usuarios_bitacora.php:14-18</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td><code>migrations/2026_02_19_bitacora_tables.php:17-21</code></td>
+<td>Host + usuario de BD de produccion hardcodeado</td>
+</tr>
+<tr>
+<td>+ 5 migraciones adicionales con host hardcodeado</td>
+<td>Usan env() pero con host visible</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CRITICO — Credenciales en documentacion:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Archivo</th>
+<th>Problema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/liquidacion-quincenal.md:283-286</code></td>
+<td>Credenciales de produccion documentadas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ALTO — <code>public/backupdb.sql</code> trackeado:</strong></p>
+<p>Dump de base de datos con estructura y datos trackeado en git dentro del directorio publico.</p>
+<p><strong>ALTO — Email from hardcodeado:</strong></p>
+<p><code>notificacion.cycloidtalent@cycloidtalent.com</code> hardcodeado en 3 archivos en vez de usar variable de entorno.</p>
+<p><strong>MEDIO — <code>app/Controllers/TestDB.php</code> en produccion:</strong></p>
+<p>Controlador de prueba de conexion a BD que no deberia estar en produccion.</p>
+<h3 id="recomendaciones">Recomendaciones</h3>
+<ol>
+<li><strong>INMEDIATO:</strong> Rotar TODAS las API Keys y passwords de BD (pueden estar en historial de git)</li>
+<li><strong>INMEDIATO:</strong> Remover <code>.env.production</code> del tracking de git</li>
+<li><strong>URGENTE:</strong> Extraer host de BD de migraciones a variables de entorno</li>
+<li><strong>URGENTE:</strong> Remover credenciales de <code>docs/liquidacion-quincenal.md</code></li>
+<li><strong>ALTO:</strong> Mover email from a variable de entorno</li>
+<li><strong>ALTO:</strong> Eliminar <code>TestDB.php</code> y <code>public/backupdb.sql</code></li>
+</ol>
+<hr>
+<h2 id="4-documentacion-del-proyecto">4. DOCUMENTACION DEL PROYECTO</h2>
+<h3 id="archivos-creados-en-el-repositorio">Archivos creados en el repositorio</h3>
+<table>
+<thead>
+<tr>
+<th>Archivo</th>
+<th>Descripcion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code></td>
+<td>Documentacion principal: stack, modulos, roles, estructura, instalacion, cron jobs, deploy</td>
+</tr>
+<tr>
+<td><code>CONTRIBUTING.md</code></td>
+<td>Guia de contribucion: flujo de ramas, convencion de commits, reglas, proceso de revision</td>
+</tr>
+<tr>
+<td><code>.env.example</code></td>
+<td>Template con todas las variables de entorno necesarias (sin valores reales)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="readmemd-incluye"><a href="http://README.html">README.md</a> incluye</h3>
+<ul>
+<li>Stack tecnologico completo (PHP 8.4, CI4 4.7.2, MySQL 8, PWA)</li>
+<li>10 modulos con descripcion</li>
+<li>4 roles de usuario con accesos</li>
+<li>Estructura de carpetas</li>
+<li>Requisitos previos e instrucciones de instalacion</li>
+<li>6 variables de entorno documentadas</li>
+<li>4 cron jobs con frecuencia y descripcion</li>
+<li>Instrucciones de deploy</li>
+<li>Links a documentacion adicional</li>
+</ul>
+<h3 id="contributingmd-incluye"><a href="http://CONTRIBUTING.html">CONTRIBUTING.md</a> incluye</h3>
+<ul>
+<li>Flujo de ramas (main → develop → feature/ → hotfix/)</li>
+<li>Convencion de commits (feat:, fix:, docs:, refactor:, chore:)</li>
+<li>Convencion de nombres de ramas</li>
+<li>5 reglas (no push directo, no credenciales, no temporales, no destructivos, no force push)</li>
+<li>Proceso de revision con pipeline CI/CD</li>
+</ul>
+<h3 id="envexample-incluye">.env.example incluye</h3>
+<ul>
+<li>Variables de entorno para BD principal</li>
+<li>API Keys de email (SendGrid) y OpenAI</li>
+<li>Configuracion de bitacora (emails, quincena, correcciones)</li>
+<li>VAPID keys para push notifications</li>
+<li>Configuracion de sesiones</li>
+</ul>
+<hr>
+<h2 id="5-ramas-de-trabajo">5. RAMAS DE TRABAJO</h2>
+<h3 id="estructura-creada">Estructura creada</h3>
+<pre><code>main          ← Produccion. Solo codigo validado y estable.
+develop       ← Integracion. Aqui se unen los cambios antes de ir a main.
+feature/xxx   ← Nuevas funcionalidades. Se crean desde develop.
+hotfix/xxx    ← Correcciones urgentes. Se crean desde main.
+</code></pre>
+<h3 id="estado-actual">Estado actual</h3>
+<table>
+<thead>
+<tr>
+<th>Rama</th>
+<th>Estado</th>
+<th>Commit actual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>main</td>
+<td>Existente, en remoto</td>
+<td>52ec650 (upgrade CI4 v4.7.2)</td>
+</tr>
+<tr>
+<td>cycloid</td>
+<td>Existente, en remoto — sincronizada con main</td>
+<td>52ec650</td>
+</tr>
+<tr>
+<td>develop</td>
+<td><strong>Creada</strong> durante hardening, pendiente push a remoto</td>
+<td>Mismo commit que main</td>
+</tr>
+<tr>
+<td>backup-antes-de-e73</td>
+<td>Legacy — solo local</td>
+<td>Backup antiguo</td>
+</tr>
+<tr>
+<td>backup-antes-de-volver-a-ayer</td>
+<td>Legacy — solo local</td>
+<td>Backup antiguo</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ramas-a-limpiar">Ramas a limpiar</h3>
+<table>
+<thead>
+<tr>
+<th>Rama</th>
+<th>Accion</th>
+<th>Razon</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cycloid</td>
+<td>Mantener temporalmente</td>
+<td>Rama de trabajo actual del usuario</td>
+</tr>
+<tr>
+<td>backup-antes-de-e73</td>
+<td>Eliminar</td>
+<td>Backup local obsoleto</td>
+</tr>
+<tr>
+<td>backup-antes-de-volver-a-ayer</td>
+<td>Eliminar</td>
+<td>Backup local obsoleto</td>
+</tr>
+</tbody>
+</table>
+<h3 id="proteccion-de-ramas-pendiente-en-gitea">Proteccion de ramas (pendiente en Gitea)</h3>
+<ul>
+<li><strong>main:</strong> protegida, requiere PR, no push directo</li>
+<li><strong>develop:</strong> protegida, requiere PR desde feature/</li>
+</ul>
+<h3 id="flujo-de-trabajo">Flujo de trabajo</h3>
+<ul>
+<li>Nueva funcionalidad: <code>develop</code> → <code>feature/nombre</code> → PR a <code>develop</code> → PR a <code>main</code></li>
+<li>Hotfix urgente: <code>main</code> → <code>hotfix/nombre</code> → PR a <code>main</code> + PR a <code>develop</code></li>
+</ul>
+<hr>
+<h2 id="6-pipelines-cicd">6. PIPELINES CI/CD</h2>
+<h3 id="plataforma-gitea-con-gitea-runner-act_runner">Plataforma: Gitea con Gitea Runner (act_runner)</h3>
+<h3 id="pipeline-1-validar-y-deploy-a-devqa">Pipeline 1: Validar y Deploy a Dev/QA</h3>
+<p><strong>Archivo:</strong> <code>.gitea/workflows/validate-and-deploy-qa.yml</code>
+<strong>Trigger:</strong> Push/PR a develop o feature/*</p>
+<pre><code>git push → Gitea → Runner → Tests + Trivy + Semgrep → Deploy SSH → LXC (Dev/QA)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Que hace</th>
+<th>Bloquea si falla</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test</td>
+<td><code>php -l</code> en todos los .php de app/</td>
+<td>Si</td>
+</tr>
+<tr>
+<td>trivy</td>
+<td>Escaneo de vulnerabilidades en dependencias (HIGH/CRITICAL)</td>
+<td>Si</td>
+</tr>
+<tr>
+<td>semgrep</td>
+<td>Analisis estatico de seguridad (reglas PHP + secrets + security-audit)</td>
+<td>Si</td>
+</tr>
+<tr>
+<td>secrets-scan</td>
+<td>Busca API keys hardcodeadas (SendGrid, OpenAI, BD)</td>
+<td>Si</td>
+</tr>
+<tr>
+<td>deploy-qa</td>
+<td>SSH al LXC Dev/QA y ejecuta deploy</td>
+<td>Solo en push a develop</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pipeline-2-cutover-a-produccion">Pipeline 2: Cutover a Produccion</h3>
+<p><strong>Archivo:</strong> <code>.gitea/workflows/cutover-production.yml</code>
+<strong>Trigger:</strong> Push a main (despues de merge de PR desde develop)</p>
+<pre><code>PR develop → main → Validacion → Trivy → Semgrep → Deploy SSH → LXC Produccion (Hetzner)
+                                                                → Verificacion post-deploy
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Que hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>validate</td>
+<td>Sintaxis PHP + busqueda de credenciales</td>
+</tr>
+<tr>
+<td>trivy</td>
+<td>Escaneo vulnerabilidades (paralelo con semgrep)</td>
+</tr>
+<tr>
+<td>semgrep</td>
+<td>Analisis estatico seguridad (paralelo con trivy)</td>
+</tr>
+<tr>
+<td>deploy-production</td>
+<td>SSH al Hetzner + deploy + verificacion HTTP post-deploy</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Todo por pipeline, nada manual.</strong></p>
+<h3 id="secrets-necesarios-en-gitea">Secrets necesarios en Gitea</h3>
+<p><strong>Para Dev/QA:</strong> QA_HOST, QA_USER, QA_SSH_KEY, QA_PATH
+<strong>Para Produccion:</strong> PROD_HOST, PROD_USER, PROD_SSH_KEY, PROD_PATH</p>
+<h3 id="flujo-completo">Flujo completo</h3>
+<pre><code>feature/xxx → push → Validacion → PR a develop → Validacion → merge
+                                                                 ↓
+                                          Deploy automatico a LXC Dev/QA
+                                                                 ↓
+                                              Pruebas en QA (manuales o auto)
+                                                                 ↓
+                                          PR develop → main → Validacion → merge
+                                                                             ↓
+                                                     Cutover automatico a Hetzner LXC
+                                                                             ↓
+                                                          Verificacion post-deploy
+                                                                             ↓
+                                                              EN PRODUCCION
+</code></pre>
+<hr>
+<h2 id="7-organizacion-del-repositorio">7. ORGANIZACION DEL REPOSITORIO</h2>
+<h3 id="estado-del-repositorio">Estado del repositorio</h3>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Estado actual</th>
+<th>Accion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Visibilidad</td>
+<td>Publico en GitHub</td>
+<td>Migrar a Gitea privado</td>
+</tr>
+<tr>
+<td>.gitignore</td>
+<td>Actualizado (excluye env, vendor, cache, IDE, stackdump, backupdb)</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>.env.example</td>
+<td>Creado con todas las variables</td>
+<td>OK</td>
+</tr>
+<tr>
+<td>.env.production</td>
+<td>Trackeado en git con credenciales</td>
+<td>Remover del tracking</td>
+</tr>
+<tr>
+<td>Archivos basura</td>
+<td>Varios identificados</td>
+<td>Pendiente limpieza</td>
+</tr>
+</tbody>
+</table>
+<h3 id="archivos-problematicos-trackeados-en-git">Archivos problematicos trackeados en git</h3>
+<p><strong>Archivos con datos sensibles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Archivo</th>
+<th>Problema</th>
+<th>Accion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.env.production</code></td>
+<td>Credenciales de produccion</td>
+<td>Remover de git, agregar a .gitignore</td>
+</tr>
+<tr>
+<td><code>public/backupdb.sql</code></td>
+<td>Dump de BD en directorio publico</td>
+<td>Remover de git</td>
+</tr>
+<tr>
+<td><code>docs/liquidacion-quincenal.md</code></td>
+<td>Credenciales hardcodeadas en lineas 283-286</td>
+<td>Editar y remover credenciales</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Archivos de desarrollo/notas:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Archivo</th>
+<th>Problema</th>
+<th>Accion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>info.txt</code></td>
+<td>Notas de desarrollo/conversaciones ChatGPT</td>
+<td>Remover o mover a docs/</td>
+</tr>
+<tr>
+<td><code>app/Controllers/TestDB.php</code></td>
+<td>Controlador de prueba, no debe estar en produccion</td>
+<td>Remover</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Plantillas CSV en public/:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Archivo</th>
+<th>Debe quedarse</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public/plantillas/plantilla_facturacion.csv</code></td>
+<td>Si — template de carga</td>
+</tr>
+<tr>
+<td><code>public/plantillas/plantilla_movimiento_bancario.csv</code></td>
+<td>Si — template de carga</td>
+</tr>
+</tbody>
+</table>
+<h3 id="archivos-csv-que-si-deben-quedarse">Archivos CSV que SI deben quedarse</h3>
+<p>Las plantillas en <code>public/plantillas/</code> son templates de carga masiva usados por el modulo de conciliaciones. Deben permanecer.</p>
+<hr>
+<h2 id="8-hallazgos-criticos-y-acciones-pendientes">8. HALLAZGOS CRITICOS Y ACCIONES PENDIENTES</h2>
+<h3 id="prioridad-critica">Prioridad CRITICA</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Accion</th>
+<th>Responsable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Hacer repo privado o migrar a Gitea</td>
+<td>Consultor/Cliente</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Rotar TODAS las API Keys y passwords de BD</td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Remover <code>.env.production</code> del tracking de git</td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Remover <code>public/backupdb.sql</code> del tracking</td>
+<td>Cliente</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prioridad-alta">Prioridad ALTA</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Accion</th>
+<th>Responsable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>Push de rama develop al remoto</td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Configurar proteccion de ramas en Gitea</td>
+<td>Consultor</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Configurar secrets en Gitea para pipelines</td>
+<td>Consultor</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Limpiar credenciales de <code>docs/liquidacion-quincenal.md</code></td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Extraer host/user de BD de 12+ migraciones a env()</td>
+<td>Cliente</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prioridad-media">Prioridad MEDIA</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Accion</th>
+<th>Responsable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td>Eliminar <code>app/Controllers/TestDB.php</code></td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Eliminar <code>info.txt</code> del repo</td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Eliminar ramas backup locales (backup-antes-de-e73, backup-antes-de-volver-a-ayer)</td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Mover email from a variable de entorno (3 archivos)</td>
+<td>Cliente</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Crear usuario readonly de BD para dashboards/reportes</td>
+<td>Consultor</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>Documento generado el 2026-04-05. Preparado como entregable del proceso de hardening del repositorio kpi.</em></p>
+
+            <script async src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+            
+        </body>
+        </html>
