@@ -5,7 +5,7 @@ namespace App\Libraries;
 /**
  * NotificadorCartera
  *
- * Envía emails cada lunes a clientes con facturas en estado 'brecha'
+ * Envía emails los días 1 y 16 de cada mes a clientes con facturas en estado 'brecha'
  * (diferencia >= $2.000 entre líquido esperado y valor pagado).
  *
  * Busca el email del cliente por NIT en 3 bases externas:
@@ -35,15 +35,16 @@ class NotificadorCartera
 
     /**
      * Ejecutar notificaciones de brecha.
-     * Solo envía si hoy es lunes (o si se fuerza con $forzar = true).
+     * Solo envía los días 1 y 16 de cada mes (o si se fuerza con $forzar = true).
      */
     public function ejecutar(bool $forzar = false): array
     {
         $resultado = ['enviados' => 0, 'sin_email' => 0, 'errores' => 0, 'detalle' => []];
 
-        // Solo lunes, a menos que se fuerce
-        if (!$forzar && date('N') !== '1') {
-            $resultado['detalle'][] = 'Hoy no es lunes. No se envían notificaciones.';
+        // Solo día 1 y 16, a menos que se fuerce
+        $dia = (int) date('j');
+        if (!$forzar && $dia !== 1 && $dia !== 16) {
+            $resultado['detalle'][] = "Hoy es día {$dia}. Solo se envía los días 1 y 16 de cada mes.";
             return $resultado;
         }
 

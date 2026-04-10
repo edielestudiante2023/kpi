@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\FacturacionCrudaModel;
+use App\Models\FacturacionModel;
+use App\Models\PortafolioModel;
 use App\Models\MovimientoBancarioCrudoModel;
 use App\Models\CuentaBancoModel;
 use CodeIgniter\HTTP\RequestInterface;
@@ -12,6 +14,8 @@ use Psr\Log\LoggerInterface;
 class CargaCrudaController extends BaseController
 {
     protected $factCrudaModel;
+    protected $facturacionModel;
+    protected $portafolioModel;
     protected $movCrudoModel;
     protected $cuentaBancoModel;
 
@@ -23,6 +27,8 @@ class CargaCrudaController extends BaseController
         parent::initController($request, $response, $logger);
         helper(['url', 'form']);
         $this->factCrudaModel   = new FacturacionCrudaModel();
+        $this->facturacionModel = new FacturacionModel();
+        $this->portafolioModel  = new PortafolioModel();
         $this->movCrudoModel    = new MovimientoBancarioCrudoModel();
         $this->cuentaBancoModel = new CuentaBancoModel();
     }
@@ -34,12 +40,15 @@ class CargaCrudaController extends BaseController
     public function uploadFacturacion()
     {
         $db = \Config\Database::connect();
-        $data['totalRegistros'] = $db->table('tbl_facturacion_cruda')->countAllResults();
-        $data['ultimaCarga']    = $db->table('tbl_facturacion_cruda')
+        $data['totalRegistros'] = $db->table('tbl_facturacion')->countAllResults();
+        $data['ultimaCarga']    = $db->table('tbl_facturacion')
             ->selectMax('created_at')->get()->getRow()->created_at;
         return view('conciliaciones/upload_facturacion_cruda', $data);
     }
 
+    /**
+     * Paso 1: Parsear CSV y mostrar vista intermedia para asignar portafolios
+     */
     public function uploadFacturacionPost()
     {
         $file = $this->request->getFile('archivo_csv');
@@ -53,24 +62,45 @@ class CargaCrudaController extends BaseController
             return redirect()->back()->with('errors', ['Solo se permiten archivos .csv']);
         }
 
-        $handle = fopen($file->getTempName(), 'r');
+        $contenido = file_get_contents($file->getTempName());
+        $contenido = preg_replace('/^\xEF\xBB\xBF/', '', $contenido);
+        $tmpPath = $file->getTempName();
+        file_put_contents($tmpPath, $contenido);
+
+        $handle = fopen($tmpPath, 'r');
         if (! $handle) {
             return redirect()->back()->with('errors', ['No se pudo abrir el archivo.']);
         }
 
-        // Leer header
-        $header = fgetcsv($handle, 0, ',');
+        // Detectar separador
+        $primeraLinea = fgets($handle);
+        rewind($handle);
+        $comas      = substr_count($primeraLinea, ',');
+        $puntoyComa = substr_count($primeraLinea, ';');
+        $tabs       = substr_count($primeraLinea, "\t");
+        $separador  = ',';
+        if ($puntoyComa > $comas && $puntoyComa > $tabs) $separador = ';';
+        elseif ($tabs > $comas && $tabs > $puntoyComa) $separador = "\t";
+
+        $header = fgetcsv($handle, 0, $separador);
         if (! $header || count($header) < 13) {
             fclose($handle);
-            return redirect()->back()->with('errors', ['El archivo debe tener al menos 13 columnas. Se encontraron ' . count($header ?: []) . '.']);
+            return redirect()->back()->with('errors', ['El archivo debe tener al menos 13 columnas. Se encontraron ' . count($header ?: []) . '. Separador detectado: "' . ($separador === "\t" ? 'TAB' : $separador) . '"']);
         }
 
-        $insertados = 0;
+        // Cargar comprobantes existentes
+        $db = \Config\Database::connect();
+        $existentes = array_flip(array_column(
+            $db->table('tbl_facturacion')->select('comprobante')->get()->getResultArray(),
+            'comprobante'
+        ));
+
+        $nuevas     = [];
+        $duplicados = 0;
         $errores    = [];
-        $lote       = [];
         $fila       = 1;
 
-        while (($row = fgetcsv($handle, 0, ',')) !== false) {
+        while (($row = fgetcsv($handle, 0, $separador)) !== false) {
             $fila++;
 
             if (count($row) < 13) {
@@ -84,49 +114,162 @@ class CargaCrudaController extends BaseController
                 continue;
             }
 
-            $registro = [
-                'comprobante'          => $comprobante,
-                'fecha_elaboracion'    => $this->parseDateCSV($row[1]),
-                'identificacion'       => $this->cleanInt($row[2]),
-                'sucursal'             => trim($row[3]) ?: null,
-                'nombre_tercero'       => trim($row[4]),
-                'base_gravada'         => $this->cleanDecimal($row[5]),
-                'base_exenta'          => $this->cleanDecimal($row[6]),
-                'iva'                  => $this->cleanDecimal($row[7]),
-                'impoconsumo'          => $this->cleanDecimal($row[8]),
-                'ad_valorem'           => $this->cleanDecimal($row[9]),
-                'cargo_en_totales'     => $this->cleanDecimal($row[10]),
-                'descuento_en_totales' => $this->cleanDecimal($row[11]),
-                'total'                => $this->cleanDecimal($row[12]),
-            ];
-
-            if (! $registro['fecha_elaboracion']) {
-                $errores[] = "Fila {$fila}: fecha elaboración inválida '{$row[1]}', se omite.";
+            if (isset($existentes[$comprobante])) {
+                $duplicados++;
                 continue;
             }
 
-            $lote[] = $registro;
-
-            if (count($lote) >= 200) {
-                $this->factCrudaModel->insertBatch($lote);
-                $insertados += count($lote);
-                $lote = [];
+            $fechaElab = $this->parseDateCSV($row[1]);
+            if (! $fechaElab) {
+                $errores[] = "Fila {$fila}: fecha inválida '{$row[1]}', se omite.";
+                continue;
             }
+
+            $nuevas[] = [
+                'comprobante'       => $comprobante,
+                'fecha_elaboracion' => $fechaElab,
+                'identificacion'    => $this->cleanInt($row[2]),
+                'sucursal'          => trim($row[3]) ?: null,
+                'nombre_tercero'    => trim($row[4]),
+                'base_gravada'      => $this->cleanDecimal($row[5]) ?? 0,
+                'base_exenta'       => $this->cleanDecimal($row[6]) ?? 0,
+                'iva'               => $this->cleanDecimal($row[7]) ?? 0,
+                'cargo_en_totales'  => $this->cleanDecimal($row[10]) ?? 0,
+                'descuento_en_totales' => $this->cleanDecimal($row[11]) ?? 0,
+                'total'             => $this->cleanDecimal($row[12]) ?? 0,
+            ];
+
+            $existentes[$comprobante] = true; // evitar duplicados dentro del mismo CSV
         }
 
         fclose($handle);
 
+        if (empty($nuevas) && $duplicados === 0) {
+            return redirect()->back()->with('errors', ['El archivo no contenía registros válidos.']);
+        }
+
+        if (empty($nuevas) && $duplicados > 0) {
+            return redirect()->back()->with('errors', ["Las {$duplicados} facturas del archivo ya existen en el sistema."]);
+        }
+
+        // Guardar en sesión para paso 2
+        session()->set('csv_facturas', $nuevas);
+
+        $data['facturas']    = $nuevas;
+        $data['duplicados']  = $duplicados;
+        $data['errores']     = $errores;
+        $data['portafolios'] = $this->portafolioModel->orderBy('portafolio', 'ASC')->findAll();
+
+        return view('conciliaciones/revisar_facturacion_csv', $data);
+    }
+
+    /**
+     * Paso 2: Confirmar e insertar en tbl_facturacion con portafolios asignados
+     */
+    public function confirmarFacturacionPost()
+    {
+        $facturas = session()->get('csv_facturas');
+        if (empty($facturas)) {
+            return redirect()->to('/conciliaciones/cruda/facturacion')
+                ->with('errors', ['No hay facturas para procesar. Suba el CSV nuevamente.']);
+        }
+
+        $portafoliosPorFila = $this->request->getPost('portafolio') ?? [];
+        $portafolioGlobal   = (int) $this->request->getPost('portafolio_global');
+
+        // Cargar portafolios para nombre detallado
+        $portafoliosDB = [];
+        foreach ($this->portafolioModel->findAll() as $p) {
+            $portafoliosDB[$p['id_portafolio']] = $p['portafolio'];
+        }
+
+        $insertados = 0;
+        $sinPortafolio = 0;
+        $errores    = [];
+        $lote       = [];
+
+        foreach ($facturas as $i => $f) {
+            $idPort = (int)($portafoliosPorFila[$i] ?? $portafolioGlobal);
+            if (! $idPort) {
+                $sinPortafolio++;
+                $errores[] = "{$f['comprobante']}: sin portafolio asignado, se omite.";
+                continue;
+            }
+
+            $baseGravada = (float) $f['base_gravada'];
+            $iva         = (float) $f['iva'];
+            $retefuente4 = round($baseGravada * 0.04, 2);
+            $fechaElab   = $f['fecha_elaboracion'];
+            $anio = (int) date('Y', strtotime($fechaElab));
+            $mes  = (int) date('m', strtotime($fechaElab));
+
+            $numFactura = null;
+            if (preg_match('/(\d+)$/', $f['comprobante'], $m)) $numFactura = (int) $m[1];
+            $extrae = null;
+            if (preg_match('/\d+-(\d+)$/', $f['comprobante'], $m)) $extrae = $m[1];
+
+            $portNombre = $portafoliosDB[$idPort] ?? '';
+
+            $lote[] = [
+                'id_portafolio'              => $idPort,
+                'semana'                     => (int) date('W', strtotime($fechaElab)),
+                'fecha_pago'                 => null,
+                'mes_pago'                   => null,
+                'valor_pagado'               => null,
+                'dif_facturado_pagado'       => 0,
+                'valor_esperado_recaudo_iva' => $baseGravada + $iva - $retefuente4,
+                'retencion_renta_4'          => $retefuente4,
+                'base_gravable_neta'         => $baseGravada - $retefuente4,
+                'pagado'                     => 0,
+                'estado_pago'                => 'pendiente',
+                'anio'                       => $anio,
+                'mes'                        => $mes,
+                'extrae'                     => $extrae,
+                'fecha_anticipo'             => null,
+                'anticipo'                   => 0,
+                'comprobante'                => $f['comprobante'],
+                'fecha_elaboracion'          => $fechaElab,
+                'identificacion'             => $f['identificacion'],
+                'sucursal'                   => $f['sucursal'],
+                'nombre_tercero'             => $f['nombre_tercero'],
+                'base_gravada'               => $baseGravada,
+                'base_exenta'                => (float) $f['base_exenta'],
+                'iva'                        => $iva,
+                'retefuente_4'               => $retefuente4,
+                'recompra'                   => 0,
+                'cargo_en_totales'           => (float) $f['cargo_en_totales'],
+                'descuento_en_totales'       => (float) $f['descuento_en_totales'],
+                'total'                      => (float) $f['total'],
+                'vendedor'                   => null,
+                'base_comisiones'            => $baseGravada - $retefuente4,
+                'numero_factura'             => $numFactura,
+                'portafolio_detallado'       => $portNombre ? $portNombre . '-PH' : null,
+                'fecha_vence'                => date('Y-m-d', strtotime($fechaElab . ' +30 days')),
+            ];
+        }
+
         if (! empty($lote)) {
-            $this->factCrudaModel->insertBatch($lote);
-            $insertados += count($lote);
+            try {
+                $this->facturacionModel->insertBatch($lote);
+                $insertados = count($lote);
+            } catch (\Exception $e) {
+                $errores[] = "Error BD: " . $e->getMessage();
+            }
         }
 
-        $msg = "Se importaron {$insertados} registros de facturación.";
-        if (! empty($errores)) {
-            $msg .= ' | ' . count($errores) . ' filas con errores.';
+        session()->remove('csv_facturas');
+
+        if ($insertados === 0) {
+            return redirect()->to('/conciliaciones/cruda/facturacion')
+                ->with('errors', ['No se pudo importar ningún registro.'])
+                ->with('import_errors', $errores);
         }
 
-        return redirect()->to('/conciliaciones/cruda/facturacion')
+        $msg = "Se importaron {$insertados} facturas nuevas a facturación.";
+        if ($sinPortafolio > 0) $msg .= " | {$sinPortafolio} omitidas (sin portafolio).";
+        if (! empty($errores)) $msg .= ' | ' . count($errores) . ' errores.';
+
+        return redirect()->to('/conciliaciones/facturacion')
             ->with('success', $msg)
             ->with('import_errors', $errores);
     }
@@ -155,17 +298,20 @@ class CargaCrudaController extends BaseController
     {
         $db = \Config\Database::connect();
         $data['cuentas']        = $this->cuentaBancoModel->orderBy('nombre_cuenta', 'ASC')->findAll();
-        $data['totalRegistros'] = $db->table('tbl_movimiento_bancario_crudo')->countAllResults();
-        $data['ultimaCarga']    = $db->table('tbl_movimiento_bancario_crudo')
+        $data['totalRegistros'] = $db->table('tbl_conciliacion_bancaria')->countAllResults();
+        $data['ultimaCarga']    = $db->table('tbl_conciliacion_bancaria')
             ->selectMax('created_at')->get()->getRow()->created_at;
-        $data['porCuenta'] = $db->table('tbl_movimiento_bancario_crudo mc')
+        $data['porCuenta'] = $db->table('tbl_conciliacion_bancaria cb')
             ->select('c.nombre_cuenta, COUNT(*) as total')
-            ->join('tbl_cuentas_banco c', 'c.id_cuenta_banco = mc.id_cuenta_banco')
+            ->join('tbl_cuentas_banco c', 'c.id_cuenta_banco = cb.id_cuenta_banco')
             ->groupBy('c.nombre_cuenta')
             ->get()->getResultArray();
         return view('conciliaciones/upload_bancario_crudo', $data);
     }
 
+    /**
+     * Paso 1 Bancario: Parsear CSV y mostrar vista intermedia
+     */
     public function uploadBancarioPost()
     {
         $file = $this->request->getFile('archivo_csv');
@@ -183,23 +329,37 @@ class CargaCrudaController extends BaseController
             return redirect()->back()->with('errors', ['Solo se permiten archivos .csv']);
         }
 
-        $handle = fopen($file->getTempName(), 'r');
+        $contenido = file_get_contents($file->getTempName());
+        $contenido = preg_replace('/^\xEF\xBB\xBF/', '', $contenido);
+        $tmpPath = $file->getTempName();
+        file_put_contents($tmpPath, $contenido);
+
+        $handle = fopen($tmpPath, 'r');
         if (! $handle) {
             return redirect()->back()->with('errors', ['No se pudo abrir el archivo.']);
         }
 
-        $header = fgetcsv($handle, 0, ',');
+        // Detectar separador
+        $primeraLinea = fgets($handle);
+        rewind($handle);
+        $comas      = substr_count($primeraLinea, ',');
+        $puntoyComa = substr_count($primeraLinea, ';');
+        $tabs       = substr_count($primeraLinea, "\t");
+        $separador  = ',';
+        if ($puntoyComa > $comas && $puntoyComa > $tabs) $separador = ';';
+        elseif ($tabs > $comas && $tabs > $puntoyComa) $separador = "\t";
+
+        $header = fgetcsv($handle, 0, $separador);
         if (! $header || count($header) < 10) {
             fclose($handle);
-            return redirect()->back()->with('errors', ['El archivo debe tener al menos 10 columnas. Se encontraron ' . count($header ?: []) . '.']);
+            return redirect()->back()->with('errors', ['El archivo debe tener al menos 10 columnas. Se encontraron ' . count($header ?: []) . '. Separador detectado: "' . ($separador === "\t" ? 'TAB' : $separador) . '"']);
         }
 
-        $insertados = 0;
-        $errores    = [];
-        $lote       = [];
-        $fila       = 1;
+        $movimientos = [];
+        $errores     = [];
+        $fila        = 1;
 
-        while (($row = fgetcsv($handle, 0, ',')) !== false) {
+        while (($row = fgetcsv($handle, 0, $separador)) !== false) {
             $fila++;
 
             if (count($row) < 10) {
@@ -213,42 +373,150 @@ class CargaCrudaController extends BaseController
                 continue;
             }
 
-            $registro = [
-                'id_cuenta_banco'    => $idCuentaBanco,
+            $transaccion = trim($row[3]) ?: null;
+            $valorTotal  = $this->cleanDecimal($row[7]) ?? 0;
+            // Cálculo: si es Nota Débito, valor negativo
+            $valor = (stripos($transaccion ?? '', 'bito') !== false || stripos($transaccion ?? '', 'Nota D') !== false)
+                ? abs($valorTotal) * -1
+                : abs($valorTotal);
+
+            $movimientos[] = [
                 'fecha_sistema'      => $fecha,
                 'documento'          => trim($row[1]) ?: null,
                 'descripcion_motivo' => trim($row[2]) ?: null,
-                'transaccion'        => trim($row[3]) ?: null,
+                'transaccion'        => $transaccion,
                 'oficina_recaudo'    => trim($row[4]) ?: null,
-                'id_origen_destino'  => trim($row[5]) ?: null,
-                'valor_cheque'       => $this->cleanDecimal($row[6]),
-                'valor_total'        => $this->cleanDecimal($row[7]),
+                'nit_originador'     => $this->cleanInt($row[5]),
+                'valor_cheque'       => $this->cleanDecimal($row[6]) ?? 0,
+                'valor_total'        => $valorTotal,
+                'valor'              => $valor,
+                'deb_cred'           => $valor >= 0 ? 'INGRESO' : 'EGRESO',
                 'referencia_1'       => trim($row[8]) ?: null,
                 'referencia_2'       => trim($row[9]) ?: null,
             ];
-
-            $lote[] = $registro;
-
-            if (count($lote) >= 200) {
-                $this->movCrudoModel->insertBatch($lote);
-                $insertados += count($lote);
-                $lote = [];
-            }
         }
 
         fclose($handle);
 
+        if (empty($movimientos)) {
+            return redirect()->back()->with('errors', ['El archivo no contenía registros válidos.'])
+                ->with('import_errors', $errores);
+        }
+
+        // Guardar en sesión
+        session()->set('csv_bancario', $movimientos);
+        session()->set('csv_bancario_cuenta', $idCuentaBanco);
+
+        // Obtener llave_items existentes para sugerencias
+        $db = \Config\Database::connect();
+        $llaveItems = array_column(
+            $db->table('tbl_conciliacion_bancaria')->select('llave_item')->distinct()->orderBy('llave_item')->get()->getResultArray(),
+            'llave_item'
+        );
+
+        $data['movimientos']  = $movimientos;
+        $data['errores']      = $errores;
+        $data['idCuentaBanco'] = $idCuentaBanco;
+        $data['cuentaNombre'] = $this->cuentaBancoModel->find($idCuentaBanco)['nombre_cuenta'] ?? '';
+        $data['centros']      = $db->table('tbl_centros_costo')->orderBy('centro_costo')->get()->getResultArray();
+        $data['llaveItems']   = $llaveItems;
+
+        return view('conciliaciones/revisar_bancario_csv', $data);
+    }
+
+    /**
+     * Paso 2 Bancario: Confirmar e insertar en tbl_conciliacion_bancaria
+     */
+    public function confirmarBancarioPost()
+    {
+        $movimientos   = session()->get('csv_bancario');
+        $idCuentaBanco = session()->get('csv_bancario_cuenta');
+
+        if (empty($movimientos) || !$idCuentaBanco) {
+            return redirect()->to('/conciliaciones/cruda/bancario')
+                ->with('errors', ['No hay movimientos para procesar. Suba el CSV nuevamente.']);
+        }
+
+        $centrosPorFila  = $this->request->getPost('centro') ?? [];
+        $centroGlobal    = (int) $this->request->getPost('centro_global');
+        $llavesPorFila   = $this->request->getPost('llave_item') ?? [];
+        $fvPorFila       = $this->request->getPost('fv') ?? [];
+        $clientePorFila  = $this->request->getPost('item_cliente') ?? [];
+
+        $db = \Config\Database::connect();
+        $concModel = new \App\Models\ConciliacionBancariaModel();
+
+        $insertados    = 0;
+        $sinCentro     = 0;
+        $errores       = [];
+        $lote          = [];
+
+        foreach ($movimientos as $i => $m) {
+            $idCentro = (int)($centrosPorFila[$i] ?? $centroGlobal);
+            if (! $idCentro) {
+                $sinCentro++;
+                $errores[] = "Mov. #{$i}: sin centro de costo, se omite.";
+                continue;
+            }
+
+            $llaveItem   = trim($llavesPorFila[$i] ?? '');
+            $fv          = trim($fvPorFila[$i] ?? '') ?: null;
+            $itemCliente = trim($clientePorFila[$i] ?? '') ?: $llaveItem;
+            $fecha       = $m['fecha_sistema'];
+
+            if (empty($llaveItem)) {
+                $llaveItem = 'SIN CLASIFICAR';
+                $itemCliente = $itemCliente ?: 'SIN CLASIFICAR';
+            }
+
+            $lote[] = [
+                'id_cuenta_banco'    => $idCuentaBanco,
+                'id_centro_costo'    => $idCentro,
+                'llave_item'         => $llaveItem,
+                'deb_cred'           => $m['deb_cred'],
+                'fv'                 => $fv,
+                'item_cliente'       => $itemCliente,
+                'anio'               => (int) date('Y', strtotime($fecha)),
+                'mes'                => (int) date('m', strtotime($fecha)),
+                'mes_real'           => (int) date('m', strtotime($fecha)),
+                'semana'             => (int) date('W', strtotime($fecha)),
+                'valor'              => (float) $m['valor'],
+                'fecha_sistema'      => $fecha,
+                'documento'          => $m['documento'],
+                'descripcion_motivo' => $m['descripcion_motivo'],
+                'transaccion'        => $m['transaccion'],
+                'oficina_recaudo'    => $m['oficina_recaudo'],
+                'nit_originador'     => $m['nit_originador'],
+                'valor_cheque'       => (float) $m['valor_cheque'],
+                'valor_total'        => (float) $m['valor_total'],
+                'referencia_1'       => $m['referencia_1'],
+                'referencia_2'       => $m['referencia_2'],
+            ];
+        }
+
         if (! empty($lote)) {
-            $this->movCrudoModel->insertBatch($lote);
-            $insertados += count($lote);
+            try {
+                $concModel->insertBatch($lote);
+                $insertados = count($lote);
+            } catch (\Exception $e) {
+                $errores[] = "Error BD: " . $e->getMessage();
+            }
+        }
+
+        session()->remove('csv_bancario');
+        session()->remove('csv_bancario_cuenta');
+
+        if ($insertados === 0) {
+            return redirect()->to('/conciliaciones/cruda/bancario')
+                ->with('errors', ['No se pudo importar ningún movimiento.'])
+                ->with('import_errors', $errores);
         }
 
         $msg = "Se importaron {$insertados} movimientos bancarios.";
-        if (! empty($errores)) {
-            $msg .= ' | ' . count($errores) . ' filas con errores.';
-        }
+        if ($sinCentro > 0) $msg .= " | {$sinCentro} omitidos (sin centro de costo).";
+        if (! empty($errores)) $msg .= ' | ' . count($errores) . ' errores.';
 
-        return redirect()->to('/conciliaciones/cruda/bancario')
+        return redirect()->to('/conciliaciones/bancaria')
             ->with('success', $msg)
             ->with('import_errors', $errores);
     }

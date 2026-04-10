@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargar Facturación Cruda – Conciliaciones – Kpi Cycloid</title>
+    <title>Importar Facturación CSV – Conciliaciones – Kpi Cycloid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
@@ -13,7 +13,7 @@
 <div class="container py-4">
     <div class="d-flex align-items-center gap-2 mb-4">
         <?= view('components/back_to_dashboard') ?>
-        <h1 class="h3 mb-0">Cargar Facturación Cruda (CSV)</h1>
+        <h1 class="h3 mb-0">Importar Facturación desde CSV</h1>
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
@@ -90,33 +90,9 @@
     </div>
 
     <div class="d-flex gap-2">
-        <a href="<?= base_url('conciliaciones/cruda/facturacion/list') ?>" class="btn btn-outline-primary">
-            <i class="bi bi-table me-1"></i> Ver registros
+        <a href="<?= base_url('conciliaciones/facturacion') ?>" class="btn btn-outline-primary">
+            <i class="bi bi-table me-1"></i> Ver facturación
         </a>
-        <?php if (($totalRegistros ?? 0) > 0): ?>
-        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalTruncar">
-            <i class="bi bi-trash me-1"></i> Vaciar tabla
-        </button>
-        <?php endif; ?>
-    </div>
-</div>
-
-<div class="modal fade" id="modalTruncar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirmar vaciado</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Esto eliminará <strong>todos los <?= number_format($totalRegistros ?? 0, 0, ',', '.') ?> registros</strong> de facturación cruda.</p>
-                <p class="text-danger fw-bold">Esta acción no se puede deshacer.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="<?= base_url('conciliaciones/cruda/facturacion/truncar') ?>" class="btn btn-danger">Sí, vaciar</a>
-            </div>
-        </div>
     </div>
 </div>
 

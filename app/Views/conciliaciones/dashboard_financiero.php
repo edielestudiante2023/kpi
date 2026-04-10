@@ -129,8 +129,9 @@
         <?php endforeach; ?>
     </div>
 
-    <!-- Cartera + Deudas + Posición Neta -->
-    <div class="row mb-4">
+    <!-- ACTIVOS -->
+    <div class="row mb-2">
+        <div class="col-12"><h6 class="text-muted fw-bold mb-2"><i class="bi bi-plus-circle me-1"></i> ACTIVOS</h6></div>
         <div class="col-md-3">
             <div class="card border-dark" data-bs-toggle="tooltip" title="Suma de saldos actuales de todas las cuentas bancarias registradas.">
                 <div class="card-body text-center">
@@ -151,24 +152,69 @@
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= base_url('conciliaciones/deudas') ?>" class="text-decoration-none" target="_blank">
-            <div class="card border-danger" style="cursor:pointer;" data-bs-toggle="tooltip" title="Saldo pendiente de todas las obligaciones/deudas activas. Clic para ver el detalle en Deudas.">
+            <div class="card border-dark bg-dark bg-opacity-10" data-bs-toggle="tooltip" title="Suma de Bancos + Cartera.">
                 <div class="card-body text-center">
-                    <h6 class="text-muted">Deudas (pasivo)</h6>
-                    <p class="h4 fw-bold text-danger">-$<?= number_format($deudaSaldo, 0, ',', '.') ?></p>
+                    <h6 class="text-muted">Total Activos</h6>
+                    <p class="h4 fw-bold">$<?= number_format($totalActivos, 0, ',', '.') ?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PASIVOS -->
+    <div class="row mb-2">
+        <div class="col-12"><h6 class="text-muted fw-bold mb-2"><i class="bi bi-dash-circle me-1"></i> PASIVOS</h6></div>
+        <div class="col-md-3">
+            <a href="<?= base_url('conciliaciones/deudas') ?>" class="text-decoration-none" target="_blank">
+            <div class="card border-danger" style="cursor:pointer;" data-bs-toggle="tooltip" title="Saldo pendiente de obligaciones/deudas activas. Clic para ver detalle.">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Deudas</h6>
+                    <p class="h4 fw-bold text-danger">$<?= number_format($deudaSaldo, 0, ',', '.') ?></p>
                     <small class="text-muted"><?= $totalObligaciones ?> obligaciones activas</small>
                 </div>
             </div>
             </a>
         </div>
         <div class="col-md-3">
-            <div class="card <?= $posicionNeta >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>" data-bs-toggle="tooltip" title="Posición financiera neta = Utilidad Operativa + Saldo Bancos + Cartera por Cobrar - Deudas. Indica la salud financiera global.">
+            <div class="card border-warning" data-bs-toggle="tooltip" title="IVA acumulado de facturas emitidas en el cuatrimestre actual (<?= $ivaPeriodoLabel ?>). Se paga al final del período.">
                 <div class="card-body text-center">
-                    <h6 class="text-muted">Posición Neta</h6>
-                    <p class="h3 fw-bold <?= $posicionNeta >= 0 ? 'text-success' : 'text-danger' ?>">
+                    <h6 class="text-muted">IVA Proyectado</h6>
+                    <p class="h4 fw-bold text-warning">$<?= number_format($ivaProyectado, 0, ',', '.') ?></p>
+                    <small class="text-muted"><?= $ivaPeriodoLabel ?> (<?= $ivaFacturas ?> facturas)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger bg-danger bg-opacity-10" data-bs-toggle="tooltip" title="Suma de Deudas + IVA Proyectado.">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Pasivos</h6>
+                    <p class="h4 fw-bold text-danger">$<?= number_format($totalPasivos, 0, ',', '.') ?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTADO DE LA EMPRESA + RESULTADO INTEGRAL -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card <?= $posicionNeta >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>" data-bs-toggle="tooltip" title="Activos - Pasivos = Bancos + Cartera - Deudas - IVA Proyectado.">
+                <div class="card-body text-center">
+                    <h6 class="text-muted fw-bold">ESTADO DE LA EMPRESA</h6>
+                    <p class="h2 fw-bold <?= $posicionNeta >= 0 ? 'text-success' : 'text-danger' ?>">
                         $<?= number_format($posicionNeta, 0, ',', '.') ?>
                     </p>
-                    <small class="text-muted">Utilidad + Cartera + Bancos - Deudas</small>
+                    <small class="text-muted">Activos ($<?= number_format($totalActivos, 0, ',', '.') ?>) - Pasivos ($<?= number_format($totalPasivos, 0, ',', '.') ?>)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card <?= $resultadoIntegral >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>" data-bs-toggle="tooltip" title="Utilidad Operativa - Deudas. Muestra el resultado de la operacion despues de descontar las obligaciones financieras.">
+                <div class="card-body text-center">
+                    <h6 class="text-muted fw-bold">RESULTADO INTEGRAL</h6>
+                    <p class="h2 fw-bold <?= $resultadoIntegral >= 0 ? 'text-success' : 'text-danger' ?>">
+                        $<?= number_format($resultadoIntegral, 0, ',', '.') ?>
+                    </p>
+                    <small class="text-muted">Utilidad Operativa ($<?= number_format($utilidadOperativa, 0, ',', '.') ?>) - Deudas ($<?= number_format($deudaSaldo, 0, ',', '.') ?>)</small>
                 </div>
             </div>
         </div>

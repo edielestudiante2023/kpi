@@ -176,6 +176,8 @@ class FacturacionController extends BaseController
         $pagado = $this->request->getGet('pagado');
         $portafolioFiltro = $this->request->getGet('portafolio');
         $vencida = $this->request->getGet('vencida');
+        $anticipo = $this->request->getGet('anticipo');
+        $estadoPago = $this->request->getGet('estado_pago');
 
         $data['anios'] = $db->table('tbl_facturacion')
             ->select('anio')->distinct()->orderBy('anio', 'DESC')
@@ -185,6 +187,8 @@ class FacturacionController extends BaseController
         $data['filtroPagado']     = $pagado;
         $data['filtroPortafolio'] = $portafolioFiltro;
         $data['filtroVencida']    = $vencida;
+        $data['filtroAnticipo']   = $anticipo;
+        $data['filtroEstadoPago'] = $estadoPago;
 
         // Calcular rango de fechas
         if ($rango === 'personalizado') {
@@ -215,6 +219,7 @@ class FacturacionController extends BaseController
             ->orderBy('total_base', 'DESC');
         $aplicarBase($resumenBuilder);
         if ($pagado !== null && $pagado !== '') $resumenBuilder->where('f.pagado', (int) $pagado);
+        if ($estadoPago && in_array($estadoPago, ['pagado', 'pendiente', 'brecha', 'anticipo', 'castigada'])) $resumenBuilder->where('f.estado_pago', $estadoPago);
         $data['resumenPortafolios'] = $resumenBuilder->get()->getResultArray();
 
         // Pagado/Cartera (respeta portafolio + fechas)
@@ -225,17 +230,28 @@ class FacturacionController extends BaseController
         if ($portafolioFiltro) $resumenPagado->where('f.id_portafolio', (int) $portafolioFiltro);
         $data['resumenPagado'] = $resumenPagado->get()->getResultArray();
 
+        // Resumen por estado_pago (pagado/pendiente/brecha/anticipo)
+        $resumenEstado = $db->table('tbl_facturacion f')
+            ->select('f.estado_pago, SUM(f.base_gravada) as total_base, COUNT(*) as facturas')
+            ->groupBy('f.estado_pago');
+        $aplicarBase($resumenEstado);
+        if ($portafolioFiltro) $resumenEstado->where('f.id_portafolio', (int) $portafolioFiltro);
+        $data['resumenEstadoPago'] = [];
+        foreach ($resumenEstado->get()->getResultArray() as $re) {
+            $data['resumenEstadoPago'][$re['estado_pago']] = $re;
+        }
+
         // Totales de IVA, Retenciones y Líquido para cards (respetan TODOS los filtros)
         $totalesBuilder = $db->table('tbl_facturacion f')
             ->select('SUM(f.base_gravada) as total_base, SUM(f.iva) as total_iva, SUM(ABS(f.retefuente_4)) as total_retencion');
         $aplicarBase($totalesBuilder);
         if ($pagado !== null && $pagado !== '') $totalesBuilder->where('f.pagado', (int) $pagado);
         if ($portafolioFiltro) $totalesBuilder->where('f.id_portafolio', (int) $portafolioFiltro);
+        if ($estadoPago && in_array($estadoPago, ['pagado', 'pendiente', 'brecha', 'anticipo', 'castigada'])) $totalesBuilder->where('f.estado_pago', $estadoPago);
         $totales = $totalesBuilder->get()->getRow();
         $data['totalBaseGravada'] = (float) ($totales->total_base ?? 0);
         $data['totalIva']         = (float) ($totales->total_iva ?? 0);
         $data['totalRetencion']   = (float) ($totales->total_retencion ?? 0);
-        $data['totalLiquido']     = $data['totalBaseGravada'] + $data['totalIva'] - $data['totalRetencion'];
 
         // Cartera vencida (no pagadas + fecha_elaboracion + 30 días < hoy)
         $vencidaBuilder = $db->table('tbl_facturacion f')
@@ -247,6 +263,19 @@ class FacturacionController extends BaseController
         $vencidaRow = $vencidaBuilder->get()->getRow();
         $data['totalCarteraVencida']   = (float) ($vencidaRow->total_vencida ?? 0);
         $data['facturasVencidas']      = (int) ($vencidaRow->facturas_vencidas ?? 0);
+
+        // Anticipos (respeta todos los filtros)
+        $anticipoBuilder = $db->table('tbl_facturacion f')
+            ->select('SUM(f.anticipo) as total_anticipo, COUNT(CASE WHEN f.anticipo > 0 THEN 1 END) as facturas_anticipo');
+        $aplicarBase($anticipoBuilder);
+        if ($pagado !== null && $pagado !== '') $anticipoBuilder->where('f.pagado', (int) $pagado);
+        if ($portafolioFiltro) $anticipoBuilder->where('f.id_portafolio', (int) $portafolioFiltro);
+        if ($estadoPago && in_array($estadoPago, ['pagado', 'pendiente', 'brecha', 'anticipo', 'castigada'])) $anticipoBuilder->where('f.estado_pago', $estadoPago);
+        $anticipoRow = $anticipoBuilder->get()->getRow();
+        $data['totalAnticipo']    = (float) ($anticipoRow->total_anticipo ?? 0);
+        $data['facturasAnticipo'] = (int) ($anticipoRow->facturas_anticipo ?? 0);
+
+        $data['totalLiquido']     = $data['totalBaseGravada'] - $data['totalRetencion'] - $data['totalAnticipo'];
 
         // ── TABLA: con todos los filtros ──
         $builder = $db->table('tbl_facturacion f')
@@ -262,6 +291,12 @@ class FacturacionController extends BaseController
         if ($vencida === '1') {
             $builder->where('f.pagado', 0)
                     ->where('DATE_ADD(f.fecha_elaboracion, INTERVAL 30 DAY) <', date('Y-m-d'));
+        }
+        if ($anticipo === '1') {
+            $builder->where('f.anticipo >', 0);
+        }
+        if ($estadoPago && in_array($estadoPago, ['pagado', 'pendiente', 'brecha', 'anticipo', 'castigada'])) {
+            $builder->where('f.estado_pago', $estadoPago);
         }
 
         $data['registros']   = $builder->get()->getResultArray();
@@ -282,6 +317,8 @@ class FacturacionController extends BaseController
         $pagado = $this->request->getGet('pagado');
         $portafolioFiltro = $this->request->getGet('portafolio');
         $vencida = $this->request->getGet('vencida');
+        $anticipo = $this->request->getGet('anticipo');
+        $estadoPago = $this->request->getGet('estado_pago');
 
         if ($rango === 'personalizado') {
             $fechas = ['desde' => $this->request->getGet('desde') ?: null, 'hasta' => $this->request->getGet('hasta') ?: null];
@@ -291,7 +328,7 @@ class FacturacionController extends BaseController
         }
 
         $builder = $db->table('tbl_facturacion f')
-            ->select('p.portafolio, f.comprobante, f.fecha_elaboracion, f.identificacion, f.nombre_tercero, f.base_gravada, f.iva, f.retefuente_4, f.pagado, f.fecha_pago, f.valor_pagado, f.vendedor, f.portafolio_detallado')
+            ->select('p.portafolio, f.comprobante, f.fecha_elaboracion, f.identificacion, f.nombre_tercero, f.base_gravada, f.iva, f.retefuente_4, f.anticipo, f.pagado, f.estado_pago, f.fecha_pago, f.valor_pagado, f.vendedor, f.portafolio_detallado')
             ->join('tbl_portafolios p', 'p.id_portafolio = f.id_portafolio', 'left')
             ->orderBy('f.fecha_elaboracion', 'DESC');
 
@@ -302,6 +339,12 @@ class FacturacionController extends BaseController
         if ($vencida === '1') {
             $builder->where('f.pagado', 0)->where('DATE_ADD(f.fecha_elaboracion, INTERVAL 30 DAY) <', date('Y-m-d'));
         }
+        if ($anticipo === '1') {
+            $builder->where('f.anticipo >', 0);
+        }
+        if ($estadoPago && in_array($estadoPago, ['pagado', 'pendiente', 'brecha', 'anticipo', 'castigada'])) {
+            $builder->where('f.estado_pago', $estadoPago);
+        }
 
         $rows = $builder->get()->getResultArray();
 
@@ -309,22 +352,32 @@ class FacturacionController extends BaseController
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Facturacion');
 
-        $headers = ['Portafolio','Comprobante','Fecha Elaboracion','NIT','Cliente','Base Gravada','IVA','Retencion 4%','Liquido','Pagado','Fecha Pago','Valor Pagado','Vendedor','Detallado'];
+        $headers = ['Portafolio','Comprobante','Fecha Elaboracion','NIT','Cliente','Base Gravada','IVA','Retencion 4%','Anticipo','Liquido','Pagado','Fecha Pago','Valor Pagado','Vendedor','Detallado'];
         $sheet->fromArray($headers, null, 'A1');
 
         // Estilo headers
         $headerStyle = ['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '212529']]];
-        $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:O1')->applyFromArray($headerStyle);
 
         $fila = 2;
         foreach ($rows as $r) {
-            $liquido = (float)$r['base_gravada'] - abs((float)$r['retefuente_4']);
+            $anticVal = (float)($r['anticipo'] ?? 0);
+            $liquido = (float)$r['base_gravada'] - abs((float)$r['retefuente_4']) - $anticVal;
+            $estadoLabel = match($r['estado_pago'] ?? '') {
+                'pagado'    => 'SI',
+                'brecha'    => 'BRECHA',
+                'castigada' => 'CASTIGADA',
+                'anticipo'  => 'ANTICIPO',
+                default     => 'NO',
+            };
             $sheet->fromArray([
                 $r['portafolio'], $r['comprobante'],
                 $r['fecha_elaboracion'] ? date('d/m/Y', strtotime($r['fecha_elaboracion'])) : '',
                 $r['identificacion'], $r['nombre_tercero'],
-                (float)$r['base_gravada'], (float)$r['iva'], (float)$r['retefuente_4'], $liquido,
-                $r['pagado'] ? 'SI' : 'NO',
+                (float)$r['base_gravada'], (float)$r['iva'], (float)$r['retefuente_4'],
+                $anticVal > 0 ? $anticVal : '',
+                $liquido,
+                $estadoLabel,
                 $r['fecha_pago'] ? date('d/m/Y', strtotime($r['fecha_pago'])) : '',
                 $r['valor_pagado'] ? (float)$r['valor_pagado'] : '',
                 $r['vendedor'], $r['portafolio_detallado'],
@@ -333,12 +386,12 @@ class FacturacionController extends BaseController
         }
 
         // Formato moneda
-        foreach (['F','G','H','I','L'] as $col) {
+        foreach (['F','G','H','I','J','M'] as $col) {
             $sheet->getStyle("{$col}2:{$col}{$fila}")->getNumberFormat()->setFormatCode('"$"#,##0');
         }
 
         // Auto-ancho
-        foreach (range('A', 'N') as $col) {
+        foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -398,6 +451,145 @@ class FacturacionController extends BaseController
         }
 
         return ['desde' => $desde, 'hasta' => $hasta];
+    }
+
+    /**
+     * Búsqueda AJAX de facturas para Select2
+     */
+    public function buscarFactura()
+    {
+        $q = trim($this->request->getGet('q') ?? '');
+        if (strlen($q) < 2) return $this->response->setJSON([]);
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('tbl_facturacion f')
+            ->select('f.id_facturacion, f.comprobante, f.nombre_tercero, f.identificacion, f.base_gravada, f.anticipo, f.fecha_anticipo, f.pagado, f.estado_pago')
+            ->groupStart()
+                ->like('f.comprobante', $q)
+                ->orLike('f.nombre_tercero', $q)
+                ->orLike('f.identificacion', $q)
+            ->groupEnd()
+            ->orderBy('f.fecha_elaboracion', 'DESC')
+            ->limit(20);
+
+        $rows = $builder->get()->getResultArray();
+        $results = [];
+        foreach ($rows as $r) {
+            $estado = $r['estado_pago'] ?? 'pendiente';
+            $badgeMap = [
+                'pagado'    => '<span class="badge bg-success">PAGADO</span>',
+                'brecha'    => '<span class="badge bg-warning text-dark">BRECHA</span>',
+                'pendiente' => '<span class="badge bg-danger">PENDIENTE</span>',
+            ];
+            $results[] = [
+                'id'             => (int) $r['id_facturacion'],
+                'text'           => $r['comprobante'] . ' — ' . $r['nombre_tercero'],
+                'comprobante'    => $r['comprobante'],
+                'cliente'        => $r['nombre_tercero'],
+                'nit'            => $r['identificacion'],
+                'base'           => number_format((float)$r['base_gravada'], 0, ',', '.'),
+                'anticipo'       => (float) $r['anticipo'],
+                'anticipo_fmt'   => number_format((float)$r['anticipo'], 0, ',', '.'),
+                'fecha_anticipo' => $r['fecha_anticipo'] ?? '',
+                'estado_badge'   => $badgeMap[$estado] ?? $badgeMap['pendiente'],
+            ];
+        }
+        return $this->response->setJSON($results);
+    }
+
+    /**
+     * Conciliar pago de factura vía AJAX (estado, pago, anticipo)
+     */
+    public function conciliar()
+    {
+        $id = (int) $this->request->getPost('id_facturacion');
+        if (!$id) return $this->response->setJSON(['ok' => false, 'error' => 'Factura no válida.']);
+
+        $factura = $this->facturacionModel->find($id);
+        if (!$factura) return $this->response->setJSON(['ok' => false, 'error' => 'Factura no encontrada.']);
+
+        $estado       = $this->request->getPost('estado_pago');
+        $fechaPago    = $this->request->getPost('fecha_pago') ?: null;
+        $valorPagado  = $this->request->getPost('valor_pagado');
+        $fechaAnticipo = $this->request->getPost('fecha_anticipo') ?: null;
+        $anticipo     = $this->request->getPost('anticipo');
+
+        $validEstados = ['pendiente', 'pagado', 'brecha', 'anticipo', 'castigada'];
+        if (!in_array($estado, $validEstados)) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Estado no válido.']);
+        }
+
+        $updateData = [
+            'estado_pago'    => $estado,
+            'fecha_anticipo' => $fechaAnticipo,
+            'anticipo'       => $anticipo !== '' ? (float) $anticipo : 0,
+        ];
+
+        // Determinar pagado según estado
+        if (in_array($estado, ['pagado', 'castigada'])) {
+            $updateData['pagado'] = 1;
+        } else {
+            $updateData['pagado'] = 0;
+        }
+
+        // Pago: solo si el estado lo amerita
+        if (in_array($estado, ['pagado', 'brecha'])) {
+            $updateData['fecha_pago']    = $fechaPago;
+            $updateData['valor_pagado']  = $valorPagado !== '' ? (float) $valorPagado : null;
+        } elseif ($estado === 'pendiente') {
+            // Limpiar datos de pago al volver a pendiente
+            $updateData['fecha_pago']   = null;
+            $updateData['valor_pagado'] = null;
+        }
+        // castigada: no tocamos fecha_pago ni valor_pagado
+
+        $this->facturacionModel->update($id, $updateData);
+
+        return $this->response->setJSON(['ok' => true]);
+    }
+
+    /**
+     * Guardar anticipo vía AJAX
+     */
+    public function saveAnticipo()
+    {
+        $id    = (int) $this->request->getPost('id_facturacion');
+        $fecha = $this->request->getPost('fecha_anticipo');
+        $valor = (float) $this->request->getPost('anticipo');
+
+        if (!$id) return $this->response->setJSON(['ok' => false, 'error' => 'Factura no válida.']);
+
+        $factura = $this->facturacionModel->find($id);
+        if (!$factura) return $this->response->setJSON(['ok' => false, 'error' => 'Factura no encontrada.']);
+
+        $updateData = [
+            'fecha_anticipo' => $fecha ?: null,
+            'anticipo'       => $valor,
+        ];
+
+        // Lógica de estado según anticipo
+        $liquido = (float)$factura['base_gravada'] - abs((float)$factura['retefuente_4']) - (float)($factura['anticipo'] ?? 0);
+        if ($valor > 0 && $valor >= $liquido) {
+            // Anticipo cubre el total → marcar pagado
+            $updateData['pagado'] = 1;
+            $updateData['estado_pago'] = 'pagado';
+            if (!$factura['fecha_pago']) {
+                $updateData['fecha_pago'] = $fecha;
+            }
+            if (!$factura['valor_pagado']) {
+                $updateData['valor_pagado'] = $valor;
+            }
+        } elseif ($valor > 0) {
+            // Anticipo parcial → estado 'anticipo'
+            $updateData['estado_pago'] = 'anticipo';
+        } elseif ($valor == 0 && $factura['pagado'] == 0) {
+            // Sin anticipo, no pagado → volver a pendiente
+            $updateData['estado_pago'] = 'pendiente';
+        }
+
+        $this->facturacionModel->update($id, $updateData);
+
+        return $this->response->setJSON(['ok' => true]);
     }
 
     /**

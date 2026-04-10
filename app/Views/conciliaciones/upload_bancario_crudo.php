@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargar Movimiento Bancario Crudo – Conciliaciones – Kpi Cycloid</title>
+    <title>Importar Movimiento Bancario CSV – Conciliaciones – Kpi Cycloid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
@@ -13,7 +13,7 @@
 <div class="container py-4">
     <div class="d-flex align-items-center gap-2 mb-4">
         <?= view('components/back_to_dashboard') ?>
-        <h1 class="h3 mb-0">Cargar Movimiento Bancario Crudo (CSV)</h1>
+        <h1 class="h3 mb-0">Importar Movimiento Bancario desde CSV</h1>
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
@@ -114,38 +114,12 @@
         </div>
     </div>
 
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="<?= base_url('conciliaciones/cruda/bancario/list') ?>" class="btn btn-outline-primary">
-            <i class="bi bi-table me-1"></i> Ver movimientos
+    <div class="d-flex gap-2">
+        <a href="<?= base_url('conciliaciones/bancaria') ?>" class="btn btn-outline-primary">
+            <i class="bi bi-table me-1"></i> Ver conciliacion bancaria
         </a>
-        <?php foreach ($cuentas ?? [] as $cu): ?>
-        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalTruncar<?= $cu['id_cuenta_banco'] ?>">
-            <i class="bi bi-trash me-1"></i> Vaciar <?= esc($cu['nombre_cuenta']) ?>
-        </button>
-        <?php endforeach; ?>
     </div>
 </div>
-
-<?php foreach ($cuentas ?? [] as $cu): ?>
-<div class="modal fade" id="modalTruncar<?= $cu['id_cuenta_banco'] ?>" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirmar vaciado – <?= esc($cu['nombre_cuenta']) ?></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Esto eliminará todos los movimientos crudos de <strong><?= esc($cu['nombre_cuenta']) ?></strong>.</p>
-                <p class="text-danger fw-bold">Esta acción no se puede deshacer.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="<?= base_url('conciliaciones/cruda/bancario/truncar/'.$cu['id_cuenta_banco']) ?>" class="btn btn-danger">Sí, vaciar</a>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endforeach; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -10,7 +10,7 @@ class CarteraNotificarBrechas extends BaseCommand
 {
     protected $group       = 'Cartera';
     protected $name        = 'cartera:notificar-brechas';
-    protected $description = 'Envia emails a clientes con facturas en estado brecha (diferencia >= $2.000). Solo los lunes, salvo que se fuerce.';
+    protected $description = 'Envia emails a clientes con facturas en estado brecha (diferencia >= $2.000). Solo dias 1 y 16 de cada mes, salvo que se fuerce.';
     protected $usage       = 'cartera:notificar-brechas [--forzar]';
     protected $options     = [
         '--forzar' => 'Enviar aunque no sea lunes',
@@ -23,7 +23,7 @@ class CarteraNotificarBrechas extends BaseCommand
         if ($forzar) {
             CLI::write('Modo forzado: enviando sin importar el dia.', 'yellow');
         } else {
-            CLI::write('Verificando brechas de cartera (solo lunes)...', 'yellow');
+            CLI::write('Verificando brechas de cartera (dias 1 y 16)...', 'yellow');
         }
 
         $notificador = new NotificadorCartera();

@@ -135,8 +135,40 @@ class DashboardFinancieroController extends BaseController
             $data['saldoTotalBancos'] += $saldoActual;
         }
 
+        // ── IVA PROYECTADO (cuatrimestre actual) ──
+        $mesActual = (int) date('m');
+        $anioActualIva = (int) date('Y');
+        if ($mesActual >= 1 && $mesActual <= 4) {
+            $ivaDesde = sprintf('%04d-01-01', $anioActualIva);
+            $ivaHasta = sprintf('%04d-04-30', $anioActualIva);
+            $ivaPeriodoLabel = 'Ene–Abr ' . $anioActualIva;
+        } elseif ($mesActual >= 5 && $mesActual <= 8) {
+            $ivaDesde = sprintf('%04d-05-01', $anioActualIva);
+            $ivaHasta = sprintf('%04d-08-31', $anioActualIva);
+            $ivaPeriodoLabel = 'May–Ago ' . $anioActualIva;
+        } else {
+            $ivaDesde = sprintf('%04d-09-01', $anioActualIva);
+            $ivaHasta = sprintf('%04d-12-31', $anioActualIva);
+            $ivaPeriodoLabel = 'Sep–Dic ' . $anioActualIva;
+        }
+
+        $ivaProyectado = $db->table('tbl_facturacion')
+            ->select('SUM(iva) as total_iva, COUNT(*) as facturas')
+            ->where('fecha_elaboracion >=', $ivaDesde)
+            ->where('fecha_elaboracion <=', $ivaHasta)
+            ->get()->getRow();
+
+        $data['ivaProyectado']    = (float) ($ivaProyectado->total_iva ?? 0);
+        $data['ivaFacturas']      = (int) ($ivaProyectado->facturas ?? 0);
+        $data['ivaPeriodoLabel']  = $ivaPeriodoLabel;
+
         // ── POSICIÓN NETA ──
-        $data['posicionNeta'] = $data['utilidadOperativa'] + $data['cartera'] + $data['saldoTotalBancos'] - $data['deudaSaldo'];
+        // Activos: Bancos + Cartera
+        // Pasivos: Deudas + IVA Proyectado
+        $data['totalActivos']       = $data['saldoTotalBancos'] + $data['cartera'];
+        $data['totalPasivos']       = $data['deudaSaldo'] + $data['ivaProyectado'];
+        $data['posicionNeta']       = $data['totalActivos'] - $data['totalPasivos'];
+        $data['resultadoIntegral']  = $data['utilidadOperativa'] - $data['deudaSaldo'];
 
         // ── DESGLOSE POR CATEGORÍA ──
         $desglose = $db->table('tbl_conciliacion_bancaria cb')

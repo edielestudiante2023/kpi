@@ -321,6 +321,7 @@ class ConciliacionBancariaController extends BaseController
         $cuenta    = $this->request->getGet('cuenta');
         $centro    = $this->request->getGet('centro');
         $debcred   = $this->request->getGet('debcred');
+        $tipo      = $this->request->getGet('tipo');
         $categoria = $this->request->getGet('categoria');
         $llave     = $this->request->getGet('llave');
 
@@ -342,8 +343,9 @@ class ConciliacionBancariaController extends BaseController
         if ($cuenta)          $builder->where('cb.id_cuenta_banco', (int) $cuenta);
         if ($centro)          $builder->where('cb.id_centro_costo', (int) $centro);
         if ($debcred)         $builder->where('cb.deb_cred', $debcred);
-        if ($categoria || $llave) {
+        if ($tipo || $categoria || $llave) {
             $builder->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left');
+            if ($tipo)      $builder->where('ccl.tipo', $tipo);
             if ($categoria) $builder->where('ccl.categoria', $categoria);
         }
         if ($llave) $builder->where('cb.llave_item', $llave);

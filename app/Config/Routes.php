@@ -362,6 +362,9 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('facturacion/upload', 'FacturacionController::uploadPost');
     $routes->get('facturacion/truncar', 'FacturacionController::truncar');
     $routes->get('facturacion/exportar', 'FacturacionController::exportarCsv');
+    $routes->get('facturacion/buscar', 'FacturacionController::buscarFactura');
+    $routes->post('facturacion/anticipo', 'FacturacionController::saveAnticipo');
+    $routes->post('facturacion/conciliar', 'FacturacionController::conciliar');
 
     // Centros de Costo
     $routes->get('centros-costo', 'CentroCostoController::listCentroCosto');
@@ -393,17 +396,15 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('deudas/abono/(:num)', 'DeudaController::addAbonoPost/$1');
     $routes->get('deudas/abono/delete/(:num)/(:num)', 'DeudaController::deleteAbono/$1/$2');
 
-    // Carga Cruda — Facturación (CSV)
+    // Carga CSV — Facturación (inserta en tbl_facturacion)
     $routes->get('cruda/facturacion', 'CargaCrudaController::uploadFacturacion');
     $routes->post('cruda/facturacion', 'CargaCrudaController::uploadFacturacionPost');
-    $routes->get('cruda/facturacion/list', 'CargaCrudaController::listFacturacionCruda');
-    $routes->get('cruda/facturacion/truncar', 'CargaCrudaController::truncarFacturacion');
+    $routes->post('cruda/facturacion/confirmar', 'CargaCrudaController::confirmarFacturacionPost');
 
-    // Carga Cruda — Movimiento Bancario (CSV)
+    // Carga CSV — Movimiento Bancario (inserta en tbl_conciliacion_bancaria)
     $routes->get('cruda/bancario', 'CargaCrudaController::uploadBancario');
     $routes->post('cruda/bancario', 'CargaCrudaController::uploadBancarioPost');
-    $routes->get('cruda/bancario/list', 'CargaCrudaController::listBancarioCrudo');
-    $routes->get('cruda/bancario/truncar/(:num)', 'CargaCrudaController::truncarBancario/$1');
+    $routes->post('cruda/bancario/confirmar', 'CargaCrudaController::confirmarBancarioPost');
 
     // Cuentas de Banco
     $routes->get('cuentas-banco', 'CuentaBancoController::listCuentaBanco');
