@@ -235,7 +235,7 @@ class FacturacionController extends BaseController
         $data['totalBaseGravada'] = (float) ($totales->total_base ?? 0);
         $data['totalIva']         = (float) ($totales->total_iva ?? 0);
         $data['totalRetencion']   = (float) ($totales->total_retencion ?? 0);
-        $data['totalLiquido']     = $data['totalBaseGravada'] - $data['totalRetencion'];
+        $data['totalLiquido']     = $data['totalBaseGravada'] + $data['totalIva'] - $data['totalRetencion'];
 
         // Cartera vencida (no pagadas + fecha_elaboracion + 30 días < hoy)
         $vencidaBuilder = $db->table('tbl_facturacion f')
@@ -244,9 +244,9 @@ class FacturacionController extends BaseController
             ->where('DATE_ADD(f.fecha_elaboracion, INTERVAL 30 DAY) <', date('Y-m-d'));
         $aplicarBase($vencidaBuilder);
         if ($portafolioFiltro) $vencidaBuilder->where('f.id_portafolio', (int) $portafolioFiltro);
-        $vencida = $vencidaBuilder->get()->getRow();
-        $data['totalCarteraVencida']   = (float) ($vencida->total_vencida ?? 0);
-        $data['facturasVencidas']      = (int) ($vencida->facturas_vencidas ?? 0);
+        $vencidaRow = $vencidaBuilder->get()->getRow();
+        $data['totalCarteraVencida']   = (float) ($vencidaRow->total_vencida ?? 0);
+        $data['facturasVencidas']      = (int) ($vencidaRow->facturas_vencidas ?? 0);
 
         // ── TABLA: con todos los filtros ──
         $builder = $db->table('tbl_facturacion f')
@@ -446,23 +446,45 @@ class FacturacionController extends BaseController
         // Si es numérico (serial de Excel)
         if (is_numeric($val) && (float) $val > 1000) {
             try {
-                $dt = ExcelDate::excelToDateTimeObject((float) $val);
-                return $dt->format('Y-m-d');
+                return ExcelDate::excelToDateTimeObject((float) $val)->format('Y-m-d');
             } catch (\Exception $e) {
                 return null;
             }
         }
 
-        // Si es string con formato DD/MM/YYYY
         $str = trim((string) $val);
-        if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $str, $m)) {
-            return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+        // Serial de Excel como texto con coma (ej: "45,643")
+        $cleaned = str_replace(',', '', $str);
+        if (is_numeric($cleaned) && (float) $cleaned > 1000 && (float) $cleaned < 100000) {
+            try { return ExcelDate::excelToDateTimeObject((float) $cleaned)->format('Y-m-d'); }
+            catch (\Exception $e) { /* continuar */ }
         }
-        // MM-DD-YY o similar
+        // Formato con /: detectar MM/DD/YYYY vs DD/MM/YYYY
+        if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $str, $m)) {
+            $a = (int) $m[1];
+            $b = (int) $m[2];
+            $y = (int) $m[3];
+            if ($b > 12) {
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            } elseif ($a > 12) {
+                return sprintf('%04d-%02d-%02d', $y, $b, $a);
+            } else {
+                return sprintf('%04d-%02d-%02d', $y, $a, $b); // Asumir MM/DD/YYYY
+            }
+        }
+        // Formato con -
         if (preg_match('#^(\d{1,2})-(\d{1,2})-(\d{2,4})$#', $str, $m)) {
             $y = (int) $m[3];
             if ($y < 100) $y += 2000;
-            return sprintf('%04d-%02d-%02d', $y, $m[1], $m[2]);
+            $a = (int) $m[1];
+            $b = (int) $m[2];
+            if ($b > 12) {
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            } elseif ($a > 12) {
+                return sprintf('%04d-%02d-%02d', $y, $b, $a);
+            } else {
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            }
         }
 
         return null;

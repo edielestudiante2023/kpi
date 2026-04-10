@@ -70,25 +70,25 @@
 
     <!-- Cards: Totales financieros -->
     <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
-        <div class="card border-success" style="min-width:130px;">
+        <div class="card border-success" style="min-width:130px;" data-bs-toggle="tooltip" title="Suma de la base gravada de todas las facturas en el período. Es el valor antes de IVA y retenciones.">
             <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                 <small class="fw-bold">BASE GRAVADA</small>
                 <p class="fw-bold mb-0 text-success">$<?= number_format($totalBaseGravada, 0, ',', '.') ?></p>
             </div>
         </div>
-        <div class="card border-warning" style="min-width:130px;">
+        <div class="card border-warning" style="min-width:130px;" data-bs-toggle="tooltip" title="Total del IVA (19%) calculado sobre la base gravada de las facturas.">
             <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                 <small class="fw-bold">IVA</small>
                 <p class="fw-bold mb-0 text-warning">$<?= number_format($totalIva, 0, ',', '.') ?></p>
             </div>
         </div>
-        <div class="card border-danger" style="min-width:130px;">
+        <div class="card border-danger" style="min-width:130px;" data-bs-toggle="tooltip" title="Retención en la fuente del 4% aplicada por el cliente al momento del pago. Se descuenta del valor a recibir.">
             <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                 <small class="fw-bold">RETENCIÓN 4%</small>
                 <p class="fw-bold mb-0 text-danger">-$<?= number_format($totalRetencion, 0, ',', '.') ?></p>
             </div>
         </div>
-        <div class="card border-primary bg-primary bg-opacity-10" style="min-width:130px;">
+        <div class="card border-primary bg-primary bg-opacity-10" style="min-width:130px;" data-bs-toggle="tooltip" title="Valor líquido = Base Gravada + IVA - Retención 4%. Es el monto efectivo a recibir por las facturas.">
             <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                 <small class="fw-bold">LÍQUIDO</small>
                 <p class="fw-bold mb-0 text-primary">$<?= number_format($totalLiquido, 0, ',', '.') ?></p>
@@ -99,7 +99,7 @@
     <!-- Cards: Pagado/No Pagado + Cartera Vencida + Portafolios -->
     <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
         <?php foreach ($resumenPagado as $rpg): ?>
-        <a href="<?= base_url($baseUrl.'&pagado='.$rpg['pagado'].($filtroPortafolio ? '&portafolio='.$filtroPortafolio : '')) ?>" class="text-decoration-none">
+        <a href="<?= base_url($baseUrl.'&pagado='.$rpg['pagado'].($filtroPortafolio ? '&portafolio='.$filtroPortafolio : '')) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="<?= $rpg['pagado'] ? 'Facturas ya pagadas por el cliente. Clic para filtrar solo las pagadas.' : 'Facturas pendientes de cobro (cartera). Clic para filtrar solo las pendientes.' ?>">
             <div class="card <?= ($filtroPagado ?? '') === (string)$rpg['pagado'] ? ($rpg['pagado'] ? 'bg-success text-white' : 'bg-danger text-white') : ($rpg['pagado'] ? 'border-success' : 'border-danger') ?>" style="cursor:pointer; min-width:130px;">
                 <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                     <small class="fw-bold"><?= $rpg['pagado'] ? 'PAGADAS' : 'CARTERA' ?></small>
@@ -111,7 +111,7 @@
         <?php endforeach; ?>
 
         <?php if ($facturasVencidas > 0): ?>
-        <a href="<?= base_url($baseUrl.'&vencida=1'.($filtroPortafolio ? '&portafolio='.$filtroPortafolio : '')) ?>" class="text-decoration-none">
+        <a href="<?= base_url($baseUrl.'&vencida=1'.($filtroPortafolio ? '&portafolio='.$filtroPortafolio : '')) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Facturas no pagadas con más de 30 días desde su elaboración. Requieren gestión de cobro urgente. Clic para filtrar.">
         <div class="card border-dark <?= ($filtroVencida ?? '') === '1' ? 'bg-danger text-white' : 'bg-danger bg-opacity-10' ?>" style="cursor:pointer; min-width:140px;">
             <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                 <small class="fw-bold <?= ($filtroVencida ?? '') === '1' ? '' : 'text-danger' ?>">CARTERA VENCIDA</small>
@@ -124,7 +124,7 @@
 
         <span class="border-start mx-1" style="height:40px;"></span>
 
-        <a href="<?= base_url($baseUrl) ?>" class="text-decoration-none">
+        <a href="<?= base_url($baseUrl) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Quitar filtros de estado y portafolio. Muestra todas las facturas.">
             <div class="card <?= empty($filtroPortafolio) && ($filtroPagado === null || $filtroPagado === '') ? 'bg-dark text-white' : 'border-dark' ?>" style="cursor:pointer; min-width:70px;">
                 <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                     <small>Todas</small>
@@ -133,7 +133,7 @@
             </div>
         </a>
         <?php foreach ($resumenPortafolios as $rp): ?>
-        <a href="<?= base_url($baseUrl.'&portafolio='.$rp['id_portafolio'].($filtroPagado !== null && $filtroPagado !== '' ? '&pagado='.$filtroPagado : '')) ?>" class="text-decoration-none">
+        <a href="<?= base_url($baseUrl.'&portafolio='.$rp['id_portafolio'].($filtroPagado !== null && $filtroPagado !== '' ? '&pagado='.$filtroPagado : '')) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Portafolio: <?= esc($rp['portafolio']) ?>. <?= $rp['facturas'] ?> facturas por $<?= number_format((float)$rp['total_base'], 0, ',', '.') ?>. Clic para filtrar.">
             <div class="card <?= ($filtroPortafolio ?? '') == $rp['id_portafolio'] ? 'bg-primary text-white' : 'border-primary' ?>" style="cursor:pointer; min-width:100px;">
                 <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                     <small><?= esc($rp['portafolio']) ?></small>
@@ -193,20 +193,23 @@
                 <td><?= esc($r['anio']) ?></td>
                 <td><?= esc($r['mes']) ?></td>
                 <td><?= esc($r['comprobante']) ?></td>
-                <td><?= $r['fecha_elaboracion'] ? date('d/m/Y', strtotime($r['fecha_elaboracion'])) : '' ?></td>
+                <td data-order="<?= $r['fecha_elaboracion'] ?? '' ?>"><?= $r['fecha_elaboracion'] ? date('d/m/Y', strtotime($r['fecha_elaboracion'])) : '' ?></td>
                 <td><?= esc($r['identificacion']) ?></td>
                 <td><?= esc($r['nombre_tercero']) ?></td>
                 <td class="text-end"><?= number_format((float)$r['base_gravada'], 0, ',', '.') ?></td>
                 <td class="text-end"><?= number_format((float)$r['iva'], 0, ',', '.') ?></td>
                 <td class="text-end text-danger"><?= number_format(abs((float)$r['retefuente_4']), 0, ',', '.') ?></td>
-                <td class="text-end text-success fw-bold"><?= number_format((float)$r['base_gravada'] - abs((float)$r['retefuente_4']), 0, ',', '.') ?></td>
+                <td class="text-end text-success fw-bold"><?= number_format((float)$r['base_gravada'] + (float)$r['iva'] - abs((float)$r['retefuente_4']), 0, ',', '.') ?></td>
                 <td>
-                    <?= $r['pagado']
-                        ? '<span class="badge bg-success">SI</span>'
-                        : '<span class="badge bg-danger">NO</span>'
-                    ?>
+                    <?php if (($r['estado_pago'] ?? '') === 'brecha'): ?>
+                        <span class="badge bg-warning text-dark">BRECHA</span>
+                    <?php elseif ($r['pagado']): ?>
+                        <span class="badge bg-success">SI</span>
+                    <?php else: ?>
+                        <span class="badge bg-danger">NO</span>
+                    <?php endif; ?>
                 </td>
-                <td><?= $r['fecha_pago'] ? date('d/m/Y', strtotime($r['fecha_pago'])) : '' ?></td>
+                <td data-order="<?= $r['fecha_pago'] ?? '' ?>"><?= $r['fecha_pago'] ? date('d/m/Y', strtotime($r['fecha_pago'])) : '' ?></td>
                 <td class="text-end"><?= $r['valor_pagado'] ? number_format((float)$r['valor_pagado'], 0, ',', '.') : '' ?></td>
                 <td><?= esc($r['vendedor'] ?? '') ?></td>
                 <td><?= esc($r['portafolio_detallado'] ?? '') ?></td>
@@ -225,6 +228,10 @@
 
 <script>
 $(document).ready(function() {
+    // Activar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+
     var selectCols = [0, 1, 2, 11, 14, 15];
     var inputCols = [3, 5, 6];
     var table = $('#facturacionTable').DataTable({

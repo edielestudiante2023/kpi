@@ -30,7 +30,7 @@
     <!-- Resumen -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <div class="card text-center border-danger">
+            <div class="card text-center border-danger" data-bs-toggle="tooltip" title="Suma del monto original de todas las obligaciones/deudas con estado activo.">
                 <div class="card-body">
                     <h6 class="card-title text-muted">Total Deuda Activa</h6>
                     <p class="display-6 fw-bold text-danger">$<?= number_format($totalDeuda ?? 0, 0, ',', '.') ?></p>
@@ -38,7 +38,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center border-success">
+            <div class="card text-center border-success" data-bs-toggle="tooltip" title="Suma de todos los abonos realizados a las deudas activas. Reduce el saldo pendiente.">
                 <div class="card-body">
                     <h6 class="card-title text-muted">Total Abonado</h6>
                     <p class="display-6 fw-bold text-success">$<?= number_format($totalAbonado ?? 0, 0, ',', '.') ?></p>
@@ -46,7 +46,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center border-warning">
+            <div class="card text-center border-warning" data-bs-toggle="tooltip" title="Saldo pendiente = Total Deuda Activa - Total Abonado. Es lo que falta por pagar.">
                 <div class="card-body">
                     <h6 class="card-title text-muted">Saldo Pendiente</h6>
                     <p class="display-6 fw-bold text-warning">$<?= number_format($totalSaldo ?? 0, 0, ',', '.') ?></p>
@@ -121,6 +121,10 @@
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Activar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+
     var filterCols = [1, 7];
     var table = $('#deudasTable').DataTable({
         pageLength: 20, responsive: true, autoWidth: false,

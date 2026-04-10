@@ -60,7 +60,7 @@
                     <?php endforeach; ?>
                 </select>
             </form>
-            <a href="<?= base_url('conciliaciones/bancaria/exportar?' . http_build_query(array_filter(['anio'=>$anioActual,'rango'=>$rangoActual,'desde'=>$fechaDesde ?? '','hasta'=>$fechaHasta ?? '','cuenta'=>$filtroCuenta,'centro'=>$filtroCentro,'debcred'=>$filtroDebCred]))) ?>" class="btn btn-outline-success btn-sm" title="Descargar Excel">
+            <a href="<?= base_url('conciliaciones/bancaria/exportar?' . http_build_query(array_filter(['anio'=>$anioActual,'rango'=>$rangoActual,'desde'=>$fechaDesde ?? '','hasta'=>$fechaHasta ?? '','cuenta'=>$filtroCuenta,'centro'=>$filtroCentro,'debcred'=>$filtroDebCred,'categoria'=>$filtroCategoria ?? '','llave'=>$filtroLlave ?? '']))) ?>" class="btn btn-outline-success btn-sm" title="Descargar Excel">
                 <i class="bi bi-download"></i>
             </a>
             <a href="<?= base_url('conciliaciones/bancaria') ?>" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros">
@@ -72,26 +72,53 @@
         </div>
     </div>
 
-    <?php $baseUrl = 'conciliaciones/bancaria?anio='.$anioActual.'&rango='.$rangoActual.($filtroCuenta ? '&cuenta='.$filtroCuenta : ''); ?>
+    <?php
+        $baseUrl = 'conciliaciones/bancaria?anio='.$anioActual.'&rango='.$rangoActual
+            .($filtroCuenta ? '&cuenta='.$filtroCuenta : '')
+            .($fechaDesde ? '&desde='.$fechaDesde : '')
+            .($fechaHasta ? '&hasta='.$fechaHasta : '');
+        // URL con debcred fijo (para categorías)
+        $baseUrlConDebCred = $baseUrl.($filtroDebCred ? '&debcred='.$filtroDebCred : '');
+        // URL con debcred + categoría fijo (para llave items)
+        $baseUrlConCategoria = $baseUrlConDebCred.($filtroCategoria ? '&categoria='.$filtroCategoria : '');
+    ?>
 
-    <!-- Cards: Ingreso/Egreso + Centro de Costo -->
-    <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+    <!-- ═══ FILA 1: INGRESO / EGRESO ═══ -->
+    <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
         <?php foreach ($resumenDebCred as $rdc): ?>
-        <a href="<?= base_url($baseUrl.'&debcred='.$rdc['deb_cred']) ?>" class="text-decoration-none">
-            <div class="card <?= ($filtroDebCred ?? '') === $rdc['deb_cred'] ? ($rdc['deb_cred'] === 'INGRESO' ? 'bg-success text-white' : 'bg-danger text-white') : ($rdc['deb_cred'] === 'INGRESO' ? 'border-success' : 'border-danger') ?>" style="cursor:pointer; min-width:120px;">
-                <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
-                    <small class="fw-bold"><?= esc($rdc['deb_cred']) ?></small>
-                    <p class="fw-bold mb-0">$<?= number_format(abs((float)$rdc['total_valor']), 0, ',', '.') ?></p>
-                    <small class="text-muted"><?= $rdc['movimientos'] ?> mov.</small>
+        <a href="<?= base_url($baseUrl.'&debcred='.$rdc['deb_cred']) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="<?= $rdc['deb_cred'] === 'INGRESO' ? 'Total de ingresos bancarios en el período seleccionado. Clic para filtrar solo ingresos.' : 'Total de egresos bancarios en el período seleccionado. Clic para filtrar solo egresos.' ?>">
+            <div class="card <?= ($filtroDebCred ?? '') === $rdc['deb_cred'] ? ($rdc['deb_cred'] === 'INGRESO' ? 'bg-success text-white' : 'bg-danger text-white') : ($rdc['deb_cred'] === 'INGRESO' ? 'border-success' : 'border-danger') ?>" style="cursor:pointer; min-width:140px;">
+                <div class="card-body py-2 px-3 text-center">
+                    <small class="fw-bold" style="font-size:0.85rem;"><?= esc($rdc['deb_cred']) ?></small>
+                    <p class="fw-bold mb-0" style="font-size:1.1rem;">$<?= number_format(abs((float)$rdc['total_valor']), 0, ',', '.') ?></p>
+                    <small class="<?= ($filtroDebCred ?? '') === $rdc['deb_cred'] ? 'text-white-50' : 'text-muted' ?>"><?= $rdc['movimientos'] ?> mov.</small>
                 </div>
             </div>
         </a>
         <?php endforeach; ?>
 
+        <?php
+            $totalIngreso = 0; $totalEgreso = 0;
+            foreach ($resumenDebCred as $rdc) {
+                if ($rdc['deb_cred'] === 'INGRESO') $totalIngreso = abs((float)$rdc['total_valor']);
+                if ($rdc['deb_cred'] === 'EGRESO')  $totalEgreso  = abs((float)$rdc['total_valor']);
+            }
+            $netoPeriodo = $totalIngreso - $totalEgreso;
+        ?>
+        <div data-bs-toggle="tooltip" title="Resultado neto del período = Ingresos - Egresos. Indica si el período fue positivo (ganancia) o negativo (pérdida).">
+            <div class="card <?= $netoPeriodo >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>" style="min-width:140px;">
+                <div class="card-body py-2 px-3 text-center">
+                    <small class="fw-bold" style="font-size:0.85rem;">NETO PERÍODO</small>
+                    <p class="fw-bold mb-0 <?= $netoPeriodo >= 0 ? 'text-success' : 'text-danger' ?>" style="font-size:1.1rem;">$<?= number_format($netoPeriodo, 0, ',', '.') ?></p>
+                    <small class="text-muted"><?= $netoPeriodo >= 0 ? 'superávit' : 'déficit' ?></small>
+                </div>
+            </div>
+        </div>
+
         <span class="border-start mx-1" style="height:40px;"></span>
 
-        <a href="<?= base_url($baseUrl) ?>" class="text-decoration-none">
-            <div class="card <?= empty($filtroCentro) && empty($filtroDebCred) ? 'bg-dark text-white' : 'border-dark' ?>" style="cursor:pointer; min-width:70px;">
+        <a href="<?= base_url($baseUrl) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Quitar todos los filtros de tipo, centro, categoría y llave. Muestra todos los movimientos.">
+            <div class="card <?= empty($filtroCentro) && empty($filtroDebCred) && empty($filtroCategoria) && empty($filtroLlave) ? 'bg-dark text-white' : 'border-dark' ?>" style="cursor:pointer; min-width:70px;">
                 <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                     <small>Todos</small>
                     <p class="fw-bold mb-0"><?= number_format(count($registros)) ?></p>
@@ -99,7 +126,7 @@
             </div>
         </a>
         <?php foreach ($resumenCentros as $rcc): ?>
-        <a href="<?= base_url($baseUrl.'&centro='.$rcc['id_centro_costo']) ?>" class="text-decoration-none">
+        <a href="<?= base_url($baseUrl.'&centro='.$rcc['id_centro_costo']) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Centro de costo: <?= esc($rcc['centro_costo']) ?>. Suma neta de ingresos y egresos (<?= $rcc['movimientos'] ?> movimientos). Clic para filtrar.">
             <div class="card <?= ($filtroCentro ?? '') == $rcc['id_centro_costo'] ? 'bg-info text-white' : 'border-secondary' ?>" style="cursor:pointer; min-width:100px;">
                 <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
                     <small><?= esc($rcc['centro_costo']) ?></small>
@@ -112,6 +139,76 @@
         </a>
         <?php endforeach; ?>
     </div>
+
+    <!-- ═══ FILA 2: CATEGORÍAS (desde tbl_clasificacion_costos) ═══ -->
+    <?php if (!empty($resumenCategorias)): ?>
+    <div class="mb-2">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <small class="text-muted fw-bold"><i class="bi bi-diagram-3"></i> Categorías</small>
+            <?php if ($filtroCategoria): ?>
+                <a href="<?= base_url($baseUrlConDebCred) ?>" class="badge bg-secondary text-decoration-none">
+                    <i class="bi bi-x"></i> Quitar categoría
+                </a>
+            <?php endif; ?>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <?php foreach ($resumenCategorias as $rc):
+                $isActive = ($filtroCategoria ?? '') === $rc['categoria'];
+                $tipoColor = match($rc['tipo'] ?? '') {
+                    'ingreso'  => 'success',
+                    'fijo'     => 'primary',
+                    'variable' => 'warning',
+                    'neutro'   => 'secondary',
+                    default    => 'secondary',
+                };
+            ?>
+            <a href="<?= base_url($baseUrlConDebCred.'&categoria='.urlencode($rc['categoria'])) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Categoría: <?= esc($rc['categoria']) ?> (tipo <?= esc($rc['tipo'] ?? '') ?>). Agrupa <?= $rc['movimientos'] ?> movimientos por $<?= number_format(abs((float)$rc['total_valor']), 0, ',', '.') ?>. Clic para ver sus llave items.">
+                <div class="card <?= $isActive ? 'bg-'.$tipoColor.' text-white border-'.$tipoColor : 'border-'.$tipoColor ?>" style="cursor:pointer; min-width:110px;">
+                    <div class="card-body py-1 px-2 text-center" style="font-size:0.78rem;">
+                        <small class="fw-bold"><?= esc($rc['categoria']) ?></small>
+                        <span class="badge bg-<?= $tipoColor ?> <?= $isActive ? 'bg-opacity-75' : '' ?>" style="font-size:0.6rem;"><?= esc($rc['tipo'] ?? '') ?></span>
+                        <p class="fw-bold mb-0 <?= !$isActive ? ((float)$rc['total_valor'] >= 0 ? 'text-success' : 'text-danger') : '' ?>">
+                            $<?= number_format(abs((float)$rc['total_valor']), 0, ',', '.') ?>
+                        </p>
+                        <small class="<?= $isActive ? 'text-white-50' : 'text-muted' ?>"><?= $rc['movimientos'] ?> mov.</small>
+                    </div>
+                </div>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- ═══ FILA 3: LLAVE ITEMS (drill-down de categoría seleccionada) ═══ -->
+    <?php if (!empty($resumenLlaveItems)): ?>
+    <div class="mb-3">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <small class="text-muted fw-bold"><i class="bi bi-tag"></i> Llave Items de: <span class="text-dark"><?= esc($filtroCategoria) ?></span></small>
+            <?php if ($filtroLlave): ?>
+                <a href="<?= base_url($baseUrlConCategoria) ?>" class="badge bg-secondary text-decoration-none">
+                    <i class="bi bi-x"></i> Quitar llave
+                </a>
+            <?php endif; ?>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <?php foreach ($resumenLlaveItems as $rl):
+                $isActive = ($filtroLlave ?? '') === $rl['llave_item'];
+            ?>
+            <a href="<?= base_url($baseUrlConCategoria.'&llave='.urlencode($rl['llave_item'])) ?>" class="text-decoration-none" data-bs-toggle="tooltip" title="Llave item: <?= esc($rl['llave_item']) ?>. <?= $rl['movimientos'] ?> movimientos por $<?= number_format(abs((float)$rl['total_valor']), 0, ',', '.') ?>. Clic para filtrar la tabla.">
+                <div class="card <?= $isActive ? 'bg-dark text-white' : 'border-dark' ?>" style="cursor:pointer; min-width:100px;">
+                    <div class="card-body py-1 px-2 text-center" style="font-size:0.75rem;">
+                        <small class="fw-bold"><?= esc($rl['llave_item']) ?></small>
+                        <span class="badge bg-dark <?= $isActive ? 'bg-opacity-50' : '' ?>" style="font-size:0.6rem;"><?= $rl['movimientos'] ?></span>
+                        <p class="fw-bold mb-0 <?= !$isActive ? ((float)$rl['total_valor'] >= 0 ? 'text-success' : 'text-danger') : '' ?>">
+                            $<?= number_format(abs((float)$rl['total_valor']), 0, ',', '.') ?>
+                        </p>
+                    </div>
+                </div>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <table id="conciliacionTable" class="table table-striped table-hover nowrap" style="width:100%; font-size:0.85rem;">
         <thead class="table-dark">
@@ -165,7 +262,7 @@
                 <td><?= esc($r['anio']) ?></td>
                 <td><?= esc($r['mes']) ?></td>
                 <td><?= esc($r['mes_real']) ?></td>
-                <td><?= $r['fecha_sistema'] ? date('d/m/Y', strtotime($r['fecha_sistema'])) : '' ?></td>
+                <td data-order="<?= $r['fecha_sistema'] ?? '' ?>"><?= $r['fecha_sistema'] ? date('d/m/Y', strtotime($r['fecha_sistema'])) : '' ?></td>
                 <td class="text-end <?= (float)$r['valor'] < 0 ? 'text-danger' : 'text-success' ?>">
                     <?= number_format((float)$r['valor'], 0, ',', '.') ?>
                 </td>
@@ -186,6 +283,10 @@
 
 <script>
 $(document).ready(function() {
+    // Activar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+
     var selectCols = [0, 1, 2, 3, 6, 7, 8, 11];
     var inputCols = [4, 5, 12];
     var table = $('#conciliacionTable').DataTable({

@@ -15,7 +15,7 @@ class FacturacionModel extends Model
         'identificacion', 'sucursal', 'nombre_tercero', 'base_gravada',
         'base_exenta', 'iva', 'retefuente_4', 'recompra', 'cargo_en_totales',
         'descuento_en_totales', 'total', 'vendedor', 'base_comisiones',
-        'numero_factura', 'portafolio_detallado', 'fecha_vence',
+        'numero_factura', 'portafolio_detallado', 'fecha_vence', 'estado_pago',
     ];
 
     protected $returnType    = 'array';

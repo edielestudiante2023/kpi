@@ -66,7 +66,7 @@
     <!-- Estado de Resultados -->
     <div class="row mb-4">
         <div class="col">
-            <div class="card border-success card-filtro" data-tipo="ingreso" style="cursor:pointer;">
+            <div class="card border-success card-filtro" data-tipo="ingreso" style="cursor:pointer;" data-bs-toggle="tooltip" title="Suma de todos los ingresos bancarios (pagos de clientes, rendimientos, etc.) en el período. Clic para filtrar el desglose.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Ingresos</h6>
                     <p class="h4 fw-bold text-success">$<?= number_format($ingresos, 0, ',', '.') ?></p>
@@ -74,7 +74,7 @@
             </div>
         </div>
         <div class="col">
-            <div class="card border-primary card-filtro" data-tipo="fijo" style="cursor:pointer;">
+            <div class="card border-primary card-filtro" data-tipo="fijo" style="cursor:pointer;" data-bs-toggle="tooltip" title="Costos fijos: nómina, seguridad social, honorarios, herramientas digitales y otros gastos recurrentes. Clic para filtrar el desglose.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Costos Fijos</h6>
                     <p class="h4 fw-bold text-primary">-$<?= number_format($costosFijos, 0, ',', '.') ?></p>
@@ -82,7 +82,7 @@
             </div>
         </div>
         <div class="col">
-            <div class="card border-warning card-filtro" data-tipo="variable" style="cursor:pointer;">
+            <div class="card border-warning card-filtro" data-tipo="variable" style="cursor:pointer;" data-bs-toggle="tooltip" title="Costos variables: impuestos, transporte, exámenes, operativos y otros gastos que varían según la actividad. Clic para filtrar el desglose.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Costos Variables</h6>
                     <p class="h4 fw-bold text-warning">-$<?= number_format($costosVariables, 0, ',', '.') ?></p>
@@ -90,7 +90,7 @@
             </div>
         </div>
         <div class="col">
-            <div class="card border-danger card-filtro" data-tipo="todos" style="cursor:pointer;">
+            <div class="card border-danger card-filtro" data-tipo="todos" style="cursor:pointer;" data-bs-toggle="tooltip" title="Suma de costos fijos + variables. Clic para filtrar ambos tipos en el desglose.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Total Costos</h6>
                     <p class="h4 fw-bold text-danger">-$<?= number_format($costosFijos + $costosVariables, 0, ',', '.') ?></p>
@@ -98,7 +98,7 @@
             </div>
         </div>
         <div class="col">
-            <div class="card <?= $utilidadOperativa >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>">
+            <div class="card <?= $utilidadOperativa >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>" data-bs-toggle="tooltip" title="Utilidad operativa = Ingresos - Costos Fijos - Costos Variables. Indica la ganancia o pérdida operativa del período.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Utilidad Operativa</h6>
                     <p class="h4 fw-bold <?= $utilidadOperativa >= 0 ? 'text-success' : 'text-danger' ?>">
@@ -113,7 +113,7 @@
     <div class="row mb-4">
         <?php foreach ($cuentasBanco as $cb): ?>
         <div class="col-md-<?= count($cuentasBanco) > 2 ? '4' : '6' ?>">
-            <div class="card border-dark">
+            <div class="card border-dark" data-bs-toggle="tooltip" title="Saldo actual de Banco <?= esc($cb['nombre']) ?>. Saldo inicial ($<?= number_format($cb['saldo_inicial'], 0, ',', '.') ?>) + movimientos del período ($<?= number_format($cb['movimientos'], 0, ',', '.') ?>).">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Banco <?= esc($cb['nombre']) ?></h6>
                     <p class="h4 fw-bold <?= $cb['saldo_actual'] >= 0 ? 'text-dark' : 'text-danger' ?>">
@@ -132,7 +132,7 @@
     <!-- Cartera + Deudas + Posición Neta -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-dark">
+            <div class="card border-dark" data-bs-toggle="tooltip" title="Suma de saldos actuales de todas las cuentas bancarias registradas.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Saldo Total Bancos</h6>
                     <p class="h4 fw-bold">$<?= number_format($saldoTotalBancos, 0, ',', '.') ?></p>
@@ -141,7 +141,7 @@
         </div>
         <div class="col-md-3">
             <a href="<?= base_url('conciliaciones/facturacion?anio=todos&pagado=0') ?>" class="text-decoration-none" target="_blank">
-            <div class="card border-info" style="cursor:pointer;">
+            <div class="card border-info" style="cursor:pointer;" data-bs-toggle="tooltip" title="Total de facturas emitidas aún no pagadas. Clic para ver el detalle en Facturación.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Cartera por Cobrar</h6>
                     <p class="h4 fw-bold text-info">$<?= number_format($cartera, 0, ',', '.') ?></p>
@@ -152,7 +152,7 @@
         </div>
         <div class="col-md-3">
             <a href="<?= base_url('conciliaciones/deudas') ?>" class="text-decoration-none" target="_blank">
-            <div class="card border-danger" style="cursor:pointer;">
+            <div class="card border-danger" style="cursor:pointer;" data-bs-toggle="tooltip" title="Saldo pendiente de todas las obligaciones/deudas activas. Clic para ver el detalle en Deudas.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Deudas (pasivo)</h6>
                     <p class="h4 fw-bold text-danger">-$<?= number_format($deudaSaldo, 0, ',', '.') ?></p>
@@ -162,7 +162,7 @@
             </a>
         </div>
         <div class="col-md-3">
-            <div class="card <?= $posicionNeta >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>">
+            <div class="card <?= $posicionNeta >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>" data-bs-toggle="tooltip" title="Posición financiera neta = Utilidad Operativa + Saldo Bancos + Cartera por Cobrar - Deudas. Indica la salud financiera global.">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Posición Neta</h6>
                     <p class="h3 fw-bold <?= $posicionNeta >= 0 ? 'text-success' : 'text-danger' ?>">
@@ -281,6 +281,10 @@ new Chart(document.getElementById('chartDistribucion'), {
     },
     options: { responsive: true }
 });
+
+// Activar tooltips de Bootstrap
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
 
 // Cards clickeables → filtran desglose y hacen scroll
 var filtroActual = null;

@@ -34,7 +34,7 @@
     <!-- Info deuda -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-center">
+            <div class="card text-center" data-bs-toggle="tooltip" title="Valor total de la deuda al momento de contraerla.">
                 <div class="card-body">
                     <h6 class="text-muted">Monto Original</h6>
                     <p class="h4 fw-bold">$<?= number_format((float)$deuda['monto_original'], 0, ',', '.') ?></p>
@@ -42,7 +42,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center border-success">
+            <div class="card text-center border-success" data-bs-toggle="tooltip" title="Suma de todos los abonos registrados para esta deuda.">
                 <div class="card-body">
                     <h6 class="text-muted">Total Abonado</h6>
                     <p class="h4 fw-bold text-success">$<?= number_format($totalAbonado, 0, ',', '.') ?></p>
@@ -50,7 +50,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center border-danger">
+            <div class="card text-center border-danger" data-bs-toggle="tooltip" title="Saldo pendiente = Monto Original - Total Abonado. Lo que falta por pagar de esta deuda.">
                 <div class="card-body">
                     <h6 class="text-muted">Saldo Pendiente</h6>
                     <p class="h4 fw-bold <?= $saldoPendiente > 0 ? 'text-danger' : 'text-success' ?>">
@@ -60,7 +60,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
+            <div class="card text-center" data-bs-toggle="tooltip" title="Porcentaje de avance del pago. 100% significa que la deuda está completamente saldada.">
                 <div class="card-body">
                     <h6 class="text-muted">Progreso</h6>
                     <?php $pct = $deuda['monto_original'] > 0 ? round($totalAbonado / $deuda['monto_original'] * 100, 1) : 0; ?>
@@ -154,5 +154,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+</script>
 </body>
 </html>

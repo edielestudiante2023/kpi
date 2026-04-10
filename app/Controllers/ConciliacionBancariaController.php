@@ -177,12 +177,14 @@ class ConciliacionBancariaController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $anio    = $this->request->getGet('anio') ?: date('Y');
-        $rango   = $this->request->getGet('rango') ?: 'todos';
-        $cuenta  = $this->request->getGet('cuenta');
-        $centro  = $this->request->getGet('centro');
-        $tipo    = $this->request->getGet('tipo');
-        $debcred = $this->request->getGet('debcred');
+        $anio      = $this->request->getGet('anio') ?: date('Y');
+        $rango     = $this->request->getGet('rango') ?: 'todos';
+        $cuenta    = $this->request->getGet('cuenta');
+        $centro    = $this->request->getGet('centro');
+        $tipo      = $this->request->getGet('tipo');
+        $debcred   = $this->request->getGet('debcred');
+        $categoria = $this->request->getGet('categoria');
+        $llave     = $this->request->getGet('llave');
 
         // Años disponibles
         $data['anios'] = $db->table('tbl_conciliacion_bancaria')
@@ -191,9 +193,11 @@ class ConciliacionBancariaController extends BaseController
         $data['anioActual']    = $anio;
         $data['rangoActual']   = $rango;
         $data['filtroCuenta']  = $cuenta;
-        $data['filtroCentro']  = $centro;
-        $data['filtroTipo']    = $tipo;
-        $data['filtroDebCred'] = $debcred;
+        $data['filtroCentro']    = $centro;
+        $data['filtroTipo']      = $tipo;
+        $data['filtroDebCred']   = $debcred;
+        $data['filtroCategoria'] = $categoria;
+        $data['filtroLlave']     = $llave;
 
         // Calcular rango de fechas
         if ($rango === 'personalizado') {
@@ -256,6 +260,30 @@ class ConciliacionBancariaController extends BaseController
         $cardWhere($resumenDebCred);
         $data['resumenDebCred'] = $resumenDebCred->get()->getResultArray();
 
+        // ── CARDS JERÁRQUICOS: Categoría y Llave Item ──
+        // Categorías (respeta fechas + cuenta + debcred)
+        $resumenCategorias = $db->table('tbl_conciliacion_bancaria cb')
+            ->select('ccl.categoria, ccl.tipo, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
+            ->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left')
+            ->where('ccl.categoria IS NOT NULL')
+            ->groupBy('ccl.categoria, ccl.tipo')
+            ->orderBy('ABS(SUM(cb.valor))', 'DESC');
+        $cardWhere($resumenCategorias);
+        $data['resumenCategorias'] = $resumenCategorias->get()->getResultArray();
+
+        // Llave Items (solo si hay categoría seleccionada)
+        $data['resumenLlaveItems'] = [];
+        if ($categoria) {
+            $resumenLlaveItems = $db->table('tbl_conciliacion_bancaria cb')
+                ->select('cb.llave_item, ccl.categoria, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
+                ->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left')
+                ->where('ccl.categoria', $categoria)
+                ->groupBy('cb.llave_item, ccl.categoria')
+                ->orderBy('ABS(SUM(cb.valor))', 'DESC');
+            $cardWhere($resumenLlaveItems);
+            $data['resumenLlaveItems'] = $resumenLlaveItems->get()->getResultArray();
+        }
+
         // ── TABLA: con todos los filtros aplicados ──
         $builder = $db->table('tbl_conciliacion_bancaria cb')
             ->select('cb.*, cc.centro_costo, cu.nombre_cuenta')
@@ -268,10 +296,12 @@ class ConciliacionBancariaController extends BaseController
         if ($cuenta)           $builder->where('cb.id_cuenta_banco', (int) $cuenta);
         if ($centro)           $builder->where('cb.id_centro_costo', (int) $centro);
         if ($debcred)          $builder->where('cb.deb_cred', $debcred);
-        if ($tipo) {
-            $builder->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left')
-                    ->where('ccl.tipo', $tipo);
+        if ($tipo || $categoria) {
+            $builder->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left');
+            if ($tipo)      $builder->where('ccl.tipo', $tipo);
+            if ($categoria) $builder->where('ccl.categoria', $categoria);
         }
+        if ($llave) $builder->where('cb.llave_item', $llave);
 
         $data['registros'] = $builder->get()->getResultArray();
         $data['cuentas']   = $this->cuentaBancoModel->findAll();
@@ -286,11 +316,13 @@ class ConciliacionBancariaController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $anio    = $this->request->getGet('anio') ?: date('Y');
-        $rango   = $this->request->getGet('rango') ?: 'todos';
-        $cuenta  = $this->request->getGet('cuenta');
-        $centro  = $this->request->getGet('centro');
-        $debcred = $this->request->getGet('debcred');
+        $anio      = $this->request->getGet('anio') ?: date('Y');
+        $rango     = $this->request->getGet('rango') ?: 'todos';
+        $cuenta    = $this->request->getGet('cuenta');
+        $centro    = $this->request->getGet('centro');
+        $debcred   = $this->request->getGet('debcred');
+        $categoria = $this->request->getGet('categoria');
+        $llave     = $this->request->getGet('llave');
 
         if ($rango === 'personalizado') {
             $fechas = ['desde' => $this->request->getGet('desde') ?: null, 'hasta' => $this->request->getGet('hasta') ?: null];
@@ -310,6 +342,11 @@ class ConciliacionBancariaController extends BaseController
         if ($cuenta)          $builder->where('cb.id_cuenta_banco', (int) $cuenta);
         if ($centro)          $builder->where('cb.id_centro_costo', (int) $centro);
         if ($debcred)         $builder->where('cb.deb_cred', $debcred);
+        if ($categoria || $llave) {
+            $builder->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left');
+            if ($categoria) $builder->where('ccl.categoria', $categoria);
+        }
+        if ($llave) $builder->where('cb.llave_item', $llave);
 
         $rows = $builder->get()->getResultArray();
 
@@ -450,13 +487,40 @@ class ConciliacionBancariaController extends BaseController
             }
         }
         $str = trim((string) $val);
+        // Serial de Excel como texto con coma (ej: "45,643")
+        $cleaned = str_replace(',', '', $str);
+        if (is_numeric($cleaned) && (float) $cleaned > 1000 && (float) $cleaned < 100000) {
+            try { return ExcelDate::excelToDateTimeObject((float) $cleaned)->format('Y-m-d'); }
+            catch (\Exception $e) { /* continuar */ }
+        }
+        // Formato con /: detectar MM/DD/YYYY vs DD/MM/YYYY
         if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $str, $m)) {
-            return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+            $a = (int) $m[1];
+            $b = (int) $m[2];
+            $y = (int) $m[3];
+            if ($b > 12) {
+                // b no puede ser mes → formato MM/DD/YYYY: a=mes, b=día
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            } elseif ($a > 12) {
+                // a no puede ser mes → formato DD/MM/YYYY: a=día, b=mes
+                return sprintf('%04d-%02d-%02d', $y, $b, $a);
+            } else {
+                // Ambos <= 12: asumir MM/DD/YYYY (formato US del banco)
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            }
         }
         if (preg_match('#^(\d{1,2})-(\d{1,2})-(\d{2,4})$#', $str, $m)) {
             $y = (int) $m[3];
             if ($y < 100) $y += 2000;
-            return sprintf('%04d-%02d-%02d', $y, $m[1], $m[2]);
+            $a = (int) $m[1];
+            $b = (int) $m[2];
+            if ($b > 12) {
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            } elseif ($a > 12) {
+                return sprintf('%04d-%02d-%02d', $y, $b, $a);
+            } else {
+                return sprintf('%04d-%02d-%02d', $y, $a, $b);
+            }
         }
         return null;
     }
