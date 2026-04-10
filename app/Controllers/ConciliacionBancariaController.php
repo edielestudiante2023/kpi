@@ -177,40 +177,226 @@ class ConciliacionBancariaController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $anio = $this->request->getGet('anio') ?: date('Y');
+        $anio    = $this->request->getGet('anio') ?: date('Y');
+        $rango   = $this->request->getGet('rango') ?: 'todos';
+        $cuenta  = $this->request->getGet('cuenta');
+        $centro  = $this->request->getGet('centro');
+        $tipo    = $this->request->getGet('tipo');
+        $debcred = $this->request->getGet('debcred');
 
         // Años disponibles
         $data['anios'] = $db->table('tbl_conciliacion_bancaria')
             ->select('anio')->distinct()->orderBy('anio', 'DESC')
             ->get()->getResultArray();
-        $data['anioActual'] = $anio;
+        $data['anioActual']    = $anio;
+        $data['rangoActual']   = $rango;
+        $data['filtroCuenta']  = $cuenta;
+        $data['filtroCentro']  = $centro;
+        $data['filtroTipo']    = $tipo;
+        $data['filtroDebCred'] = $debcred;
 
+        // Calcular rango de fechas
+        if ($rango === 'personalizado') {
+            $fechas = [
+                'desde' => $this->request->getGet('desde') ?: null,
+                'hasta' => $this->request->getGet('hasta') ?: null,
+            ];
+        } else {
+            $anioNum = ($anio === 'todos') ? 0 : (int) $anio;
+            $fechas = $this->calcularRangoFechas($rango, $anioNum);
+        }
+        $data['fechaDesde'] = $fechas['desde'];
+        $data['fechaHasta'] = $fechas['hasta'];
+
+        // ── CARDS: respetan TODOS los filtros ──
+        $cardWhere = function($builder) use ($fechas, $cuenta, $debcred) {
+            if ($fechas['desde']) $builder->where('cb.fecha_sistema >=', $fechas['desde']);
+            if ($fechas['hasta']) $builder->where('cb.fecha_sistema <=', $fechas['hasta']);
+            if ($cuenta) $builder->where('cb.id_cuenta_banco', (int) $cuenta);
+            if ($debcred) $builder->where('cb.deb_cred', $debcred);
+            return $builder;
+        };
+
+        // Centros de costo (respeta cuenta + debcred + fechas)
+        $resumenCentros = $db->table('tbl_conciliacion_bancaria cb')
+            ->select('cc.id_centro_costo, cc.centro_costo, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
+            ->join('tbl_centros_costo cc', 'cc.id_centro_costo = cb.id_centro_costo', 'left')
+            ->groupBy('cc.id_centro_costo, cc.centro_costo')
+            ->orderBy('total_valor', 'DESC');
+        $cardWhere($resumenCentros);
+        $data['resumenCentros'] = $resumenCentros->get()->getResultArray();
+
+        // Cuentas banco (respeta debcred + fechas, NO cuenta porque es el filtro propio)
+        $resumenCuentas = $db->table('tbl_conciliacion_bancaria cb')
+            ->select('cu.id_cuenta_banco, cu.nombre_cuenta, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
+            ->join('tbl_cuentas_banco cu', 'cu.id_cuenta_banco = cb.id_cuenta_banco', 'left')
+            ->groupBy('cu.id_cuenta_banco, cu.nombre_cuenta')
+            ->orderBy('cu.nombre_cuenta', 'ASC');
+        if ($fechas['desde']) $resumenCuentas->where('cb.fecha_sistema >=', $fechas['desde']);
+        if ($fechas['hasta']) $resumenCuentas->where('cb.fecha_sistema <=', $fechas['hasta']);
+        if ($debcred) $resumenCuentas->where('cb.deb_cred', $debcred);
+        $data['resumenCuentas'] = $resumenCuentas->get()->getResultArray();
+
+        // Deb/Cred (respeta cuenta + centro + fechas, NO debcred porque es el filtro propio)
+        $resumenDebCred = $db->table('tbl_conciliacion_bancaria cb')
+            ->select('cb.deb_cred, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
+            ->groupBy('cb.deb_cred')
+            ->orderBy('cb.deb_cred', 'ASC');
+        if ($fechas['desde']) $resumenDebCred->where('cb.fecha_sistema >=', $fechas['desde']);
+        if ($fechas['hasta']) $resumenDebCred->where('cb.fecha_sistema <=', $fechas['hasta']);
+        if ($cuenta) $resumenDebCred->where('cb.id_cuenta_banco', (int) $cuenta);
+        if ($centro) $resumenDebCred->where('cb.id_centro_costo', (int) $centro);
+        $data['resumenDebCred'] = $resumenDebCred->get()->getResultArray();
+
+        // Resumen INGRESO / EGRESO para cards
+        $resumenDebCred = $db->table('tbl_conciliacion_bancaria cb')
+            ->select('cb.deb_cred, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
+            ->groupBy('cb.deb_cred')
+            ->orderBy('cb.deb_cred', 'ASC');
+        $cardWhere($resumenDebCred);
+        $data['resumenDebCred'] = $resumenDebCred->get()->getResultArray();
+
+        // ── TABLA: con todos los filtros aplicados ──
         $builder = $db->table('tbl_conciliacion_bancaria cb')
             ->select('cb.*, cc.centro_costo, cu.nombre_cuenta')
             ->join('tbl_centros_costo cc', 'cc.id_centro_costo = cb.id_centro_costo', 'left')
             ->join('tbl_cuentas_banco cu', 'cu.id_cuenta_banco = cb.id_cuenta_banco', 'left')
             ->orderBy('cb.fecha_sistema', 'DESC');
 
-        if ($anio !== 'todos') {
-            $builder->where('cb.anio', (int) $anio);
-        }
-
-        // Filtros adicionales desde dashboard
-        $tipo = $this->request->getGet('tipo');
-        $cuenta = $this->request->getGet('cuenta');
+        if ($fechas['desde'])  $builder->where('cb.fecha_sistema >=', $fechas['desde']);
+        if ($fechas['hasta'])  $builder->where('cb.fecha_sistema <=', $fechas['hasta']);
+        if ($cuenta)           $builder->where('cb.id_cuenta_banco', (int) $cuenta);
+        if ($centro)           $builder->where('cb.id_centro_costo', (int) $centro);
+        if ($debcred)          $builder->where('cb.deb_cred', $debcred);
         if ($tipo) {
             $builder->join('tbl_clasificacion_costos ccl', 'ccl.llave_item = cb.llave_item', 'left')
                     ->where('ccl.tipo', $tipo);
         }
-        if ($cuenta) {
-            $builder->where('cb.id_cuenta_banco', (int) $cuenta);
-        }
-        $data['filtroTipo']   = $tipo;
-        $data['filtroCuenta'] = $cuenta;
 
         $data['registros'] = $builder->get()->getResultArray();
         $data['cuentas']   = $this->cuentaBancoModel->findAll();
+
         return view('conciliaciones/list_conciliacion', $data);
+    }
+
+    /**
+     * Exportar Excel con los mismos filtros
+     */
+    public function exportarCsv()
+    {
+        $db = \Config\Database::connect();
+
+        $anio    = $this->request->getGet('anio') ?: date('Y');
+        $rango   = $this->request->getGet('rango') ?: 'todos';
+        $cuenta  = $this->request->getGet('cuenta');
+        $centro  = $this->request->getGet('centro');
+        $debcred = $this->request->getGet('debcred');
+
+        if ($rango === 'personalizado') {
+            $fechas = ['desde' => $this->request->getGet('desde') ?: null, 'hasta' => $this->request->getGet('hasta') ?: null];
+        } else {
+            $anioNum = ($anio === 'todos') ? 0 : (int) $anio;
+            $fechas = $this->calcularRangoFechas($rango, $anioNum);
+        }
+
+        $builder = $db->table('tbl_conciliacion_bancaria cb')
+            ->select('cu.nombre_cuenta, cc.centro_costo, cb.llave_item, cb.deb_cred, cb.fv, cb.item_cliente, cb.anio, cb.mes, cb.mes_real, cb.fecha_sistema, cb.valor, cb.transaccion, cb.descripcion_motivo')
+            ->join('tbl_centros_costo cc', 'cc.id_centro_costo = cb.id_centro_costo', 'left')
+            ->join('tbl_cuentas_banco cu', 'cu.id_cuenta_banco = cb.id_cuenta_banco', 'left')
+            ->orderBy('cb.fecha_sistema', 'DESC');
+
+        if ($fechas['desde']) $builder->where('cb.fecha_sistema >=', $fechas['desde']);
+        if ($fechas['hasta']) $builder->where('cb.fecha_sistema <=', $fechas['hasta']);
+        if ($cuenta)          $builder->where('cb.id_cuenta_banco', (int) $cuenta);
+        if ($centro)          $builder->where('cb.id_centro_costo', (int) $centro);
+        if ($debcred)         $builder->where('cb.deb_cred', $debcred);
+
+        $rows = $builder->get()->getResultArray();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Conciliacion Bancaria');
+
+        $headers = ['Cuenta','Centro Costo','Llave Item','Deb/Cred','FV','Cliente/Item','Anio','Mes','Mes Real','Fecha Sistema','Valor','Transaccion','Descripcion'];
+        $sheet->fromArray($headers, null, 'A1');
+
+        $headerStyle = ['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '212529']]];
+        $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+
+        $fila = 2;
+        foreach ($rows as $r) {
+            $sheet->fromArray([
+                'Banco ' . $r['nombre_cuenta'], $r['centro_costo'], $r['llave_item'], $r['deb_cred'],
+                $r['fv'], $r['item_cliente'], (int)$r['anio'], (int)$r['mes'], (int)$r['mes_real'],
+                $r['fecha_sistema'] ? date('d/m/Y', strtotime($r['fecha_sistema'])) : '',
+                (float)$r['valor'], $r['transaccion'], $r['descripcion_motivo'],
+            ], null, "A{$fila}");
+            $fila++;
+        }
+
+        $sheet->getStyle("K2:K{$fila}")->getNumberFormat()->setFormatCode('"$"#,##0');
+
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'conciliacion_bancaria_' . date('Y-m-d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function calcularRangoFechas(string $rango, int $anio): array
+    {
+        $desde = null;
+        $hasta = null;
+
+        switch ($rango) {
+            case 'todos':
+                if ($anio !== 0) {
+                    $desde = sprintf('%04d-01-01', $anio);
+                    $hasta = sprintf('%04d-12-31', $anio);
+                }
+                break;
+            case 'mes_actual':
+                $desde = date('Y-m-01');
+                $hasta = date('Y-m-t');
+                break;
+            case 'mes_anterior':
+                $desde = date('Y-m-01', strtotime('first day of last month'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'bimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-2 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'trimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-3 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'cuatrimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-4 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'semestre_anterior':
+                $desde = date('Y-m-01', strtotime('-6 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            default:
+                // Meses individuales: "01", "02", ..., "12"
+                if (preg_match('/^(\d{2})$/', $rango, $m)) {
+                    $mes = (int) $m[1];
+                    $desde = sprintf('%04d-%02d-01', $anio, $mes);
+                    $hasta = date('Y-m-t', strtotime($desde));
+                }
+                break;
+        }
+
+        return ['desde' => $desde, 'hasta' => $hasta];
     }
 
     /**

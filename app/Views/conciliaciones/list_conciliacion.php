@@ -22,17 +22,95 @@
         </div>
         <div class="d-flex gap-2 align-items-center">
             <form method="get" class="d-flex gap-2">
-                <select name="anio" class="form-select form-select-sm" style="width:120px;" onchange="this.form.submit()">
+                <select name="anio" class="form-select form-select-sm" style="width:100px;" onchange="this.form.desde.value='';this.form.hasta.value='';this.form.rango.value='todos';this.form.submit()">
                     <option value="todos" <?= ($anioActual ?? '') === 'todos' ? 'selected' : '' ?>>Todos</option>
                     <?php foreach ($anios as $a): ?>
                         <option value="<?= $a['anio'] ?>" <?= ($anioActual ?? '') == $a['anio'] ? 'selected' : '' ?>><?= $a['anio'] ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php
+                $mesesNombre = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                $rangos = [
+                    'todos' => 'Todo el año',
+                    'mes_actual' => 'Mes actual',
+                    'mes_anterior' => 'Mes anterior',
+                    'bimestre_anterior' => 'Bimestre anterior',
+                    'trimestre_anterior' => 'Trimestre anterior',
+                    'cuatrimestre_anterior' => 'Cuatrimestre anterior',
+                    'semestre_anterior' => 'Semestre anterior',
+                ];
+                ?>
+                <select name="rango" class="form-select form-select-sm" style="width:170px;" onchange="if(this.value!=='personalizado'){this.form.desde.value='';this.form.hasta.value='';} this.form.submit()">
+                    <?php foreach ($rangos as $k => $v): ?>
+                        <option value="<?= $k ?>" <?= ($rangoActual ?? '') === $k ? 'selected' : '' ?>><?= $v ?></option>
+                    <?php endforeach; ?>
+                    <option value="personalizado" <?= ($rangoActual ?? '') === 'personalizado' ? 'selected' : '' ?>>Personalizado</option>
+                    <optgroup label="Mes específico">
+                        <?php for ($m = 1; $m <= 12; $m++): ?>
+                            <option value="<?= sprintf('%02d', $m) ?>" <?= ($rangoActual ?? '') === sprintf('%02d', $m) ? 'selected' : '' ?>><?= $mesesNombre[$m] ?></option>
+                        <?php endfor; ?>
+                    </optgroup>
+                </select>
+                <input type="date" name="desde" class="form-control form-control-sm" style="width:140px;" value="<?= $fechaDesde ?? '' ?>" onchange="document.querySelector('[name=rango]').value='personalizado'; this.form.submit()">
+                <input type="date" name="hasta" class="form-control form-control-sm" style="width:140px;" value="<?= $fechaHasta ?? '' ?>" onchange="document.querySelector('[name=rango]').value='personalizado'; this.form.submit()">
+                <select name="cuenta" class="form-select form-select-sm" style="width:150px;" onchange="this.form.submit()">
+                    <option value="">Todos los bancos</option>
+                    <?php foreach ($resumenCuentas as $rc): ?>
+                        <option value="<?= $rc['id_cuenta_banco'] ?>" <?= ($filtroCuenta ?? '') == $rc['id_cuenta_banco'] ? 'selected' : '' ?>>Banco <?= esc($rc['nombre_cuenta']) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </form>
+            <a href="<?= base_url('conciliaciones/bancaria/exportar?' . http_build_query(array_filter(['anio'=>$anioActual,'rango'=>$rangoActual,'desde'=>$fechaDesde ?? '','hasta'=>$fechaHasta ?? '','cuenta'=>$filtroCuenta,'centro'=>$filtroCentro,'debcred'=>$filtroDebCred]))) ?>" class="btn btn-outline-success btn-sm" title="Descargar Excel">
+                <i class="bi bi-download"></i>
+            </a>
+            <a href="<?= base_url('conciliaciones/bancaria') ?>" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros">
+                <i class="bi bi-eraser"></i>
+            </a>
             <a href="<?= base_url('conciliaciones/bancaria/upload') ?>" class="btn btn-primary btn-sm">
                 <i class="bi bi-upload me-1"></i> Cargar Excel
             </a>
         </div>
+    </div>
+
+    <?php $baseUrl = 'conciliaciones/bancaria?anio='.$anioActual.'&rango='.$rangoActual.($filtroCuenta ? '&cuenta='.$filtroCuenta : ''); ?>
+
+    <!-- Cards: Ingreso/Egreso + Centro de Costo -->
+    <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+        <?php foreach ($resumenDebCred as $rdc): ?>
+        <a href="<?= base_url($baseUrl.'&debcred='.$rdc['deb_cred']) ?>" class="text-decoration-none">
+            <div class="card <?= ($filtroDebCred ?? '') === $rdc['deb_cred'] ? ($rdc['deb_cred'] === 'INGRESO' ? 'bg-success text-white' : 'bg-danger text-white') : ($rdc['deb_cred'] === 'INGRESO' ? 'border-success' : 'border-danger') ?>" style="cursor:pointer; min-width:120px;">
+                <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
+                    <small class="fw-bold"><?= esc($rdc['deb_cred']) ?></small>
+                    <p class="fw-bold mb-0">$<?= number_format(abs((float)$rdc['total_valor']), 0, ',', '.') ?></p>
+                    <small class="text-muted"><?= $rdc['movimientos'] ?> mov.</small>
+                </div>
+            </div>
+        </a>
+        <?php endforeach; ?>
+
+        <span class="border-start mx-1" style="height:40px;"></span>
+
+        <a href="<?= base_url($baseUrl) ?>" class="text-decoration-none">
+            <div class="card <?= empty($filtroCentro) && empty($filtroDebCred) ? 'bg-dark text-white' : 'border-dark' ?>" style="cursor:pointer; min-width:70px;">
+                <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
+                    <small>Todos</small>
+                    <p class="fw-bold mb-0"><?= number_format(count($registros)) ?></p>
+                </div>
+            </div>
+        </a>
+        <?php foreach ($resumenCentros as $rcc): ?>
+        <a href="<?= base_url($baseUrl.'&centro='.$rcc['id_centro_costo']) ?>" class="text-decoration-none">
+            <div class="card <?= ($filtroCentro ?? '') == $rcc['id_centro_costo'] ? 'bg-info text-white' : 'border-secondary' ?>" style="cursor:pointer; min-width:100px;">
+                <div class="card-body py-1 px-2 text-center" style="font-size:0.8rem;">
+                    <small><?= esc($rcc['centro_costo']) ?></small>
+                    <p class="fw-bold mb-0 <?= (float)$rcc['total_valor'] >= 0 ? 'text-success' : 'text-danger' ?>">
+                        $<?= number_format((float)$rcc['total_valor'], 0, ',', '.') ?>
+                    </p>
+                    <small class="text-muted"><?= $rcc['movimientos'] ?></small>
+                </div>
+            </div>
+        </a>
+        <?php endforeach; ?>
     </div>
 
     <table id="conciliacionTable" class="table table-striped table-hover nowrap" style="width:100%; font-size:0.85rem;">
@@ -59,21 +137,21 @@
                 <th><select class="form-select form-select-sm"><option value="">Todos</option></select></th>
                 <th><select class="form-select form-select-sm"><option value="">Todas</option></select></th>
                 <th><select class="form-select form-select-sm"><option value="">Todos</option></select></th>
-                <th></th>
-                <th></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar FV..."></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar cliente..."></th>
                 <th><select class="form-select form-select-sm"><option value="">Todos</option></select></th>
                 <th><select class="form-select form-select-sm"><option value="">Todos</option></select></th>
                 <th><select class="form-select form-select-sm"><option value="">Todos</option></select></th>
                 <th></th>
                 <th></th>
                 <th><select class="form-select form-select-sm"><option value="">Todas</option></select></th>
-                <th></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
             </tr>
         </tfoot>
         <tbody>
         <?php foreach ($registros as $r): ?>
             <tr>
-                <td><?= esc($r['nombre_cuenta'] ?? '') ?></td>
+                <td><?= $r['nombre_cuenta'] ? 'Banco ' . esc($r['nombre_cuenta']) : '' ?></td>
                 <td><?= esc($r['centro_costo'] ?? '') ?></td>
                 <td><?= esc($r['llave_item']) ?></td>
                 <td>
@@ -108,7 +186,8 @@
 
 <script>
 $(document).ready(function() {
-    var filterCols = [0, 1, 2, 3, 6, 7, 8, 11];
+    var selectCols = [0, 1, 2, 3, 6, 7, 8, 11];
+    var inputCols = [4, 5, 12];
     var table = $('#conciliacionTable').DataTable({
         pageLength: 50,
         lengthMenu: [[50, 100, 200, -1], [50, 100, 200, 'Todos']],
@@ -116,7 +195,9 @@ $(document).ready(function() {
         autoWidth: false,
         order: [[9, 'desc']],
         initComplete: function () {
-            this.api().columns(filterCols).every(function () {
+            var api = this.api();
+            // Selects
+            api.columns(selectCols).every(function () {
                 var column = this;
                 var select = $('select', column.footer());
                 column.data().unique().sort().each(function (d) {
@@ -128,6 +209,15 @@ $(document).ready(function() {
                 select.on('change', function () {
                     var val = $.fn.dataTable.util.escapeRegex($(this).val());
                     column.search(val ? '^'+val+'$' : '', true, false).draw();
+                });
+            });
+            // Inputs de texto
+            api.columns(inputCols).every(function () {
+                var column = this;
+                $('input', column.footer()).on('keyup change', function () {
+                    if (column.search() !== this.value) {
+                        column.search(this.value).draw();
+                    }
                 });
             });
         },

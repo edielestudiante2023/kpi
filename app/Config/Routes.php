@@ -361,6 +361,7 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->get('facturacion/upload', 'FacturacionController::uploadForm');
     $routes->post('facturacion/upload', 'FacturacionController::uploadPost');
     $routes->get('facturacion/truncar', 'FacturacionController::truncar');
+    $routes->get('facturacion/exportar', 'FacturacionController::exportarCsv');
 
     // Centros de Costo
     $routes->get('centros-costo', 'CentroCostoController::listCentroCosto');
@@ -417,6 +418,7 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->get('bancaria/upload', 'ConciliacionBancariaController::uploadForm');
     $routes->post('bancaria/upload', 'ConciliacionBancariaController::uploadPost');
     $routes->get('bancaria/truncar/(:num)', 'ConciliacionBancariaController::truncar/$1');
+    $routes->get('bancaria/exportar', 'ConciliacionBancariaController::exportarCsv');
 });
 
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario

@@ -19,63 +19,85 @@
         </div>
 
         <!-- Filtros -->
+        <?php
+        $mesesNombre = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        $rangos = [
+            'todos' => 'Todo el año',
+            'mes_actual' => 'Mes actual',
+            'mes_anterior' => 'Mes anterior',
+            'bimestre_anterior' => 'Bimestre anterior',
+            'trimestre_anterior' => 'Trimestre anterior',
+            'cuatrimestre_anterior' => 'Cuatrimestre anterior',
+            'semestre_anterior' => 'Semestre anterior',
+        ];
+        ?>
         <form method="get" class="d-flex gap-2">
             <select name="anio" class="form-select form-select-sm" style="width:100px;" onchange="this.form.submit()">
+                <option value="todos" <?= $anioActual === 'todos' ? 'selected' : '' ?>>Todos</option>
                 <?php foreach ($anios as $a): ?>
                     <option value="<?= $a['anio'] ?>" <?= $a['anio'] == $anioActual ? 'selected' : '' ?>><?= $a['anio'] ?></option>
                 <?php endforeach; ?>
             </select>
-            <select name="mes" class="form-select form-select-sm" style="width:140px;" onchange="this.form.submit()">
-                <option value="">Todo el año</option>
-                <?php
-                $mesesNombre = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                for ($m = 1; $m <= 12; $m++):
-                ?>
-                    <option value="<?= $m ?>" <?= $mesActual == $m ? 'selected' : '' ?>><?= $mesesNombre[$m] ?></option>
-                <?php endfor; ?>
+            <select name="rango" class="form-select form-select-sm" style="width:170px;" onchange="this.form.submit()">
+                <?php foreach ($rangos as $k => $v): ?>
+                    <option value="<?= $k ?>" <?= ($rangoActual ?? '') === $k ? 'selected' : '' ?>><?= $v ?></option>
+                <?php endforeach; ?>
+                <option value="personalizado" <?= ($rangoActual ?? '') === 'personalizado' ? 'selected' : '' ?>>Personalizado</option>
+                <optgroup label="Mes específico">
+                    <?php for ($m = 1; $m <= 12; $m++): ?>
+                        <option value="<?= sprintf('%02d', $m) ?>" <?= ($rangoActual ?? '') === sprintf('%02d', $m) ? 'selected' : '' ?>><?= $mesesNombre[$m] ?></option>
+                    <?php endfor; ?>
+                </optgroup>
             </select>
+            <input type="date" name="desde" class="form-control form-control-sm" style="width:140px;" value="<?= $fechaDesde ?? '' ?>" onchange="document.querySelector('[name=rango]').value='personalizado'; this.form.submit()">
+            <input type="date" name="hasta" class="form-control form-control-sm" style="width:140px;" value="<?= $fechaHasta ?? '' ?>" onchange="document.querySelector('[name=rango]').value='personalizado'; this.form.submit()">
         </form>
+        <a href="<?= base_url('conciliaciones/dashboard') ?>" class="btn btn-outline-secondary btn-sm" title="Limpiar filtros">
+            <i class="bi bi-eraser"></i>
+        </a>
     </div>
 
     <!-- Período -->
     <p class="text-muted mb-4">
         <i class="bi bi-calendar me-1"></i>
-        <?= $mesActual ? $mesesNombre[(int)$mesActual] . ' ' . $anioActual : 'Año ' . $anioActual ?>
+        <?= $fechaDesde ? date('d/m/Y', strtotime($fechaDesde)) . ' — ' . date('d/m/Y', strtotime($fechaHasta)) : 'Sin filtro de fecha' ?>
     </p>
 
     <!-- Estado de Resultados -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&tipo=ingreso') ?>" class="text-decoration-none">
-            <div class="card border-success" style="cursor:pointer;">
+        <div class="col">
+            <div class="card border-success card-filtro" data-tipo="ingreso" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Ingresos</h6>
                     <p class="h4 fw-bold text-success">$<?= number_format($ingresos, 0, ',', '.') ?></p>
                 </div>
             </div>
-            </a>
         </div>
-        <div class="col-md-3">
-            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&tipo=fijo') ?>" class="text-decoration-none">
-            <div class="card border-primary" style="cursor:pointer;">
+        <div class="col">
+            <div class="card border-primary card-filtro" data-tipo="fijo" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Costos Fijos</h6>
                     <p class="h4 fw-bold text-primary">-$<?= number_format($costosFijos, 0, ',', '.') ?></p>
                 </div>
             </div>
-            </a>
         </div>
-        <div class="col-md-3">
-            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&tipo=variable') ?>" class="text-decoration-none">
-            <div class="card border-warning" style="cursor:pointer;">
+        <div class="col">
+            <div class="card border-warning card-filtro" data-tipo="variable" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Costos Variables</h6>
                     <p class="h4 fw-bold text-warning">-$<?= number_format($costosVariables, 0, ',', '.') ?></p>
                 </div>
             </div>
-            </a>
         </div>
-        <div class="col-md-3">
+        <div class="col">
+            <div class="card border-danger card-filtro" data-tipo="todos" style="cursor:pointer;">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Costos</h6>
+                    <p class="h4 fw-bold text-danger">-$<?= number_format($costosFijos + $costosVariables, 0, ',', '.') ?></p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
             <div class="card <?= $utilidadOperativa >= 0 ? 'border-success bg-success bg-opacity-10' : 'border-danger bg-danger bg-opacity-10' ?>">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Utilidad Operativa</h6>
@@ -91,8 +113,7 @@
     <div class="row mb-4">
         <?php foreach ($cuentasBanco as $cb): ?>
         <div class="col-md-<?= count($cuentasBanco) > 2 ? '4' : '6' ?>">
-            <a href="<?= base_url('conciliaciones/bancaria?anio='.$anioActual.'&cuenta='.$cb['id']) ?>" class="text-decoration-none">
-            <div class="card border-dark" style="cursor:pointer;">
+            <div class="card border-dark">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Banco <?= esc($cb['nombre']) ?></h6>
                     <p class="h4 fw-bold <?= $cb['saldo_actual'] >= 0 ? 'text-dark' : 'text-danger' ?>">
@@ -104,7 +125,6 @@
                     </small>
                 </div>
             </div>
-            </a>
         </div>
         <?php endforeach; ?>
     </div>
@@ -120,7 +140,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <a href="<?= base_url('conciliaciones/facturacion?anio=todos&pagado=0') ?>" class="text-decoration-none">
+            <a href="<?= base_url('conciliaciones/facturacion?anio=todos&pagado=0') ?>" class="text-decoration-none" target="_blank">
             <div class="card border-info" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Cartera por Cobrar</h6>
@@ -131,7 +151,7 @@
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= base_url('conciliaciones/deudas') ?>" class="text-decoration-none">
+            <a href="<?= base_url('conciliaciones/deudas') ?>" class="text-decoration-none" target="_blank">
             <div class="card border-danger" style="cursor:pointer;">
                 <div class="card-body text-center">
                     <h6 class="text-muted">Deudas (pasivo)</h6>
@@ -175,27 +195,43 @@
     </div>
 
     <!-- Desglose por categoría -->
-    <div class="card">
-        <div class="card-header"><strong>Desglose por Categoría</strong></div>
+    <div class="card" id="seccionDesglose">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>Desglose por Categoría</strong>
+            <span id="filtroActivo" class="badge bg-secondary d-none"></span>
+        </div>
         <div class="card-body">
-            <table class="table table-sm table-striped" style="font-size:0.9rem;">
+            <table id="desgloseTable" class="table table-sm table-striped" style="font-size:0.9rem;">
                 <thead class="table-dark">
                     <tr>
                         <th>Categoría</th>
                         <th>Tipo</th>
                         <th class="text-end">Monto</th>
+                        <th class="text-end">Peso %</th>
                         <th class="text-end">Movimientos</th>
                     </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($desglose as $d):
+                <?php
                     $badges = ['fijo' => 'bg-primary', 'variable' => 'bg-warning text-dark', 'ingreso' => 'bg-success'];
+                    $totalesTipo = ['fijo' => $costosFijos, 'variable' => $costosVariables, 'ingreso' => $ingresos];
+                    foreach ($desglose as $d):
+                        $totalTipo = abs($totalesTipo[$d['tipo']] ?? 1);
+                        $pct = $totalTipo > 0 ? round(abs((float)$d['total_valor']) / $totalTipo * 100, 1) : 0;
                 ?>
-                    <tr>
+                    <tr data-tipo="<?= $d['tipo'] ?>">
                         <td><?= esc($d['categoria']) ?></td>
                         <td><span class="badge <?= $badges[$d['tipo']] ?? 'bg-secondary' ?>"><?= strtoupper($d['tipo']) ?></span></td>
                         <td class="text-end <?= (float)$d['total_valor'] >= 0 ? 'text-success' : 'text-danger' ?>">
                             $<?= number_format((float)$d['total_valor'], 0, ',', '.') ?>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                <div class="progress flex-grow-1" style="height:16px; max-width:120px;">
+                                    <div class="progress-bar <?= $badges[$d['tipo']] ?? 'bg-secondary' ?>" style="width:<?= $pct ?>%"></div>
+                                </div>
+                                <span class="fw-bold" style="min-width:45px;"><?= $pct ?>%</span>
+                            </div>
                         </td>
                         <td class="text-end"><?= number_format($d['movimientos']) ?></td>
                     </tr>
@@ -206,6 +242,7 @@
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Evolución mensual
@@ -243,6 +280,46 @@ new Chart(document.getElementById('chartDistribucion'), {
         }]
     },
     options: { responsive: true }
+});
+
+// Cards clickeables → filtran desglose y hacen scroll
+var filtroActual = null;
+$('.card-filtro').on('click', function() {
+    var tipo = $(this).data('tipo');
+    var $seccion = $('#seccionDesglose');
+    var $badge = $('#filtroActivo');
+    var $rows = $('#desgloseTable tbody tr');
+
+    // Toggle: si ya está activo, desactivar
+    if (filtroActual === tipo) {
+        filtroActual = null;
+        $rows.show();
+        $badge.addClass('d-none');
+        $('.card-filtro').removeClass('shadow-lg');
+        return;
+    }
+
+    filtroActual = tipo;
+    $('.card-filtro').removeClass('shadow-lg');
+    $(this).addClass('shadow-lg');
+
+    if (tipo === 'todos') {
+        // Total Costos: mostrar fijo + variable
+        $rows.each(function() {
+            var rowTipo = $(this).data('tipo');
+            $(this).toggle(rowTipo === 'fijo' || rowTipo === 'variable');
+        });
+        $badge.text('COSTOS FIJOS + VARIABLES').removeClass('d-none');
+    } else {
+        $rows.each(function() {
+            $(this).toggle($(this).data('tipo') === tipo);
+        });
+        var labels = {'ingreso':'INGRESOS','fijo':'COSTOS FIJOS','variable':'COSTOS VARIABLES'};
+        $badge.text(labels[tipo] || tipo.toUpperCase()).removeClass('d-none');
+    }
+
+    // Scroll al desglose
+    $('html, body').animate({ scrollTop: $seccion.offset().top - 80 }, 400);
 });
 </script>
 </body>

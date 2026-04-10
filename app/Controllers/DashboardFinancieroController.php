@@ -21,28 +21,41 @@ class DashboardFinancieroController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $anio = (int) ($this->request->getGet('anio') ?: date('Y'));
-        $mes  = $this->request->getGet('mes') ?: null;
+        $anio  = $this->request->getGet('anio') ?: date('Y');
+        $rango = $this->request->getGet('rango') ?: 'todos';
 
         // Años disponibles
         $data['anios'] = $db->table('tbl_conciliacion_bancaria')
             ->select('anio')->distinct()->orderBy('anio', 'DESC')
             ->get()->getResultArray();
-        $data['anioActual'] = $anio;
-        $data['mesActual']  = $mes;
+        $data['anioActual']  = $anio;
+        $data['rangoActual'] = $rango;
+
+        // Calcular rango de fechas
+        if ($rango === 'personalizado') {
+            $fechas = [
+                'desde' => $this->request->getGet('desde') ?: null,
+                'hasta' => $this->request->getGet('hasta') ?: null,
+            ];
+        } else {
+            $anioNum = ($anio === 'todos') ? 0 : (int) $anio;
+            $fechas = $this->calcularRangoFechas($rango, $anioNum);
+        }
+        $data['fechaDesde'] = $fechas['desde'];
+        $data['fechaHasta'] = $fechas['hasta'];
+
+        // Helper para aplicar filtro de fechas
+        $aplicarFechas = function($builder, $campoFecha = 'cb.fecha_sistema') use ($fechas) {
+            if ($fechas['desde']) $builder->where("{$campoFecha} >=", $fechas['desde']);
+            if ($fechas['hasta']) $builder->where("{$campoFecha} <=", $fechas['hasta']);
+            return $builder;
+        };
 
         // ── INGRESOS, COSTOS FIJOS, VARIABLES, NEUTROS ──
         $builder = $db->table('tbl_conciliacion_bancaria cb')
-            ->select("
-                cc.tipo,
-                SUM(cb.valor) as total_valor
-            ")
-            ->join('tbl_clasificacion_costos cc', 'cc.llave_item = cb.llave_item', 'left')
-            ->where('cb.anio', $anio);
-
-        if ($mes) {
-            $builder->where('cb.mes_real', (int) $mes);
-        }
+            ->select("cc.tipo, SUM(cb.valor) as total_valor")
+            ->join('tbl_clasificacion_costos cc', 'cc.llave_item = cb.llave_item', 'left');
+        $aplicarFechas($builder);
 
         $resumen = $builder->groupBy('cc.tipo')->get()->getResultArray();
 
@@ -71,11 +84,7 @@ class DashboardFinancieroController extends BaseController
         $carteraBuilder = $db->table('tbl_facturacion')
             ->select('SUM(base_gravada) as total_cartera, COUNT(*) as facturas_pendientes')
             ->where('pagado', 0);
-
-        if ($mes) {
-            $carteraBuilder->where('anio', $anio)->where('mes', (int) $mes);
-        }
-        // Si no hay filtro de mes, mostrar toda la cartera vigente
+        // Cartera siempre es global (no filtrada por fecha)
         $cartera = $carteraBuilder->get()->getRow();
         $data['cartera']           = (float) ($cartera->total_cartera ?? 0);
         $data['facturasPendientes'] = (int) ($cartera->facturas_pendientes ?? 0);
@@ -133,12 +142,8 @@ class DashboardFinancieroController extends BaseController
         $desglose = $db->table('tbl_conciliacion_bancaria cb')
             ->select('cc.categoria, cc.tipo, SUM(cb.valor) as total_valor, COUNT(*) as movimientos')
             ->join('tbl_clasificacion_costos cc', 'cc.llave_item = cb.llave_item', 'left')
-            ->where('cb.anio', $anio)
             ->where('cc.tipo !=', 'neutro');
-
-        if ($mes) {
-            $desglose->where('cb.mes_real', (int) $mes);
-        }
+        $aplicarFechas($desglose);
 
         $data['desglose'] = $desglose->groupBy('cc.categoria, cc.tipo')
             ->orderBy('cc.tipo', 'ASC')
@@ -146,10 +151,11 @@ class DashboardFinancieroController extends BaseController
             ->get()->getResultArray();
 
         // ── EVOLUCIÓN MENSUAL (para gráfico) ──
+        $anioGrafico = ($anio === 'todos') ? (int) date('Y') : (int) $anio;
         $evolucion = $db->table('tbl_conciliacion_bancaria cb')
             ->select("cb.mes_real, cc.tipo, SUM(cb.valor) as total_valor")
             ->join('tbl_clasificacion_costos cc', 'cc.llave_item = cb.llave_item', 'left')
-            ->where('cb.anio', $anio)
+            ->where('cb.anio', $anioGrafico)
             ->whereIn('cc.tipo', ['ingreso', 'fijo', 'variable'])
             ->groupBy('cb.mes_real, cc.tipo')
             ->orderBy('cb.mes_real', 'ASC')
@@ -165,5 +171,54 @@ class DashboardFinancieroController extends BaseController
         $data['evolucionMensual'] = $meses;
 
         return view('conciliaciones/dashboard_financiero', $data);
+    }
+
+    private function calcularRangoFechas(string $rango, int $anio): array
+    {
+        $desde = null;
+        $hasta = null;
+
+        switch ($rango) {
+            case 'todos':
+                if ($anio !== 0) {
+                    $desde = sprintf('%04d-01-01', $anio);
+                    $hasta = sprintf('%04d-12-31', $anio);
+                }
+                break;
+            case 'mes_actual':
+                $desde = date('Y-m-01');
+                $hasta = date('Y-m-t');
+                break;
+            case 'mes_anterior':
+                $desde = date('Y-m-01', strtotime('first day of last month'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'bimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-2 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'trimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-3 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'cuatrimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-4 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'semestre_anterior':
+                $desde = date('Y-m-01', strtotime('-6 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            default:
+                if (preg_match('/^(\d{2})$/', $rango, $m)) {
+                    $mes = (int) $m[1];
+                    if ($anio === 0) $anio = (int) date('Y');
+                    $desde = sprintf('%04d-%02d-01', $anio, $mes);
+                    $hasta = date('Y-m-t', strtotime($desde));
+                }
+                break;
+        }
+
+        return ['desde' => $desde, 'hasta' => $hasta];
     }
 }

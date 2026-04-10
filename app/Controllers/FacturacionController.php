@@ -171,34 +171,233 @@ class FacturacionController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $anio = $this->request->getGet('anio') ?: date('Y');
+        $anio   = $this->request->getGet('anio') ?: date('Y');
+        $rango  = $this->request->getGet('rango') ?: 'todos';
+        $pagado = $this->request->getGet('pagado');
+        $portafolioFiltro = $this->request->getGet('portafolio');
+        $vencida = $this->request->getGet('vencida');
 
         $data['anios'] = $db->table('tbl_facturacion')
             ->select('anio')->distinct()->orderBy('anio', 'DESC')
             ->get()->getResultArray();
-        $data['anioActual'] = $anio;
+        $data['anioActual']       = $anio;
+        $data['rangoActual']      = $rango;
+        $data['filtroPagado']     = $pagado;
+        $data['filtroPortafolio'] = $portafolioFiltro;
+        $data['filtroVencida']    = $vencida;
 
+        // Calcular rango de fechas
+        if ($rango === 'personalizado') {
+            $fechas = [
+                'desde' => $this->request->getGet('desde') ?: null,
+                'hasta' => $this->request->getGet('hasta') ?: null,
+            ];
+        } else {
+            $anioNum = ($anio === 'todos') ? 0 : (int) $anio;
+            $fechas = $this->calcularRangoFechas($rango, $anioNum);
+        }
+        $data['fechaDesde'] = $fechas['desde'];
+        $data['fechaHasta'] = $fechas['hasta'];
+
+        // Función para aplicar filtros base (año + rango)
+        $aplicarBase = function($builder, $prefix = 'f') use ($fechas) {
+            if ($fechas['desde'])  $builder->where("{$prefix}.fecha_elaboracion >=", $fechas['desde']);
+            if ($fechas['hasta'])  $builder->where("{$prefix}.fecha_elaboracion <=", $fechas['hasta']);
+            return $builder;
+        };
+
+        // ── CARDS: respetan TODOS los filtros ──
+        // Portafolios (respeta pagado + fechas)
+        $resumenBuilder = $db->table('tbl_facturacion f')
+            ->select('p.id_portafolio, p.portafolio, SUM(f.base_gravada) as total_base, COUNT(*) as facturas')
+            ->join('tbl_portafolios p', 'p.id_portafolio = f.id_portafolio', 'left')
+            ->groupBy('p.id_portafolio, p.portafolio')
+            ->orderBy('total_base', 'DESC');
+        $aplicarBase($resumenBuilder);
+        if ($pagado !== null && $pagado !== '') $resumenBuilder->where('f.pagado', (int) $pagado);
+        $data['resumenPortafolios'] = $resumenBuilder->get()->getResultArray();
+
+        // Pagado/Cartera (respeta portafolio + fechas)
+        $resumenPagado = $db->table('tbl_facturacion f')
+            ->select('f.pagado, SUM(f.base_gravada) as total_base, COUNT(*) as facturas')
+            ->groupBy('f.pagado');
+        $aplicarBase($resumenPagado);
+        if ($portafolioFiltro) $resumenPagado->where('f.id_portafolio', (int) $portafolioFiltro);
+        $data['resumenPagado'] = $resumenPagado->get()->getResultArray();
+
+        // Totales de IVA, Retenciones y Líquido para cards (respetan TODOS los filtros)
+        $totalesBuilder = $db->table('tbl_facturacion f')
+            ->select('SUM(f.base_gravada) as total_base, SUM(f.iva) as total_iva, SUM(ABS(f.retefuente_4)) as total_retencion');
+        $aplicarBase($totalesBuilder);
+        if ($pagado !== null && $pagado !== '') $totalesBuilder->where('f.pagado', (int) $pagado);
+        if ($portafolioFiltro) $totalesBuilder->where('f.id_portafolio', (int) $portafolioFiltro);
+        $totales = $totalesBuilder->get()->getRow();
+        $data['totalBaseGravada'] = (float) ($totales->total_base ?? 0);
+        $data['totalIva']         = (float) ($totales->total_iva ?? 0);
+        $data['totalRetencion']   = (float) ($totales->total_retencion ?? 0);
+        $data['totalLiquido']     = $data['totalBaseGravada'] - $data['totalRetencion'];
+
+        // Cartera vencida (no pagadas + fecha_elaboracion + 30 días < hoy)
+        $vencidaBuilder = $db->table('tbl_facturacion f')
+            ->select('SUM(f.base_gravada) as total_vencida, COUNT(*) as facturas_vencidas')
+            ->where('f.pagado', 0)
+            ->where('DATE_ADD(f.fecha_elaboracion, INTERVAL 30 DAY) <', date('Y-m-d'));
+        $aplicarBase($vencidaBuilder);
+        if ($portafolioFiltro) $vencidaBuilder->where('f.id_portafolio', (int) $portafolioFiltro);
+        $vencida = $vencidaBuilder->get()->getRow();
+        $data['totalCarteraVencida']   = (float) ($vencida->total_vencida ?? 0);
+        $data['facturasVencidas']      = (int) ($vencida->facturas_vencidas ?? 0);
+
+        // ── TABLA: con todos los filtros ──
         $builder = $db->table('tbl_facturacion f')
             ->select('f.*, p.portafolio')
             ->join('tbl_portafolios p', 'p.id_portafolio = f.id_portafolio', 'left')
-            ->orderBy('f.anio', 'DESC')
-            ->orderBy('f.mes', 'DESC')
+            ->orderBy('f.fecha_elaboracion', 'DESC')
             ->orderBy('f.numero_factura', 'DESC');
 
-        if ($anio !== 'todos') {
-            $builder->where('f.anio', (int) $anio);
+        if ($fechas['desde']) $builder->where('f.fecha_elaboracion >=', $fechas['desde']);
+        if ($fechas['hasta']) $builder->where('f.fecha_elaboracion <=', $fechas['hasta']);
+        if ($pagado !== null && $pagado !== '') $builder->where('f.pagado', (int) $pagado);
+        if ($portafolioFiltro) $builder->where('f.id_portafolio', (int) $portafolioFiltro);
+        if ($vencida === '1') {
+            $builder->where('f.pagado', 0)
+                    ->where('DATE_ADD(f.fecha_elaboracion, INTERVAL 30 DAY) <', date('Y-m-d'));
         }
-
-        // Filtro cartera (pagado=NO) desde dashboard
-        $pagado = $this->request->getGet('pagado');
-        if ($pagado !== null && $pagado !== '') {
-            $builder->where('f.pagado', (int) $pagado);
-        }
-        $data['filtroPagado'] = $pagado;
 
         $data['registros']   = $builder->get()->getResultArray();
         $data['portafolios'] = $this->portafolioModel->orderBy('portafolio', 'ASC')->findAll();
+
         return view('conciliaciones/list_facturacion', $data);
+    }
+
+    /**
+     * Exportar Excel con los mismos filtros aplicados
+     */
+    public function exportarCsv()
+    {
+        $db = \Config\Database::connect();
+
+        $anio   = $this->request->getGet('anio') ?: date('Y');
+        $rango  = $this->request->getGet('rango') ?: 'todos';
+        $pagado = $this->request->getGet('pagado');
+        $portafolioFiltro = $this->request->getGet('portafolio');
+        $vencida = $this->request->getGet('vencida');
+
+        if ($rango === 'personalizado') {
+            $fechas = ['desde' => $this->request->getGet('desde') ?: null, 'hasta' => $this->request->getGet('hasta') ?: null];
+        } else {
+            $anioNum = ($anio === 'todos') ? 0 : (int) $anio;
+            $fechas = $this->calcularRangoFechas($rango, $anioNum);
+        }
+
+        $builder = $db->table('tbl_facturacion f')
+            ->select('p.portafolio, f.comprobante, f.fecha_elaboracion, f.identificacion, f.nombre_tercero, f.base_gravada, f.iva, f.retefuente_4, f.pagado, f.fecha_pago, f.valor_pagado, f.vendedor, f.portafolio_detallado')
+            ->join('tbl_portafolios p', 'p.id_portafolio = f.id_portafolio', 'left')
+            ->orderBy('f.fecha_elaboracion', 'DESC');
+
+        if ($fechas['desde']) $builder->where('f.fecha_elaboracion >=', $fechas['desde']);
+        if ($fechas['hasta']) $builder->where('f.fecha_elaboracion <=', $fechas['hasta']);
+        if ($pagado !== null && $pagado !== '') $builder->where('f.pagado', (int) $pagado);
+        if ($portafolioFiltro) $builder->where('f.id_portafolio', (int) $portafolioFiltro);
+        if ($vencida === '1') {
+            $builder->where('f.pagado', 0)->where('DATE_ADD(f.fecha_elaboracion, INTERVAL 30 DAY) <', date('Y-m-d'));
+        }
+
+        $rows = $builder->get()->getResultArray();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Facturacion');
+
+        $headers = ['Portafolio','Comprobante','Fecha Elaboracion','NIT','Cliente','Base Gravada','IVA','Retencion 4%','Liquido','Pagado','Fecha Pago','Valor Pagado','Vendedor','Detallado'];
+        $sheet->fromArray($headers, null, 'A1');
+
+        // Estilo headers
+        $headerStyle = ['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '212529']]];
+        $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
+
+        $fila = 2;
+        foreach ($rows as $r) {
+            $liquido = (float)$r['base_gravada'] - abs((float)$r['retefuente_4']);
+            $sheet->fromArray([
+                $r['portafolio'], $r['comprobante'],
+                $r['fecha_elaboracion'] ? date('d/m/Y', strtotime($r['fecha_elaboracion'])) : '',
+                $r['identificacion'], $r['nombre_tercero'],
+                (float)$r['base_gravada'], (float)$r['iva'], (float)$r['retefuente_4'], $liquido,
+                $r['pagado'] ? 'SI' : 'NO',
+                $r['fecha_pago'] ? date('d/m/Y', strtotime($r['fecha_pago'])) : '',
+                $r['valor_pagado'] ? (float)$r['valor_pagado'] : '',
+                $r['vendedor'], $r['portafolio_detallado'],
+            ], null, "A{$fila}");
+            $fila++;
+        }
+
+        // Formato moneda
+        foreach (['F','G','H','I','L'] as $col) {
+            $sheet->getStyle("{$col}2:{$col}{$fila}")->getNumberFormat()->setFormatCode('"$"#,##0');
+        }
+
+        // Auto-ancho
+        foreach (range('A', 'N') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'facturacion_' . date('Y-m-d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function calcularRangoFechas(string $rango, int $anio): array
+    {
+        $desde = null;
+        $hasta = null;
+
+        switch ($rango) {
+            case 'todos':
+                if ($anio !== 0) {
+                    $desde = sprintf('%04d-01-01', $anio);
+                    $hasta = sprintf('%04d-12-31', $anio);
+                }
+                break;
+            case 'mes_actual':
+                $desde = date('Y-m-01');
+                $hasta = date('Y-m-t');
+                break;
+            case 'mes_anterior':
+                $desde = date('Y-m-01', strtotime('first day of last month'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'bimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-2 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'trimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-3 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'cuatrimestre_anterior':
+                $desde = date('Y-m-01', strtotime('-4 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            case 'semestre_anterior':
+                $desde = date('Y-m-01', strtotime('-6 months'));
+                $hasta = date('Y-m-t', strtotime('last day of last month'));
+                break;
+            default:
+                if (preg_match('/^(\d{2})$/', $rango, $m)) {
+                    $mes = (int) $m[1];
+                    $desde = sprintf('%04d-%02d-01', $anio, $mes);
+                    $hasta = date('Y-m-t', strtotime($desde));
+                }
+                break;
+        }
+
+        return ['desde' => $desde, 'hasta' => $hasta];
     }
 
     /**
