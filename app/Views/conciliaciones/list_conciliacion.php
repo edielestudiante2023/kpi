@@ -235,6 +235,7 @@ function centroLabel(string $nombre): string {
     </div>
     <?php endif; ?>
 
+    <div class="table-responsive">
     <table id="conciliacionTable" class="table table-striped table-hover nowrap" style="width:100%; font-size:0.85rem;">
         <thead class="table-dark">
             <tr>
@@ -297,6 +298,7 @@ function centroLabel(string $nombre): string {
         <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

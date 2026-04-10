@@ -188,6 +188,7 @@ function cardUrl(array $base, array $override): string {
         <?php endforeach; ?>
     </div>
 
+    <div class="table-responsive">
     <table id="facturacionTable" class="table table-striped table-hover nowrap" style="width:100%; font-size:0.85rem;">
         <thead class="table-dark">
             <tr>
@@ -287,6 +288,7 @@ function cardUrl(array $base, array $override): string {
         <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Modal Conciliar Pago -->
