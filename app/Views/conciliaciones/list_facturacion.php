@@ -270,12 +270,14 @@ function cardUrl(array $base, array $override): string {
                 <td><?= esc($r['vendedor'] ?? '') ?></td>
                 <td><?= esc($r['portafolio_detallado'] ?? '') ?></td>
                 <td>
+                    <?php $esperado = (float)$r['base_gravada'] + (float)$r['iva'] - abs((float)$r['retefuente_4']); ?>
                     <button class="btn btn-outline-secondary btn-sm btn-conciliar" title="Conciliar pago"
                         data-id="<?= $r['id_facturacion'] ?>"
                         data-comprobante="<?= esc($r['comprobante']) ?>"
                         data-cliente="<?= esc($r['nombre_tercero']) ?>"
                         data-base="<?= number_format((float)$r['base_gravada'], 0, ',', '.') ?>"
-                        data-liquido="<?= number_format((float)$r['base_gravada'] - abs((float)$r['retefuente_4']) - (float)($r['anticipo'] ?? 0), 0, ',', '.') ?>"
+                        data-esperado="<?= $esperado ?>"
+                        data-esperado-fmt="<?= number_format($esperado, 0, ',', '.') ?>"
                         data-estado="<?= $r['estado_pago'] ?? 'pendiente' ?>"
                         data-fecha-pago="<?= $r['fecha_pago'] ?? '' ?>"
                         data-valor-pagado="<?= (float)($r['valor_pagado'] ?? 0) ?>"
@@ -306,34 +308,27 @@ function cardUrl(array $base, array $override): string {
                 <div class="col-6"><small class="text-muted">Cliente</small><br><strong id="concCliente"></strong></div>
             </div>
             <div class="row mt-2">
-                <div class="col-6"><small class="text-muted">Base Gravada</small><br><strong id="concBase"></strong></div>
-                <div class="col-6"><small class="text-muted">Líquido</small><br><strong id="concLiquido" class="text-success"></strong></div>
+                <div class="col-4"><small class="text-muted">Base Gravada</small><br><strong id="concBase"></strong></div>
+                <div class="col-4"><small class="text-muted">Valor Esperado</small><br><strong id="concEsperado" class="text-primary"></strong></div>
+                <div class="col-4"><small class="text-muted">Estado</small><br><span id="concEstadoBadge"></span></div>
             </div>
         </div>
         <input type="hidden" id="concIdFacturacion" value="">
+        <input type="hidden" id="concEsperadoVal" value="">
+        <input type="hidden" id="concEstado" value="">
 
-        <div class="mb-3">
-            <label class="form-label fw-bold">Estado de pago</label>
-            <select id="concEstado" class="form-select">
-                <option value="pendiente">NO (Pendiente)</option>
-                <option value="pagado">SI (Pagado)</option>
-                <option value="brecha">BRECHA</option>
-                <option value="castigada">CASTIGADA</option>
-            </select>
-        </div>
-
-        <div id="seccionPago">
-            <div class="row mb-3">
-                <div class="col-6">
-                    <label class="form-label">Fecha de pago</label>
-                    <input type="date" id="concFechaPago" class="form-control">
-                </div>
-                <div class="col-6">
-                    <label class="form-label">Valor pagado ($)</label>
-                    <input type="text" id="concValorPagado" class="form-control" placeholder="Ej: $475.333">
-                </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label">Fecha de pago</label>
+                <input type="date" id="concFechaPago" class="form-control">
+            </div>
+            <div class="col-6">
+                <label class="form-label">Valor pagado ($)</label>
+                <input type="text" id="concValorPagado" class="form-control" placeholder="Ej: $475.333">
             </div>
         </div>
+
+        <div id="concAnalisis" class="alert d-none mb-3" style="font-size:0.85rem;"></div>
 
         <hr>
         <p class="fw-bold mb-2"><i class="bi bi-cash-coin me-1"></i>Anticipo</p>
@@ -346,6 +341,18 @@ function cardUrl(array $base, array $override): string {
                 <label class="form-label">Valor anticipo ($)</label>
                 <input type="text" id="concValorAnticipo" class="form-control" placeholder="Ej: $50.000">
             </div>
+        </div>
+
+        <hr>
+        <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">Override manual:</small>
+            <select id="concEstadoManual" class="form-select form-select-sm" style="width:180px;">
+                <option value="">Automatico</option>
+                <option value="pagado">SI (Pagado)</option>
+                <option value="pendiente">NO (Pendiente)</option>
+                <option value="brecha">BRECHA</option>
+                <option value="castigada">CASTIGADA</option>
+            </select>
         </div>
       </div>
       <div class="modal-footer">
@@ -444,14 +451,56 @@ $(document).ready(function() {
     });
 
     // ── Modal Conciliar Pago ──
-    // Mostrar/ocultar sección de pago según estado
-    $('#concEstado').on('change', function() {
-        var estado = $(this).val();
-        if (estado === 'pagado' || estado === 'brecha') {
-            $('#seccionPago').show();
-        } else {
-            $('#seccionPago').hide();
+    function calcularEstado() {
+        var manual = $('#concEstadoManual').val();
+        if (manual) {
+            actualizarBadge(manual);
+            return;
         }
+        var valorPagado = limpiarMonto($('#concValorPagado').val()) || 0;
+        var esperado = parseFloat($('#concEsperadoVal').val()) || 0;
+        var estado, msg;
+
+        if (valorPagado === 0 || valorPagado === '') {
+            estado = 'pendiente';
+            msg = '';
+        } else {
+            var diff = Math.abs(esperado - valorPagado);
+            if (diff < 2000) {
+                estado = 'pagado';
+                msg = '<i class="bi bi-check-circle me-1"></i>Coincide con el valor esperado.';
+            } else {
+                estado = 'brecha';
+                msg = '<i class="bi bi-exclamation-triangle me-1"></i>Diferencia de $' + diff.toLocaleString('es-CO') + ' con el valor esperado.';
+            }
+        }
+        actualizarBadge(estado);
+        if (msg) {
+            $('#concAnalisis').removeClass('d-none alert-success alert-warning alert-danger')
+                .addClass(estado === 'pagado' ? 'alert-success' : 'alert-warning').html(msg);
+        } else {
+            $('#concAnalisis').addClass('d-none');
+        }
+    }
+
+    function actualizarBadge(estado) {
+        $('#concEstado').val(estado);
+        var badges = {
+            'pendiente': '<span class="badge bg-danger">NO (Pendiente)</span>',
+            'pagado':    '<span class="badge bg-success">SI (Pagado)</span>',
+            'brecha':    '<span class="badge bg-warning text-dark">BRECHA</span>',
+            'castigada': '<span class="badge bg-dark">CASTIGADA</span>',
+        };
+        $('#concEstadoBadge').html(badges[estado] || badges['pendiente']);
+    }
+
+    // Recalcular al cambiar valor pagado o override manual
+    $(document).on('blur', '#concValorPagado', calcularEstado);
+    $('#concEstadoManual').on('change', function() {
+        if ($(this).val()) {
+            $('#concAnalisis').addClass('d-none');
+        }
+        calcularEstado();
     });
 
     // Abrir modal desde botón de la tabla
@@ -461,12 +510,21 @@ $(document).ready(function() {
         $('#concComprobante').text(btn.data('comprobante'));
         $('#concCliente').text(btn.data('cliente'));
         $('#concBase').text('$' + btn.data('base'));
-        $('#concLiquido').text('$' + btn.data('liquido'));
-        $('#concEstado').val(btn.data('estado')).trigger('change');
+        $('#concEsperado').text('$' + btn.data('esperado-fmt'));
+        $('#concEsperadoVal').val(btn.data('esperado'));
         $('#concFechaPago').val(btn.data('fecha-pago') || '');
         $('#concValorPagado').val(btn.data('valor-pagado') > 0 ? btn.data('valor-pagado') : '');
         $('#concFechaAnticipo').val(btn.data('fecha-anticipo') || '');
         $('#concValorAnticipo').val(btn.data('anticipo') > 0 ? btn.data('anticipo') : '');
+        $('#concEstadoManual').val('');
+        $('#concAnalisis').addClass('d-none');
+
+        // Estado inicial
+        var estadoActual = btn.data('estado');
+        if (estadoActual === 'castigada') {
+            $('#concEstadoManual').val('castigada');
+        }
+        calcularEstado();
 
         new bootstrap.Modal('#modalConciliar').show();
     });
