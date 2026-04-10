@@ -319,7 +319,8 @@ $(document).ready(function() {
     var table = $('#conciliacionTable').DataTable({
         pageLength: 50,
         lengthMenu: [[50, 100, 200, -1], [50, 100, 200, 'Todos']],
-        responsive: true,
+        responsive: false,
+        scrollX: true,
         autoWidth: false,
         order: [[9, 'desc']],
         initComplete: function () {
