@@ -330,7 +330,7 @@ function cardUrl(array $base, array $override): string {
                 </div>
                 <div class="col-6">
                     <label class="form-label">Valor pagado ($)</label>
-                    <input type="number" id="concValorPagado" class="form-control" step="0.01" min="0" placeholder="0.00">
+                    <input type="text" id="concValorPagado" class="form-control" placeholder="Ej: $475.333">
                 </div>
             </div>
         </div>
@@ -344,7 +344,7 @@ function cardUrl(array $base, array $override): string {
             </div>
             <div class="col-6">
                 <label class="form-label">Valor anticipo ($)</label>
-                <input type="number" id="concValorAnticipo" class="form-control" step="0.01" min="0" placeholder="0.00">
+                <input type="text" id="concValorAnticipo" class="form-control" placeholder="Ej: $50.000">
             </div>
         </div>
       </div>
@@ -417,6 +417,32 @@ $(document).ready(function() {
         }
     });
 
+    // ── Parsear montos: quitar $, puntos, comas, espacios → entero ──
+    function limpiarMonto(val) {
+        if (!val) return '';
+        var str = String(val).replace(/[\$\s;]/g, '');
+        // Si tiene formato 123.456,78 (colombiano) → quitar puntos, coma→punto
+        if (/^\-?[\d.]+,\d{1,2}$/.test(str)) {
+            str = str.replace(/\./g, '').replace(',', '.');
+        }
+        // Si tiene formato 123,456.78 (US) → quitar comas
+        else if (/^\-?[\d,]+\.\d{1,2}$/.test(str)) {
+            str = str.replace(/,/g, '');
+        }
+        // Si solo tiene comas como miles (123,456) → quitar comas
+        else {
+            str = str.replace(/[,.]/g, '');
+        }
+        var num = parseFloat(str);
+        return isNaN(num) ? '' : Math.round(num);
+    }
+
+    // Limpiar al salir del campo
+    $(document).on('blur', '#concValorPagado, #concValorAnticipo', function() {
+        var limpio = limpiarMonto($(this).val());
+        $(this).val(limpio);
+    });
+
     // ── Modal Conciliar Pago ──
     // Mostrar/ocultar sección de pago según estado
     $('#concEstado').on('change', function() {
@@ -457,9 +483,9 @@ $(document).ready(function() {
             id_facturacion: id,
             estado_pago: $('#concEstado').val(),
             fecha_pago: $('#concFechaPago').val(),
-            valor_pagado: $('#concValorPagado').val(),
+            valor_pagado: limpiarMonto($('#concValorPagado').val()),
             fecha_anticipo: $('#concFechaAnticipo').val(),
-            anticipo: $('#concValorAnticipo').val(),
+            anticipo: limpiarMonto($('#concValorAnticipo').val()),
             '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
         }).done(function(resp) {
             if (resp.ok) {
