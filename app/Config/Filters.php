@@ -82,6 +82,7 @@ class Filters extends BaseFilters
                 'resetear/*',
                 'cambiarclave',
                 'cambiarclave/*',
+                'rutinas/checklist/*',
             ]],
             'sesiontracking' => ['except' => [
                 '/',
@@ -97,6 +98,7 @@ class Filters extends BaseFilters
                 'cambiarclave',
                 'cambiarclave/*',
                 'sesion/heartbeat',
+                'rutinas/checklist/*',
             ]],
             // 'honeypot',
             // 'csrf',

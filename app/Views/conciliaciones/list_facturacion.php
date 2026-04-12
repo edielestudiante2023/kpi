@@ -34,6 +34,35 @@ function cardUrl(array $base, array $override): string {
 }
 ?>
 
+<?php if (session()->getFlashdata('success')): ?>
+<div class="position-fixed top-0 end-0 p-3" style="z-index:1080;">
+    <div class="toast show align-items-center text-white bg-success border-0" role="alert" id="toastImport">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle me-1"></i>
+                <?= session()->getFlashdata('success') ?>
+                <br><small class="text-white-50"><?= date('d/m/Y H:i:s') ?></small>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php if (session()->getFlashdata('errors')): ?>
+<div class="position-fixed top-0 end-0 p-3" style="z-index:1080;">
+    <div class="toast show align-items-center text-white bg-danger border-0" role="alert" id="toastError">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <?php foreach (session()->getFlashdata('errors') as $e): ?><?= esc($e) ?><br><?php endforeach; ?>
+                <small class="text-white-50"><?= date('d/m/Y H:i:s') ?></small>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-2">
@@ -423,6 +452,9 @@ $(document).ready(function() {
             zeroRecords: "No se encontraron registros"
         }
     });
+
+    // Auto-hide toasts después de 8 segundos
+    setTimeout(function() { $('.toast').toast('hide'); }, 30000);
 
     // ── Parsear montos: quitar $, puntos, comas, espacios → entero ──
     function limpiarMonto(val) {

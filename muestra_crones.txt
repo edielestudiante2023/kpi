@@ -1,0 +1,457 @@
+function enviarRecordatorioRutina() {
+  var destinatario = "solangel.cuervo@cycloidtalent.com";
+  var asunto = "Rutina de Trabajo - Revisión Correo Propiedad Horizontal";
+
+  var cuerpo = "Hola Solangel,\n\n"
+    + "RUTINA DE TRABAJO\n\n"
+    + "No olvides revisar el correo de Propiedad Horizontal y gestionar lo que allí hayas recibido.\n\n"
+    + "No olvides dar respuesta a este email para confirmar que la tarea quedó ejecutada.\n\n"
+    + "Saludos cordiales.";
+
+  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "EEEE, d 'de' MMMM 'de' yyyy");
+
+  var cuerpoHtml = ""
+    + "<div style='font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;'>"
+
+    // Header
+    + "  <div style='background:linear-gradient(135deg,#1a237e,#3949ab);padding:30px 25px;border-radius:12px 12px 0 0;text-align:center;'>"
+    + "    <h1 style='color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;'>&#128203; Rutina de Trabajo</h1>"
+    + "    <p style='color:#c5cae9;margin:8px 0 0;font-size:13px;'>" + fecha + "</p>"
+    + "  </div>"
+
+    // Body
+    + "  <div style='background:#ffffff;padding:30px 25px;border-left:1px solid #e0e0e0;border-right:1px solid #e0e0e0;'>"
+    + "    <p style='color:#333333;font-size:15px;margin:0 0 20px;'>Hola <strong>Solangel</strong>,</p>"
+    + "    <p style='color:#555555;font-size:14px;margin:0 0 20px;'>Te recordamos la siguiente tarea pendiente en tu rutina diaria:</p>"
+
+    // Task card
+    + "    <div style='background:#f5f7ff;border-left:4px solid #3949ab;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#1a237e;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#128233; Correo Propiedad Horizontal</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Revisar el correo de <strong>Propiedad Horizontal</strong> y gestionar todo lo que allí hayas recibido."
+    + "      </p>"
+    + "    </div>"
+
+    // Action required
+    + "    <div style='background:#fff8e1;border-left:4px solid #f9a825;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#e65100;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#9888;&#65039; Acción Requerida</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Responde este email para confirmar que la tarea quedó ejecutada."
+    + "      </p>"
+    + "    </div>"
+
+    + "    <p style='color:#333333;font-size:14px;margin:0;'>Saludos cordiales.</p>"
+    + "  </div>"
+
+    // Footer
+    + "  <div style='background:#f5f5f5;padding:20px 25px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;text-align:center;'>"
+    + "    <p style='color:#999999;font-size:11px;margin:0;'>Este es un mensaje automático enviado por el sistema de Rutinas de Trabajo &bull; Cycloid Talent</p>"
+    + "  </div>"
+
+    + "</div>";
+
+  MailApp.sendEmail({
+    to: destinatario,
+    subject: asunto,
+    body: cuerpo,
+    htmlBody: cuerpoHtml
+  });
+}
+
+function enviarSiEsDiaLaboral() {
+  var hoy = new Date();
+  var dia = hoy.getDay(); // 0=Domingo, 1=Lunes, ..., 5=Viernes, 6=Sábado
+
+  if (dia >= 1 && dia <= 5) {
+    enviarRecordatorioRutina();
+  }
+}
+
+function crearTriggerFinal() {
+  // Eliminar triggers existentes para evitar duplicados
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "enviarSiEsDiaLaboral") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Crear trigger diario a las 7:00 AM (solo enviará de lunes a viernes)
+  ScriptApp.newTrigger("enviarSiEsDiaLaboral")
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .create();
+}
+
+
+function enviarRecordatorioBusiness() {
+  var destinatario = "solangel.cuervo@cycloidtalent.com";
+  var asunto = "Rutina de Trabajo - Revisión Correo Business";
+
+  var cuerpo = "Hola Solangel,\n\n"
+    + "RUTINA DE TRABAJO\n\n"
+    + "No olvides revisar el correo de Business y gestionar lo que allí hayas recibido.\n\n"
+    + "No olvides dar respuesta a este email para confirmar que la tarea quedó ejecutada.\n\n"
+    + "Saludos cordiales.";
+
+  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "EEEE, d 'de' MMMM 'de' yyyy");
+
+  var cuerpoHtml = ""
+    + "<div style='font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;'>"
+
+    // Header
+    + "  <div style='background:linear-gradient(135deg,#1b5e20,#43a047);padding:30px 25px;border-radius:12px 12px 0 0;text-align:center;'>"
+    + "    <h1 style='color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;'>&#128203; Rutina de Trabajo</h1>"
+    + "    <p style='color:#c8e6c9;margin:8px 0 0;font-size:13px;'>" + fecha + "</p>"
+    + "  </div>"
+
+    // Body
+    + "  <div style='background:#ffffff;padding:30px 25px;border-left:1px solid #e0e0e0;border-right:1px solid #e0e0e0;'>"
+    + "    <p style='color:#333333;font-size:15px;margin:0 0 20px;'>Hola <strong>Solangel</strong>,</p>"
+    + "    <p style='color:#555555;font-size:14px;margin:0 0 20px;'>Te recordamos la siguiente tarea pendiente en tu rutina diaria:</p>"
+
+    // Task card
+    + "    <div style='background:#f1f8e9;border-left:4px solid #43a047;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#1b5e20;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#128233; Correo Business</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Revisar el correo de <strong>Business</strong> y gestionar todo lo que allí hayas recibido."
+    + "      </p>"
+    + "    </div>"
+
+    // Action required
+    + "    <div style='background:#fff8e1;border-left:4px solid #f9a825;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#e65100;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#9888;&#65039; Acción Requerida</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Responde este email para confirmar que la tarea quedó ejecutada."
+    + "      </p>"
+    + "    </div>"
+
+    + "    <p style='color:#333333;font-size:14px;margin:0;'>Saludos cordiales.</p>"
+    + "  </div>"
+
+    // Footer
+    + "  <div style='background:#f5f5f5;padding:20px 25px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;text-align:center;'>"
+    + "    <p style='color:#999999;font-size:11px;margin:0;'>Este es un mensaje automático enviado por el sistema de Rutinas de Trabajo &bull; Cycloid Talent</p>"
+    + "  </div>"
+
+    + "</div>";
+
+  MailApp.sendEmail({
+    to: destinatario,
+    subject: asunto,
+    body: cuerpo,
+    htmlBody: cuerpoHtml
+  });
+}
+
+function enviarBusinessSiEsDiaLaboral() {
+  var hoy = new Date();
+  var dia = hoy.getDay();
+
+  if (dia >= 1 && dia <= 5) {
+    enviarRecordatorioBusiness();
+  }
+}
+
+function crearTriggerBusiness() {
+  // Eliminar triggers existentes para evitar duplicados
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "enviarBusinessSiEsDiaLaboral") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Crear trigger diario a las 2:00 PM (solo enviará de lunes a viernes)
+  ScriptApp.newTrigger("enviarBusinessSiEsDiaLaboral")
+    .timeBased()
+    .everyDays(1)
+    .atHour(14)
+    .create();
+}
+
+
+function enviarRecordatorioHeadConsultant() {
+  var destinatario = "solangel.cuervo@cycloidtalent.com";
+  var asunto = "Rutina de Trabajo - Revisión Correo Head Consultant";
+
+  var cuerpo = "Hola Solangel,\n\n"
+    + "RUTINA DE TRABAJO\n\n"
+    + "No olvides revisar el correo de Head Consultant y gestionar lo que allí hayas recibido.\n\n"
+    + "No olvides dar respuesta a este email para confirmar que la tarea quedó ejecutada.\n\n"
+    + "Saludos cordiales.";
+
+  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "EEEE, d 'de' MMMM 'de' yyyy");
+
+  var cuerpoHtml = ""
+    + "<div style='font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;'>"
+
+    // Header
+    + "  <div style='background:linear-gradient(135deg,#b71c1c,#e53935);padding:30px 25px;border-radius:12px 12px 0 0;text-align:center;'>"
+    + "    <h1 style='color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;'>&#128203; Rutina de Trabajo</h1>"
+    + "    <p style='color:#ffcdd2;margin:8px 0 0;font-size:13px;'>" + fecha + "</p>"
+    + "  </div>"
+
+    // Body
+    + "  <div style='background:#ffffff;padding:30px 25px;border-left:1px solid #e0e0e0;border-right:1px solid #e0e0e0;'>"
+    + "    <p style='color:#333333;font-size:15px;margin:0 0 20px;'>Hola <strong>Solangel</strong>,</p>"
+    + "    <p style='color:#555555;font-size:14px;margin:0 0 20px;'>Te recordamos la siguiente tarea pendiente en tu rutina diaria:</p>"
+
+    // Task card
+    + "    <div style='background:#ffebee;border-left:4px solid #e53935;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#b71c1c;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#128233; Correo Head Consultant</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Revisar el correo de <strong>Head Consultant</strong> y gestionar todo lo que allí hayas recibido."
+    + "      </p>"
+    + "    </div>"
+
+    // Action required
+    + "    <div style='background:#fff8e1;border-left:4px solid #f9a825;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#e65100;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#9888;&#65039; Acción Requerida</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Responde este email para confirmar que la tarea quedó ejecutada."
+    + "      </p>"
+    + "    </div>"
+
+    + "    <p style='color:#333333;font-size:14px;margin:0;'>Saludos cordiales.</p>"
+    + "  </div>"
+
+    // Footer
+    + "  <div style='background:#f5f5f5;padding:20px 25px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;text-align:center;'>"
+    + "    <p style='color:#999999;font-size:11px;margin:0;'>Este es un mensaje automático enviado por el sistema de Rutinas de Trabajo &bull; Cycloid Talent</p>"
+    + "  </div>"
+
+    + "</div>";
+
+  MailApp.sendEmail({
+    to: destinatario,
+    subject: asunto,
+    body: cuerpo,
+    htmlBody: cuerpoHtml
+  });
+}
+
+function enviarHeadConsultantSiEsDiaLaboral() {
+  var hoy = new Date();
+  var dia = hoy.getDay();
+
+  if (dia >= 1 && dia <= 5) {
+    enviarRecordatorioHeadConsultant();
+  }
+}
+
+function crearTriggerHeadConsultant() {
+  // Eliminar triggers existentes para evitar duplicados
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "enviarHeadConsultantSiEsDiaLaboral") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Crear trigger diario a las 2:30 PM (solo enviará de lunes a viernes)
+  ScriptApp.newTrigger("enviarHeadConsultantSiEsDiaLaboral")
+    .timeBased()
+    .everyDays(1)
+    .atHour(14)
+    .nearMinute(30)
+    .create();
+}
+
+function enviarRecordatorioNotificacionCycloid() {
+  var destinatario = "solangel.cuervo@cycloidtalent.com";
+  var asunto = "Rutina de Trabajo - Revisión Correo Notificación Cycloid";
+
+  var cuerpo = "Hola Solangel,\n\n"
+    + "RUTINA DE TRABAJO\n\n"
+    + "No olvides revisar el correo de Notificación Cycloid y gestionar lo que allí hayas recibido.\n\n"
+    + "No olvides dar respuesta a este email para confirmar que la tarea quedó ejecutada.\n\n"
+    + "Saludos cordiales.";
+
+  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "EEEE, d 'de' MMMM 'de' yyyy");
+
+  var cuerpoHtml = ""
+    + "<div style='font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;'>"
+
+    // Header
+    + "  <div style='background:linear-gradient(135deg,#e65100,#fb8c00);padding:30px 25px;border-radius:12px 12px 0 0;text-align:center;'>"
+    + "    <h1 style='color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;'>&#128203; Rutina de Trabajo</h1>"
+    + "    <p style='color:#ffe0b2;margin:8px 0 0;font-size:13px;'>" + fecha + "</p>"
+    + "  </div>"
+
+    // Body
+    + "  <div style='background:#ffffff;padding:30px 25px;border-left:1px solid #e0e0e0;border-right:1px solid #e0e0e0;'>"
+    + "    <p style='color:#333333;font-size:15px;margin:0 0 20px;'>Hola <strong>Solangel</strong>,</p>"
+    + "    <p style='color:#555555;font-size:14px;margin:0 0 20px;'>Te recordamos la siguiente tarea pendiente en tu rutina diaria:</p>"
+
+    // Task card
+    + "    <div style='background:#fff3e0;border-left:4px solid #fb8c00;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#e65100;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#128233; Correo Notificación Cycloid</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Revisar el correo de <strong>Notificación Cycloid</strong> y gestionar todo lo que allí hayas recibido."
+    + "      </p>"
+    + "    </div>"
+
+    // Action required
+    + "    <div style='background:#fff8e1;border-left:4px solid #f9a825;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#e65100;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#9888;&#65039; Acción Requerida</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Responde este email para confirmar que la tarea quedó ejecutada."
+    + "      </p>"
+    + "    </div>"
+
+    + "    <p style='color:#333333;font-size:14px;margin:0;'>Saludos cordiales.</p>"
+    + "  </div>"
+
+    // Footer
+    + "  <div style='background:#f5f5f5;padding:20px 25px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;text-align:center;'>"
+    + "    <p style='color:#999999;font-size:11px;margin:0;'>Este es un mensaje automático enviado por el sistema de Rutinas de Trabajo &bull; Cycloid Talent</p>"
+    + "  </div>"
+
+    + "</div>";
+
+  MailApp.sendEmail({
+    to: destinatario,
+    subject: asunto,
+    body: cuerpo,
+    htmlBody: cuerpoHtml
+  });
+}
+
+function enviarNotificacionCycloidSiEsDiaLaboral() {
+  var hoy = new Date();
+  var dia = hoy.getDay();
+
+  if (dia >= 1 && dia <= 5) {
+    enviarRecordatorioNotificacionCycloid();
+  }
+}
+
+function crearTriggerNotificacionCycloid() {
+  // Eliminar triggers existentes para evitar duplicados
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "enviarNotificacionCycloidSiEsDiaLaboral") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Crear trigger diario a las 3:00 PM (solo enviará de lunes a viernes)
+  ScriptApp.newTrigger("enviarNotificacionCycloidSiEsDiaLaboral")
+    .timeBased()
+    .everyDays(1)
+    .atHour(15)
+    .create();
+}
+
+
+function enviarRecordatorioPlanTrabajo() {
+  var destinatario = "solangel.cuervo@cycloidtalent.com";
+  var asunto = "Rutina de Trabajo - Plan de Trabajo Consultores";
+
+  var cuerpo = "Hola Solangel,\n\n"
+    + "RUTINA DE TRABAJO - PLAN DE TRABAJO CONSULTORES\n\n"
+    + "Recuerda realizar las siguientes acciones:\n\n"
+    + "1. Revisar los consultores que tendrán visita a cliente.\n"
+    + "2. Verificar que cada consultor tenga el plan de trabajo correspondiente al mes de visita.\n"
+    + "3. Informar al consultor sobre los pendientes identificados.\n"
+    + "4. Gestionar apoyo si el consultor requiere algo para la visita.\n\n"
+    + "No olvides dar respuesta a este email para confirmar que la tarea quedó ejecutada.\n\n"
+    + "Saludos cordiales.";
+
+  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "EEEE, d 'de' MMMM 'de' yyyy");
+
+  var cuerpoHtml = ""
+    + "<div style='font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;'>"
+
+    // Header
+    + "  <div style='background:linear-gradient(135deg,#4a148c,#7b1fa2);padding:30px 25px;border-radius:12px 12px 0 0;text-align:center;'>"
+    + "    <h1 style='color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;'>&#128203; Rutina de Trabajo</h1>"
+    + "    <p style='color:#e1bee7;margin:8px 0 0;font-size:13px;'>" + fecha + "</p>"
+    + "  </div>"
+
+    // Body
+    + "  <div style='background:#ffffff;padding:30px 25px;border-left:1px solid #e0e0e0;border-right:1px solid #e0e0e0;'>"
+    + "    <p style='color:#333333;font-size:15px;margin:0 0 20px;'>Hola <strong>Solangel</strong>,</p>"
+    + "    <p style='color:#555555;font-size:14px;margin:0 0 20px;'>Recuerda realizar las siguientes acciones sobre los <strong>consultores con visita a cliente</strong>:</p>"
+
+    // Task 1
+    + "    <div style='background:#f3e5f5;border-left:4px solid #7b1fa2;border-radius:0 8px 8px 0;padding:15px 20px;margin:0 0 12px;'>"
+    + "      <p style='color:#4a148c;font-size:14px;margin:0;'>"
+    + "        <strong>1.</strong> Revisar los consultores que tendr&aacute;n <strong>visita a cliente</strong>."
+    + "      </p>"
+    + "    </div>"
+
+    // Task 2
+    + "    <div style='background:#f3e5f5;border-left:4px solid #7b1fa2;border-radius:0 8px 8px 0;padding:15px 20px;margin:0 0 12px;'>"
+    + "      <p style='color:#4a148c;font-size:14px;margin:0;'>"
+    + "        <strong>2.</strong> Verificar que cada consultor tenga el <strong>plan de trabajo</strong> correspondiente al mes de visita."
+    + "      </p>"
+    + "    </div>"
+
+    // Task 3
+    + "    <div style='background:#f3e5f5;border-left:4px solid #7b1fa2;border-radius:0 8px 8px 0;padding:15px 20px;margin:0 0 12px;'>"
+    + "      <p style='color:#4a148c;font-size:14px;margin:0;'>"
+    + "        <strong>3.</strong> Informar al consultor sobre los <strong>pendientes</strong> identificados."
+    + "      </p>"
+    + "    </div>"
+
+    // Task 4
+    + "    <div style='background:#f3e5f5;border-left:4px solid #7b1fa2;border-radius:0 8px 8px 0;padding:15px 20px;margin:0 0 20px;'>"
+    + "      <p style='color:#4a148c;font-size:14px;margin:0;'>"
+    + "        <strong>4.</strong> Gestionar <strong>apoyo</strong> si el consultor requiere algo para la visita."
+    + "      </p>"
+    + "    </div>"
+
+    // Action required
+    + "    <div style='background:#fff8e1;border-left:4px solid #f9a825;border-radius:0 8px 8px 0;padding:20px;margin:0 0 20px;'>"
+    + "      <p style='color:#e65100;font-size:15px;font-weight:bold;margin:0 0 10px;'>&#9888;&#65039; Acci&oacute;n Requerida</p>"
+    + "      <p style='color:#444444;font-size:14px;line-height:1.6;margin:0;'>"
+    + "        Responde este email para confirmar que la tarea qued&oacute; ejecutada."
+    + "      </p>"
+    + "    </div>"
+
+    + "    <p style='color:#333333;font-size:14px;margin:0;'>Saludos cordiales.</p>"
+    + "  </div>"
+
+    // Footer
+    + "  <div style='background:#f5f5f5;padding:20px 25px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;text-align:center;'>"
+    + "    <p style='color:#999999;font-size:11px;margin:0;'>Este es un mensaje autom&aacute;tico enviado por el sistema de Rutinas de Trabajo &bull; Cycloid Talent</p>"
+    + "  </div>"
+
+    + "</div>";
+
+  MailApp.sendEmail({
+    to: destinatario,
+    subject: asunto,
+    body: cuerpo,
+    htmlBody: cuerpoHtml
+  });
+}
+
+function enviarPlanTrabajoSiEsDiaLaboral() {
+  var hoy = new Date();
+  var dia = hoy.getDay();
+
+  if (dia >= 1 && dia <= 5) {
+    enviarRecordatorioPlanTrabajo();
+  }
+}
+
+function crearTriggerPlanTrabajo() {
+  // Eliminar triggers existentes para evitar duplicados
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "enviarPlanTrabajoSiEsDiaLaboral") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Crear trigger diario a las 4:00 PM (solo enviará de lunes a viernes)
+  ScriptApp.newTrigger("enviarPlanTrabajoSiEsDiaLaboral")
+    .timeBased()
+    .everyDays(1)
+    .atHour(16)
+    .create();
+}

@@ -422,4 +422,29 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->get('bancaria/exportar', 'ConciliacionBancariaController::exportarCsv');
 });
 
+// ====================================
+// RUTINAS DE TRABAJO
+// ====================================
+$routes->group('rutinas', ['namespace' => 'App\Controllers'], function($routes) {
+    // CRUD Actividades (tabla maestra)
+    $routes->get('actividades', 'RutinasController::listActividades');
+    $routes->get('actividades/add', 'RutinasController::addActividad');
+    $routes->post('actividades/add', 'RutinasController::addActividadPost');
+    $routes->get('actividades/edit/(:num)', 'RutinasController::editActividad/$1');
+    $routes->post('actividades/edit/(:num)', 'RutinasController::editActividadPost/$1');
+    $routes->get('actividades/delete/(:num)', 'RutinasController::deleteActividad/$1');
+
+    // CRUD Asignaciones
+    $routes->get('asignaciones', 'RutinasController::listAsignaciones');
+    $routes->post('asignaciones/add', 'RutinasController::addAsignacionPost');
+    $routes->get('asignaciones/delete/(:num)', 'RutinasController::deleteAsignacion/$1');
+
+    // Calendario
+    $routes->get('calendario', 'RutinasController::calendario');
+});
+
+// Rutinas — vista pública (sin auth, acceso por token)
+$routes->get('rutinas/checklist/(:num)/(:segment)/(:any)', 'RutinasController::checklistPublico/$1/$2/$3');
+$routes->post('rutinas/checklist/update', 'RutinasController::updateChecklistPublico');
+
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario

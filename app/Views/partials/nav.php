@@ -251,6 +251,26 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                     </ul>
                 </li>
 
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= strpos($currentUrl, 'rutinas') !== false ? 'active fw-bold' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-clipboard-check me-1"></i>Rutinas
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item fw-bold" href="<?= base_url('rutinas/calendario') ?>">
+                            <i class="bi bi-calendar-week me-2"></i>Calendario
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">Maestras</li>
+                        <li><a class="dropdown-item" href="<?= base_url('rutinas/actividades') ?>">
+                            <i class="bi bi-list-task me-2"></i>Actividades
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('rutinas/asignaciones') ?>">
+                            <i class="bi bi-person-plus me-2"></i>Asignaciones
+                        </a></li>
+                    </ul>
+                </li>
+
                 <?php if ($session->get('bitacora_habilitada')): ?>
                 <li class="nav-item">
                     <a class="nav-link" href="<?= base_url('bitacora') ?>" target="_blank">
