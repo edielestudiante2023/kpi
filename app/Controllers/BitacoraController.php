@@ -640,7 +640,9 @@ PROMPT;
 
         // Determinar inicio del periodo
         $ultima = $liquidacionModel->getUltimaLiquidacion();
-        $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
+        $fechaInicio = $ultima
+            ? date('Y-m-d 00:00:00', strtotime($ultima['fecha_corte'] . ' +1 day'))
+            : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
         $fechaHoy = date('Y-m-d H:i:s');
 
         // Días hábiles transcurridos (hasta hoy)
@@ -718,7 +720,9 @@ PROMPT;
 
         // Inicio del periodo
         $ultima = $liquidacionModel->getUltimaLiquidacion();
-        $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
+        $fechaInicio = $ultima
+            ? date('Y-m-d 00:00:00', strtotime($ultima['fecha_corte'] . ' +1 day'))
+            : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
 
         // 1. Cortar actividades en progreso
         $enProgreso = $this->bitacoraModel->getTodasEnProgreso();

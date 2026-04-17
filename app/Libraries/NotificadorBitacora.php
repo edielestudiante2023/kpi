@@ -93,7 +93,9 @@ class NotificadorBitacora
             $festivoModel = new DiaFestivoModel();
 
             $ultima = $liqModel->getUltimaLiquidacion();
-            $fechaInicio = $ultima ? $ultima['fecha_corte'] : env('BITACORA_PRIMERA_QUINCENA', '');
+            $fechaInicio = $ultima
+                ? date('Y-m-d 00:00:00', strtotime($ultima['fecha_corte'] . ' +1 day'))
+                : env('BITACORA_PRIMERA_QUINCENA', '');
             if (empty($fechaInicio)) return null;
 
             $ahora = $hasta ?? date('Y-m-d H:i:s');
