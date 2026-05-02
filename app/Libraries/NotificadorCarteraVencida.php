@@ -56,7 +56,7 @@ class NotificadorCarteraVencida
         $facturas = $db->table('tbl_facturacion f')
             ->select('f.id_facturacion, f.comprobante, f.identificacion, f.nombre_tercero,
                       f.base_gravada, f.iva, ABS(f.retefuente_4) as ret4,
-                      (f.base_gravada - ABS(f.retefuente_4)) as liquido,
+                      (f.base_gravada + f.iva - ABS(f.retefuente_4)) as liquido,
                       f.fecha_elaboracion, f.anticipo,
                       DATEDIFF(CURDATE(), f.fecha_elaboracion) as dias_vencida,
                       p.portafolio')
@@ -92,7 +92,12 @@ class NotificadorCarteraVencida
             $html = $this->generarHTML($nombreCliente, $nit, $facturasCliente);
             $asunto = "Cycloid Talent - Recordatorio de cartera pendiente - NIT {$nit}";
 
-            $enviado = $this->enviarEmail($emailCliente, $nombreCliente, $asunto, $html, [$this->ccDiana, $this->ccEdison]);
+            // === MODO TEST: solo envía a head.consultant para verificar fórmula corregida ===
+            // REVERTIR antes del próximo jueves par (14/05/2026)
+            // $enviado = $this->enviarEmail($emailCliente, $nombreCliente, $asunto, $html, [$this->ccDiana, $this->ccEdison]);
+            $asuntoTest = "[TEST {$nit}] {$nombreCliente} — habria ido a {$emailCliente}";
+            $enviado = $this->enviarEmail($this->ccEdison, 'Edison Cuervo (TEST)', $asuntoTest, $html, []);
+            // === FIN MODO TEST ===
 
             if ($enviado) {
                 $resultado['enviados']++;
@@ -141,13 +146,16 @@ class NotificadorCarteraVencida
         $filas = '';
         $totalPendiente = 0;
         foreach ($facturas as $f) {
-            $liquido = (float)$f['liquido'] - (float)$f['anticipo'];
-            $totalPendiente += $liquido;
+            $anticipo = (float)$f['anticipo'];
+            $aConsignar = (float)$f['liquido'] - $anticipo;
+            $totalPendiente += $aConsignar;
+            $anticipoTxt = $anticipo > 0 ? "anticipo $" . number_format($anticipo, 0, ',', '.') : '—';
             $filas .= "<tr>
                 <td style='padding:8px; border:1px solid #ddd;'>{$f['comprobante']}</td>
                 <td style='padding:8px; border:1px solid #ddd;'>" . date('d/m/Y', strtotime($f['fecha_elaboracion'])) . "</td>
                 <td style='padding:8px; border:1px solid #ddd; text-align:center;'>{$f['dias_vencida']} dias</td>
-                <td style='padding:8px; border:1px solid #ddd; text-align:right;'>$" . number_format($liquido, 0, ',', '.') . "</td>
+                <td style='padding:8px; border:1px solid #ddd; text-align:center; color:#6c757d; font-size:12px;'>{$anticipoTxt}</td>
+                <td style='padding:8px; border:1px solid #ddd; text-align:right;'>$" . number_format($aConsignar, 0, ',', '.') . "</td>
             </tr>";
         }
 
@@ -166,13 +174,14 @@ class NotificadorCarteraVencida
                             <th style='padding:8px; border:1px solid #ddd; text-align:left;'>Factura</th>
                             <th style='padding:8px; border:1px solid #ddd; text-align:left;'>Fecha Elaboracion</th>
                             <th style='padding:8px; border:1px solid #ddd; text-align:center;'>Dias Vencida</th>
-                            <th style='padding:8px; border:1px solid #ddd; text-align:right;'>Valor Liquidado</th>
+                            <th style='padding:8px; border:1px solid #ddd; text-align:center;'>Anticipo</th>
+                            <th style='padding:8px; border:1px solid #ddd; text-align:right;'>Valor a Consignar</th>
                         </tr>
                     </thead>
                     <tbody>{$filas}</tbody>
                     <tfoot>
                         <tr style='background:#f8f9fa; font-weight:bold;'>
-                            <td colspan='3' style='padding:8px; border:1px solid #ddd; text-align:right;'>Total pendiente:</td>
+                            <td colspan='4' style='padding:8px; border:1px solid #ddd; text-align:right;'>Total pendiente:</td>
                             <td style='padding:8px; border:1px solid #ddd; text-align:right; color:#dc3545;'>$" . number_format($totalPendiente, 0, ',', '.') . "</td>
                         </tr>
                     </tfoot>
