@@ -90,12 +90,12 @@ class NotificadorCarteraVencida
             }
 
             $html = $this->generarHTML($nombreCliente, $nit, $facturasCliente);
-            $asunto = "Cycloid Talent - Recordatorio de cartera pendiente - NIT {$nit}";
+            $asunto = "Cycloid Talent - Recordatorio de cartera pendiente - {$nombreCliente}";
 
             // === MODO TEST: solo envía a head.consultant para verificar fórmula corregida ===
             // REVERTIR antes del próximo jueves par (14/05/2026)
             // $enviado = $this->enviarEmail($emailCliente, $nombreCliente, $asunto, $html, [$this->ccDiana, $this->ccEdison]);
-            $asuntoTest = "[TEST {$nit}] {$nombreCliente} — habria ido a {$emailCliente}";
+            $asuntoTest = "[TEST] {$asunto} — habria ido a {$emailCliente}";
             $enviado = $this->enviarEmail($this->ccEdison, 'Edison Cuervo (TEST)', $asuntoTest, $html, []);
             // === FIN MODO TEST ===
 
