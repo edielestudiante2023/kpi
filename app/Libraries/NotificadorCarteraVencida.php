@@ -13,6 +13,7 @@ class NotificadorCarteraVencida
     private string $fromEmail = 'notificacion.cycloidtalent@cycloidtalent.com';
     private string $fromName  = 'Kpi Cycloid - Cartera';
     private string $ccDiana   = 'diana.cuestas@cycloidtalent.com';
+    private string $ccEdison  = 'head.consultant.cycloidtalent@gmail.com';
 
     private string $extHost;
     private int    $extPort;
@@ -91,7 +92,7 @@ class NotificadorCarteraVencida
             $html = $this->generarHTML($nombreCliente, $nit, $facturasCliente);
             $asunto = "Cycloid Talent - Recordatorio de cartera pendiente - NIT {$nit}";
 
-            $enviado = $this->enviarEmail($emailCliente, $nombreCliente, $asunto, $html, [$this->ccDiana]);
+            $enviado = $this->enviarEmail($emailCliente, $nombreCliente, $asunto, $html, [$this->ccDiana, $this->ccEdison]);
 
             if ($enviado) {
                 $resultado['enviados']++;
