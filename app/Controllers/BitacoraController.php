@@ -324,11 +324,36 @@ class BitacoraController extends BaseController
         $q      = trim($this->request->getGet('q') ?? '');
         $origen = strtoupper(trim($this->request->getGet('origen') ?? ''));
 
-        if (!in_array($origen, ['PH', 'SST'], true)) {
+        if (!in_array($origen, ['PH', 'SST', 'PSY'], true)) {
             return $this->response->setJSON(['error' => 'Origen inválido']);
         }
 
-        $database = $origen === 'PH' ? 'propiedad_horizontal' : 'empresas_sst';
+        // Cada origen tiene su propia BD, tabla y columnas
+        $configByOrigen = [
+            'PH'  => [
+                'db'    => 'propiedad_horizontal',
+                'sql'   => "SELECT id_cliente AS id, nombre_cliente AS nombre, ciudad_cliente AS ciudad
+                            FROM tbl_clientes
+                            WHERE estado = 'activo' AND nombre_cliente LIKE ?
+                            ORDER BY nombre_cliente ASC LIMIT 30",
+            ],
+            'SST' => [
+                'db'    => 'empresas_sst',
+                'sql'   => "SELECT id_cliente AS id, nombre_cliente AS nombre, ciudad_cliente AS ciudad
+                            FROM tbl_clientes
+                            WHERE estado = 'activo' AND nombre_cliente LIKE ?
+                            ORDER BY nombre_cliente ASC LIMIT 30",
+            ],
+            'PSY' => [
+                'db'    => 'psyrisk',
+                'sql'   => "SELECT id, name AS nombre, city AS ciudad
+                            FROM companies
+                            WHERE tenant_id = 1 AND status = 'active' AND name LIKE ?
+                            ORDER BY name ASC LIMIT 30",
+            ],
+        ];
+
+        $cfg = $configByOrigen[$origen];
 
         $host = env('EXT_DB_HOST', '127.0.0.1');
         $port = (int) env('EXT_DB_PORT', 3306);
@@ -336,20 +361,14 @@ class BitacoraController extends BaseController
         $pass = env('EXT_DB_PASS', '');
 
         try {
-            $conn = new \mysqli($host, $user, $pass, $database, $port);
+            $conn = new \mysqli($host, $user, $pass, $cfg['db'], $port);
             if ($conn->connect_error) {
                 return $this->response->setJSON(['ok' => false, 'error' => 'Conexión BD externa', 'items' => []]);
             }
             $conn->set_charset('utf8mb4');
 
-            $like  = '%' . $conn->real_escape_string($q) . '%';
-            $stmt  = $conn->prepare("
-                SELECT id_cliente, nombre_cliente, ciudad_cliente
-                FROM tbl_clientes
-                WHERE estado = 'activo' AND nombre_cliente LIKE ?
-                ORDER BY nombre_cliente ASC
-                LIMIT 30
-            ");
+            $like = '%' . $conn->real_escape_string($q) . '%';
+            $stmt = $conn->prepare($cfg['sql']);
             $stmt->bind_param('s', $like);
             $stmt->execute();
             $res = $stmt->get_result();
@@ -357,9 +376,9 @@ class BitacoraController extends BaseController
             $items = [];
             while ($row = $res->fetch_assoc()) {
                 $items[] = [
-                    'id'     => (int) $row['id_cliente'],
-                    'nombre' => $row['nombre_cliente'],
-                    'ciudad' => $row['ciudad_cliente'] ?? '',
+                    'id'     => (int) $row['id'],
+                    'nombre' => $row['nombre'],
+                    'ciudad' => $row['ciudad'] ?? '',
                 ];
             }
             $stmt->close();
