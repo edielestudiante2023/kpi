@@ -439,6 +439,8 @@ $routes->group('rutinas', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->get('asignaciones', 'RutinasController::listAsignaciones');
     $routes->post('asignaciones/add', 'RutinasController::addAsignacionPost');
     $routes->get('asignaciones/delete/(:num)', 'RutinasController::deleteAsignacion/$1');
+    $routes->post('asignaciones/toggle/(:num)', 'RutinasController::toggleAsignacion/$1');
+    $routes->post('asignaciones/bulk', 'RutinasController::bulkAsignaciones');
 
     // Calendario
     $routes->get('calendario', 'RutinasController::calendario');

@@ -33,10 +33,25 @@
             <form method="post" action="<?= base_url('rutinas/actividades/edit/' . $actividad['id_actividad']) ?>">
                 <?= csrf_field() ?>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Nombre *</label>
-                    <input type="text" name="nombre" class="form-control" required
-                           value="<?= old('nombre', $actividad['nombre']) ?>">
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label fw-bold">Nombre *</label>
+                        <input type="text" name="nombre" class="form-control" required
+                               value="<?= old('nombre', $actividad['nombre']) ?>">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Categoria *</label>
+                        <input type="text" name="categoria" class="form-control" list="categorias-list" required
+                               value="<?= old('categoria', $actividad['categoria'] ?? 'General') ?>">
+                        <datalist id="categorias-list">
+                            <option value="Operativa">
+                            <option value="Comercial">
+                            <option value="SST">
+                            <option value="Bitacora">
+                            <option value="Reportes">
+                            <option value="General">
+                        </datalist>
+                    </div>
                 </div>
 
                 <div class="mb-3">

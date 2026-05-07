@@ -35,6 +35,7 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Nombre</th>
+                        <th>Categoria</th>
                         <th>Descripcion</th>
                         <th>Frecuencia</th>
                         <th>Peso</th>
@@ -43,11 +44,24 @@
                     </tr>
                 </thead>
                 <tbody>
+                <?php
+                $colorCategoria = function($cat) {
+                    $colors = ['Operativa'=>'primary','Comercial'=>'success','SST'=>'danger','Bitacora'=>'warning','Reportes'=>'info','General'=>'secondary'];
+                    return $colors[$cat] ?? 'dark';
+                };
+                ?>
                 <?php foreach ($actividades as $a): ?>
                     <tr>
                         <td><?= esc($a['nombre']) ?></td>
+                        <td><span class="badge bg-<?= $colorCategoria($a['categoria'] ?? 'General') ?>"><?= esc($a['categoria'] ?? 'General') ?></span></td>
                         <td><?= esc($a['descripcion'] ?? '-') ?></td>
-                        <td><span class="badge bg-info"><?= esc($a['frecuencia']) ?></span></td>
+                        <td>
+                            <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
+                                <span class="badge bg-info" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
+                            <?php else: ?>
+                                <span class="badge bg-info" data-bs-toggle="tooltip" title="Lunes a Viernes">📆 L-V</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= esc($a['peso']) ?></td>
                         <td>
                             <?= $a['activa']
@@ -76,6 +90,9 @@
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 <script>
 $(document).ready(function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+
     $('#tblActividades').DataTable({
         pageLength: 20,
         responsive: true,

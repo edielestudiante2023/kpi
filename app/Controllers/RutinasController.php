@@ -50,6 +50,7 @@ class RutinasController extends BaseController
     {
         $rules = [
             'nombre'    => 'required|max_length[255]',
+            'categoria' => 'permit_empty|max_length[100]',
             'descripcion' => 'permit_empty',
             'frecuencia'  => 'required|in_list[L-V,diaria]',
             'peso'        => 'required|decimal',
@@ -59,6 +60,7 @@ class RutinasController extends BaseController
         }
         $this->actividadModel->insert([
             'nombre'      => $this->request->getPost('nombre'),
+            'categoria'   => trim($this->request->getPost('categoria') ?: 'General'),
             'descripcion' => $this->request->getPost('descripcion'),
             'frecuencia'  => $this->request->getPost('frecuencia'),
             'peso'        => $this->request->getPost('peso'),
@@ -80,6 +82,7 @@ class RutinasController extends BaseController
     {
         $rules = [
             'nombre'    => 'required|max_length[255]',
+            'categoria' => 'permit_empty|max_length[100]',
             'descripcion' => 'permit_empty',
             'frecuencia'  => 'required|in_list[L-V,diaria]',
             'peso'        => 'required|decimal',
@@ -90,6 +93,7 @@ class RutinasController extends BaseController
         }
         $this->actividadModel->update($id, [
             'nombre'      => $this->request->getPost('nombre'),
+            'categoria'   => trim($this->request->getPost('categoria') ?: 'General'),
             'descripcion' => $this->request->getPost('descripcion'),
             'frecuencia'  => $this->request->getPost('frecuencia'),
             'peso'        => $this->request->getPost('peso'),
@@ -111,55 +115,141 @@ class RutinasController extends BaseController
     public function listAsignaciones()
     {
         $db = \Config\Database::connect();
-        $data['asignaciones'] = $db->query("
-            SELECT ra.id_asignacion, ra.activa,
-                   u.id_users, u.nombre_completo, u.correo,
-                   a.id_actividad, a.nombre AS actividad_nombre
-            FROM rutinas_asignaciones ra
-            JOIN users u ON u.id_users = ra.id_users
-            JOIN rutinas_actividades a ON a.id_actividad = ra.id_actividad
-            ORDER BY u.nombre_completo, a.nombre
-        ")->getResultArray();
+
+        // Filtros server-side
+        $fUser      = (int) ($this->request->getGet('usuario') ?: 0);
+        $fCategoria = trim((string) $this->request->getGet('categoria'));
+        $fFrecuencia = trim((string) $this->request->getGet('frecuencia'));
+        $fEstado    = $this->request->getGet('estado'); // '', '1', '0'
+
+        $builder = $db->table('rutinas_asignaciones ra')
+            ->select('ra.id_asignacion, ra.activa,
+                      u.id_users, u.nombre_completo, u.correo,
+                      a.id_actividad, a.nombre AS actividad_nombre,
+                      a.categoria, a.frecuencia, a.peso')
+            ->join('users u', 'u.id_users = ra.id_users')
+            ->join('rutinas_actividades a', 'a.id_actividad = ra.id_actividad')
+            ->orderBy('u.nombre_completo, a.categoria, a.nombre');
+
+        if ($fUser > 0)         $builder->where('ra.id_users', $fUser);
+        if ($fCategoria !== '') $builder->where('a.categoria', $fCategoria);
+        if ($fFrecuencia !== '') $builder->where('a.frecuencia', $fFrecuencia);
+        if ($fEstado === '1')   $builder->where('ra.activa', 1);
+        if ($fEstado === '0')   $builder->where('ra.activa', 0);
+
+        $data['asignaciones'] = $builder->get()->getResultArray();
 
         $data['usuarios']    = $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll();
-        $data['actividades'] = $this->actividadModel->where('activa', 1)->orderBy('nombre')->findAll();
+        $data['actividades'] = $this->actividadModel->where('activa', 1)->orderBy('categoria, nombre')->findAll();
+
+        // Categorías únicas para el filtro
+        $cats = $db->query("SELECT DISTINCT categoria FROM rutinas_actividades WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria")->getResultArray();
+        $data['categorias'] = array_column($cats, 'categoria');
+
+        // Filtros activos para mostrar en la vista
+        $data['filtros'] = [
+            'usuario' => $fUser, 'categoria' => $fCategoria,
+            'frecuencia' => $fFrecuencia, 'estado' => $fEstado,
+        ];
 
         return view('rutinas/list_asignaciones', $data);
     }
 
     public function addAsignacionPost()
     {
-        $idUsers     = $this->request->getPost('id_users');
+        $idUsers     = $this->request->getPost('id_users'); // puede ser array o int
         $actividades = $this->request->getPost('actividades'); // array de ids
 
         if (empty($idUsers) || empty($actividades)) {
-            return redirect()->back()->with('error', 'Selecciona usuario y al menos una actividad.');
+            return redirect()->back()->with('error', 'Selecciona al menos un usuario y una actividad.');
         }
 
+        // Soportar N usuarios x N actividades
+        $idUsers = is_array($idUsers) ? $idUsers : [$idUsers];
+
         $insertadas = 0;
-        foreach ($actividades as $idAct) {
-            $existe = $this->asignacionModel
-                ->where('id_users', $idUsers)
-                ->where('id_actividad', $idAct)
-                ->first();
-            if (! $existe) {
-                $this->asignacionModel->insert([
-                    'id_users'     => $idUsers,
-                    'id_actividad' => $idAct,
-                    'activa'       => 1,
-                ]);
-                $insertadas++;
+        foreach ($idUsers as $idU) {
+            $idU = (int) $idU;
+            if (!$idU) continue;
+            foreach ($actividades as $idAct) {
+                $existe = $this->asignacionModel
+                    ->where('id_users', $idU)
+                    ->where('id_actividad', $idAct)
+                    ->first();
+                if (! $existe) {
+                    $this->asignacionModel->insert([
+                        'id_users'     => $idU,
+                        'id_actividad' => $idAct,
+                        'activa'       => 1,
+                    ]);
+                    $insertadas++;
+                }
             }
         }
 
         return redirect()->to('/rutinas/asignaciones')
-            ->with('success', "$insertadas asignación(es) creada(s).");
+            ->with('success', "$insertadas asignacion(es) creada(s).");
     }
 
     public function deleteAsignacion($id)
     {
         $this->asignacionModel->delete($id);
-        return redirect()->to('/rutinas/asignaciones')->with('success', 'Asignación eliminada.');
+        return redirect()->to('/rutinas/asignaciones')->with('success', 'Asignacion eliminada.');
+    }
+
+    /**
+     * Toggle inline de activa/inactiva (vía AJAX o link directo)
+     */
+    public function toggleAsignacion($id)
+    {
+        $a = $this->asignacionModel->find($id);
+        if (! $a) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No existe']);
+            }
+            return redirect()->to('/rutinas/asignaciones')->with('error', 'Asignacion no existe.');
+        }
+        $nueva = ((int) $a['activa']) ? 0 : 1;
+        $this->asignacionModel->update($id, ['activa' => $nueva]);
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => true, 'activa' => $nueva]);
+        }
+        return redirect()->to('/rutinas/asignaciones')->with('success', 'Estado actualizado.');
+    }
+
+    /**
+     * Bulk: eliminar / activar / desactivar varias asignaciones
+     */
+    public function bulkAsignaciones()
+    {
+        $ids    = $this->request->getPost('ids'); // array
+        $accion = $this->request->getPost('accion'); // delete|activar|desactivar
+
+        if (empty($ids) || !is_array($ids)) {
+            return redirect()->to('/rutinas/asignaciones')->with('error', 'No se selecciono ninguna asignacion.');
+        }
+        $ids = array_map('intval', $ids);
+        $ids = array_filter($ids, fn($v) => $v > 0);
+
+        $count = 0;
+        if ($accion === 'delete') {
+            $this->asignacionModel->whereIn('id_asignacion', $ids)->delete();
+            $count = count($ids);
+            $msg = "$count asignacion(es) eliminada(s).";
+        } elseif ($accion === 'activar') {
+            $this->asignacionModel->whereIn('id_asignacion', $ids)->set(['activa' => 1])->update();
+            $count = count($ids);
+            $msg = "$count asignacion(es) activadas.";
+        } elseif ($accion === 'desactivar') {
+            $this->asignacionModel->whereIn('id_asignacion', $ids)->set(['activa' => 0])->update();
+            $count = count($ids);
+            $msg = "$count asignacion(es) desactivadas.";
+        } else {
+            return redirect()->to('/rutinas/asignaciones')->with('error', 'Accion invalida.');
+        }
+
+        return redirect()->to('/rutinas/asignaciones')->with('success', $msg);
     }
 
     // =========================================================
@@ -174,7 +264,7 @@ class RutinasController extends BaseController
 
         // Días hábiles (L-V) del mes
         $diasHabiles = [];
-        $totalDias = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
+        $totalDias = (int) date('t', strtotime(sprintf('%04d-%02d-01', $anio, $mes)));
         for ($d = 1; $d <= $totalDias; $d++) {
             $fecha = sprintf('%04d-%02d-%02d', $anio, $mes, $d);
             $dow = (int) date('N', strtotime($fecha)); // 1=Lun .. 5=Vie
@@ -268,10 +358,7 @@ class RutinasController extends BaseController
                 : 0;
         }
 
-        // Acumulado mensual
-        $totalPuntaje = array_sum($puntajeDiario);
-        $cantDias = count(array_filter($puntajeDiario, fn($v) => $v > 0));
-        // Solo promediar los días que ya pasaron (hasta hoy)
+        // Acumulado mensual: solo promediar los días que ya pasaron (hasta hoy)
         $hoy = date('Y-m-d');
         $diasPasados = 0;
         $sumaPasados = 0;
