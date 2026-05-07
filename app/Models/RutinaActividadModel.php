@@ -9,6 +9,7 @@ class RutinaActividadModel extends Model
 
     protected $allowedFields = [
         'nombre',
+        'categoria',
         'descripcion',
         'frecuencia',
         'peso',
