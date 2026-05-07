@@ -217,11 +217,13 @@ class NotificadorBitacora
             $horaFin = $act['hora_fin'] ? date('h:i A', strtotime($act['hora_fin'])) : 'En progreso';
             $duracion = $act['duracion_minutos'] ? $this->formatMinutosHoras((float) $act['duracion_minutos']) : '-';
             $ccNombre = $act['centro_costo_nombre'] ?? '-';
+            $cliente  = !empty($act['cliente']) ? $act['cliente'] : 'FRAMEWORK';
 
             $filasHTML .= "
                 <tr>
                     <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center;'>{$act['numero_actividad']}</td>
                     <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($act['descripcion']) . "</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($cliente) . "</td>
                     <td style='padding: 8px; border-bottom: 1px solid #eee;'>" . htmlspecialchars($ccNombre) . "</td>
                     <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center;'>{$horaInicio}</td>
                     <td style='padding: 8px; border-bottom: 1px solid #eee; text-align: center;'>{$horaFin}</td>
@@ -263,6 +265,7 @@ class NotificadorBitacora
                         <tr style='background: #2c3e50; color: white;'>
                             <th style='padding: 10px; text-align: center;'>#</th>
                             <th style='padding: 10px;'>Descripción</th>
+                            <th style='padding: 10px;'>Cliente</th>
                             <th style='padding: 10px;'>Centro Costo</th>
                             <th style='padding: 10px; text-align: center;'>Inicio</th>
                             <th style='padding: 10px; text-align: center;'>Fin</th>
@@ -274,7 +277,7 @@ class NotificadorBitacora
                     </tbody>
                     <tfoot>
                         <tr style='background: #e9ecef;'>
-                            <td colspan='5' style='padding: 10px; text-align: right; font-weight: bold;'>TOTAL:</td>
+                            <td colspan='6' style='padding: 10px; text-align: right; font-weight: bold;'>TOTAL:</td>
                             <td style='padding: 10px; text-align: center; font-weight: bold; color: #198754; font-size: 15px;'>{$totalHoras}</td>
                         </tr>
                     </tfoot>

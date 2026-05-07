@@ -198,6 +198,16 @@
 <body>
 
     <!-- Header -->
+    <?php
+        // Dashboard principal según rol (mismo switch que AuthController::index)
+        $rolHeader   = (int) $session->get('id_roles');
+        $dashboardUrl = match ($rolHeader) {
+            1       => 'superadmin/superadmindashboard',
+            2       => 'admin/admindashboard',
+            3       => 'jefatura/jefaturadashboard',
+            default => 'trabajador/trabajadordashboard',
+        };
+    ?>
     <div class="bitacora-header">
         <div class="d-flex align-items-center gap-2">
             <img src="<?= base_url('img/cycloid_sqe.jpg') ?>" alt="Logo" class="logo rounded">
@@ -205,7 +215,11 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="user-name d-none d-sm-inline"><?= esc($session->get('nombre_completo')) ?></span>
-            <a href="<?= base_url('logout') ?>" class="btn btn-sm btn-outline-light">
+            <a href="<?= base_url($dashboardUrl) ?>" class="btn btn-sm btn-outline-light" title="Dashboard Principal">
+                <i class="bi bi-grid-1x2"></i>
+                <span class="d-none d-sm-inline ms-1">Dashboard</span>
+            </a>
+            <a href="<?= base_url('logout') ?>" class="btn btn-sm btn-outline-light" title="Cerrar sesión">
                 <i class="bi bi-box-arrow-right"></i>
             </a>
         </div>

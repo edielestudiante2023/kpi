@@ -298,6 +298,7 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->get('actividad-activa', 'BitacoraController::actividadActiva');
     $routes->get('actividades-hoy', 'BitacoraController::actividadesHoy');
     $routes->get('equipo-en-progreso', 'BitacoraController::equipoEnProgreso');
+    $routes->get('clientes/buscar', 'BitacoraController::buscarClientes');
     $routes->get('historial', 'BitacoraController::historial');
     $routes->get('historial/(:segment)', 'BitacoraController::historial/$1');
     $routes->get('resumen', 'BitacoraController::resumen');

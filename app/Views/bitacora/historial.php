@@ -56,6 +56,9 @@
                     <div class="flex-grow-1">
                         <div class="fw-bold small"><?= esc($act['descripcion']) ?></div>
                         <div class="text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-person-badge"></i> <?= esc($act['cliente'] ?? 'FRAMEWORK') ?>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.75rem;">
                             <i class="bi bi-building"></i> <?= esc($act['centro_costo_nombre'] ?? '') ?>
                         </div>
                         <div class="text-muted" style="font-size: 0.75rem;">

@@ -14,6 +14,7 @@ class BitacoraActividadModel extends Model
         'id_usuario',
         'numero_actividad',
         'descripcion',
+        'cliente',
         'id_centro_costo',
         'fecha',
         'hora_inicio',
@@ -149,6 +150,7 @@ class BitacoraActividadModel extends Model
                 WEEK(ba.fecha, 1)                 AS week_num,
                 COALESCE(cc.nombre, 'Sin centro') AS centro_costo_nombre,
                 ba.descripcion,
+                COALESCE(NULLIF(ba.cliente, ''), 'FRAMEWORK') AS cliente,
                 SUM(CASE WHEN ba.estado = 'finalizada' THEN ba.duracion_minutos ELSE 0 END) AS total_minutos,
                 COUNT(*) AS num_actividades
             FROM bitacora_actividades ba
@@ -157,7 +159,7 @@ class BitacoraActividadModel extends Model
             WHERE YEAR(ba.fecha) = ?
               AND MONTH(ba.fecha) = ?
               {$userFilter}
-            GROUP BY ba.id_usuario, u.nombre_completo, ba.fecha, ba.id_centro_costo, cc.nombre, ba.descripcion, WEEK(ba.fecha, 1)
+            GROUP BY ba.id_usuario, u.nombre_completo, ba.fecha, ba.id_centro_costo, cc.nombre, ba.descripcion, ba.cliente, WEEK(ba.fecha, 1)
             ORDER BY ba.fecha ASC
         ", $params)->getResultArray();
     }
@@ -322,6 +324,7 @@ class BitacoraActividadModel extends Model
             SELECT
                 ba.id_bitacora,
                 ba.descripcion,
+                ba.cliente,
                 ba.hora_inicio,
                 ba.id_centro_costo,
                 u.nombre_completo,
