@@ -17,10 +17,37 @@
 <?= $this->include('partials/nav') ?>
 
 <div class="container-fluid py-4">
-    <div class="d-flex align-items-center gap-2 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
         <?= view('components/back_to_dashboard') ?>
         <h1 class="h3 mb-0"><i class="bi bi-person-plus me-2"></i>Asignaciones de Rutina</h1>
         <span class="badge bg-secondary ms-2"><?= count($asignaciones) ?> registros</span>
+
+        <!-- Toggle vista lista / agrupada por usuario -->
+        <?php
+        $qsLista = http_build_query(array_filter([
+            'usuario' => $filtros['usuario'] ?? '', 'categoria' => $filtros['categoria'] ?? '',
+            'frecuencia' => $filtros['frecuencia'] ?? '', 'estado' => $filtros['estado'] ?? '',
+            'vista' => 'lista',
+        ]));
+        $qsUsuarios = http_build_query(array_filter([
+            'usuario' => $filtros['usuario'] ?? '', 'categoria' => $filtros['categoria'] ?? '',
+            'frecuencia' => $filtros['frecuencia'] ?? '', 'estado' => $filtros['estado'] ?? '',
+            'vista' => 'usuarios',
+        ]));
+        $vistaActual = $filtros['vista'] ?? 'lista';
+        ?>
+        <div class="btn-group btn-group-sm ms-auto" role="group">
+            <a href="<?= base_url('rutinas/asignaciones?'.$qsLista) ?>"
+               class="btn btn-outline-primary <?= $vistaActual === 'lista' ? 'active' : '' ?>"
+               data-bs-toggle="tooltip" title="Vista de lista (tabla con filas)">
+                <i class="bi bi-list-ul me-1"></i> Lista
+            </a>
+            <a href="<?= base_url('rutinas/asignaciones?'.$qsUsuarios) ?>"
+               class="btn btn-outline-primary <?= $vistaActual === 'usuarios' ? 'active' : '' ?>"
+               data-bs-toggle="tooltip" title="Agrupada por usuario (cards expandibles)">
+                <i class="bi bi-people-fill me-1"></i> Por usuario
+            </a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
@@ -184,74 +211,175 @@
         </div>
     </div>
 
-    <!-- Tabla de asignaciones -->
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <table id="tblAsignaciones" class="table table-striped table-hover nowrap" style="width:100%">
-                <thead class="table-dark">
-                    <tr>
-                        <th style="width:40px;"><input type="checkbox" id="selectAllRows" class="form-check-input"></th>
-                        <th>Usuario</th>
-                        <th>Categoria</th>
-                        <th>Actividad</th>
-                        <th>Frecuencia</th>
-                        <th>Estado</th>
-                        <th class="text-center" style="width:80px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php
-                $colorCategoria = function($cat) {
-                    $colors = ['Operativa'=>'primary','Comercial'=>'success','SST'=>'danger','Bitacora'=>'warning','Reportes'=>'info','General'=>'secondary'];
-                    return $colors[$cat] ?? 'dark';
-                };
-                ?>
-                <?php foreach ($asignaciones as $a): ?>
-                    <tr data-id="<?= $a['id_asignacion'] ?>">
-                        <td>
-                            <input type="checkbox" class="form-check-input row-cb" value="<?= $a['id_asignacion'] ?>">
-                        </td>
-                        <td>
-                            <strong><?= esc($a['nombre_completo']) ?></strong>
-                            <br><small class="text-muted"><?= esc($a['correo']) ?></small>
-                        </td>
-                        <td>
-                            <span class="badge bg-<?= $colorCategoria($a['categoria'] ?? 'General') ?>">
-                                <?= esc($a['categoria'] ?? 'General') ?>
-                            </span>
-                        </td>
-                        <td><?= esc($a['actividad_nombre']) ?></td>
-                        <td>
-                            <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
-                                <span class="badge bg-info" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
-                            <?php else: ?>
-                                <span class="badge bg-info" data-bs-toggle="tooltip" title="Lunes a Viernes">📆 L-V</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input toggle-activa" type="checkbox"
-                                       data-id="<?= $a['id_asignacion'] ?>"
-                                       <?= $a['activa'] ? 'checked' : '' ?>>
-                                <label class="form-check-label small">
-                                    <?= $a['activa'] ? '<span class="text-success fw-bold">Activa</span>' : '<span class="text-muted">Inactiva</span>' ?>
-                                </label>
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <a href="<?= base_url('rutinas/asignaciones/delete/' . $a['id_asignacion']) ?>"
-                               class="btn btn-sm btn-outline-danger"
-                               data-bs-toggle="tooltip" title="Eliminar"
-                               onclick="return confirm('Quitar esta asignacion?')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+    <?php
+    $colorCategoria = function($cat) {
+        $colors = ['Operativa'=>'primary','Comercial'=>'success','SST'=>'danger','Bitacora'=>'warning','Reportes'=>'info','General'=>'secondary'];
+        return $colors[$cat] ?? 'dark';
+    };
+    $renderCumplimiento = function($pct, $done, $esp) {
+        $color = $pct >= 80 ? 'success' : ($pct >= 50 ? 'warning' : 'danger');
+        $textColor = $pct >= 50 && $pct < 80 ? 'text-dark' : 'text-white';
+        return '<div class="progress" style="height:18px;min-width:90px;" data-bs-toggle="tooltip" title="'.$done.' de '.$esp.' días esperados (mes actual)">
+            <div class="progress-bar bg-'.$color.' '.$textColor.'" role="progressbar" style="width:'.$pct.'%;font-size:0.7rem;">
+                '.$pct.'%
+            </div>
+        </div>';
+    };
+    ?>
+
+    <?php if ($vistaActual === 'usuarios'): ?>
+        <!-- ═══ VISTA AGRUPADA POR USUARIO ═══ -->
+        <?php
+        $porUsuario = [];
+        foreach ($asignaciones as $a) {
+            $porUsuario[$a['id_users']]['user'] = $a;
+            $porUsuario[$a['id_users']]['rutinas'][] = $a;
+        }
+        $mesLabel = strftime('%B %Y') ?: date('m/Y');
+        ?>
+        <div class="alert alert-info py-2 mb-3 small">
+            <i class="bi bi-info-circle me-1"></i> Cumplimiento del mes actual (<?= esc($mesActual) ?>) calculado hasta hoy.
         </div>
-    </div>
+        <div class="row g-3">
+            <?php foreach ($porUsuario as $idU => $datos):
+                $u = $datos['user'];
+                $rutinas = $datos['rutinas'];
+                $totalRutinas = count($rutinas);
+                $activas = count(array_filter($rutinas, fn($r) => $r['activa']));
+                $promedio = $totalRutinas > 0 ? round(array_sum(array_column($rutinas, 'cumplimiento_pct')) / $totalRutinas) : 0;
+                $colorProm = $promedio >= 80 ? 'success' : ($promedio >= 50 ? 'warning' : 'danger');
+            ?>
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-<?= $colorProm ?> bg-opacity-10">
+                        <div>
+                            <strong><?= esc($u['nombre_completo']) ?></strong>
+                            <br><small class="text-muted"><?= esc($u['correo']) ?></small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary"><?= $totalRutinas ?> rutinas (<?= $activas ?> activas)</span>
+                            <br>
+                            <span class="badge bg-<?= $colorProm ?> mt-1">Cumplimiento: <?= $promedio ?>%</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <table class="table table-sm table-hover mb-0" style="font-size:0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th style="width:30px;"><input type="checkbox" class="form-check-input cb-grupo" data-user="<?= $idU ?>"></th>
+                                    <th>Categoria</th>
+                                    <th>Actividad</th>
+                                    <th>Cumplim.</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($rutinas as $a): ?>
+                                <tr>
+                                    <td><input type="checkbox" class="form-check-input row-cb" value="<?= $a['id_asignacion'] ?>" data-grupo="<?= $idU ?>"></td>
+                                    <td><span class="badge bg-<?= $colorCategoria($a['categoria'] ?? 'General') ?>"><?= esc($a['categoria'] ?? 'General') ?></span></td>
+                                    <td><?= esc($a['actividad_nombre']) ?>
+                                        <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
+                                            <span class="text-muted small" data-bs-toggle="tooltip" title="Diaria">📅</span>
+                                        <?php else: ?>
+                                            <span class="text-muted small" data-bs-toggle="tooltip" title="L-V">📆</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= $renderCumplimiento($a['cumplimiento_pct'] ?? 0, $a['cumplimiento_done'] ?? 0, $a['cumplimiento_esp'] ?? 0) ?></td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input toggle-activa" type="checkbox"
+                                                   data-id="<?= $a['id_asignacion'] ?>"
+                                                   <?= $a['activa'] ? 'checked' : '' ?>>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="<?= base_url('rutinas/asignaciones/delete/' . $a['id_asignacion']) ?>"
+                                           class="btn btn-sm btn-outline-danger"
+                                           data-bs-toggle="tooltip" title="Eliminar"
+                                           onclick="return confirm('Quitar esta asignacion?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+    <?php else: ?>
+        <!-- ═══ VISTA LISTA (TABLA) ═══ -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <table id="tblAsignaciones" class="table table-striped table-hover nowrap" style="width:100%">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:40px;"><input type="checkbox" id="selectAllRows" class="form-check-input"></th>
+                            <th>Usuario</th>
+                            <th>Categoria</th>
+                            <th>Actividad</th>
+                            <th>Frecuencia</th>
+                            <th data-bs-toggle="tooltip" title="% cumplimiento del mes actual hasta hoy">Cumplim. (<?= esc($mesActual) ?>)</th>
+                            <th>Estado</th>
+                            <th class="text-center" style="width:80px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($asignaciones as $a): ?>
+                        <tr data-id="<?= $a['id_asignacion'] ?>">
+                            <td>
+                                <input type="checkbox" class="form-check-input row-cb" value="<?= $a['id_asignacion'] ?>">
+                            </td>
+                            <td>
+                                <strong><?= esc($a['nombre_completo']) ?></strong>
+                                <br><small class="text-muted"><?= esc($a['correo']) ?></small>
+                            </td>
+                            <td>
+                                <span class="badge bg-<?= $colorCategoria($a['categoria'] ?? 'General') ?>">
+                                    <?= esc($a['categoria'] ?? 'General') ?>
+                                </span>
+                            </td>
+                            <td><?= esc($a['actividad_nombre']) ?></td>
+                            <td>
+                                <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
+                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
+                                <?php else: ?>
+                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="Lunes a Viernes">📆 L-V</span>
+                                <?php endif; ?>
+                            </td>
+                            <td data-order="<?= $a['cumplimiento_pct'] ?? 0 ?>">
+                                <?= $renderCumplimiento($a['cumplimiento_pct'] ?? 0, $a['cumplimiento_done'] ?? 0, $a['cumplimiento_esp'] ?? 0) ?>
+                            </td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input toggle-activa" type="checkbox"
+                                           data-id="<?= $a['id_asignacion'] ?>"
+                                           <?= $a['activa'] ? 'checked' : '' ?>>
+                                    <label class="form-check-label small">
+                                        <?= $a['activa'] ? '<span class="text-success fw-bold">Activa</span>' : '<span class="text-muted">Inactiva</span>' ?>
+                                    </label>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <a href="<?= base_url('rutinas/asignaciones/delete/' . $a['id_asignacion']) ?>"
+                                   class="btn btn-sm btn-outline-danger"
+                                   data-bs-toggle="tooltip" title="Eliminar"
+                                   onclick="return confirm('Quitar esta asignacion?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -264,20 +392,23 @@ $(document).ready(function() {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
 
-    // DataTable
-    var table = $('#tblAsignaciones').DataTable({
-        pageLength: 25,
-        responsive: true,
-        order: [[1, 'asc'], [2, 'asc']],
-        columnDefs: [
-            { orderable: false, targets: [0, 5, 6] }
-        ],
-        language: {
-            search: "Buscar en pagina:", lengthMenu: "Mostrar _MENU_",
-            info: "_START_ a _END_ de _TOTAL_", emptyTable: "Sin asignaciones",
-            paginate: { previous: "Ant", next: "Sig" }
-        }
-    });
+    // DataTable (solo en vista lista)
+    var table = null;
+    if ($('#tblAsignaciones').length) {
+        table = $('#tblAsignaciones').DataTable({
+            pageLength: 25,
+            responsive: true,
+            order: [[1, 'asc'], [2, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: [0, 6, 7] }
+            ],
+            language: {
+                search: "Buscar en pagina:", lengthMenu: "Mostrar _MENU_",
+                info: "_START_ a _END_ de _TOTAL_", emptyTable: "Sin asignaciones",
+                paginate: { previous: "Ant", next: "Sig" }
+            }
+        });
+    }
 
     // === Form: select all users / actividades ===
     $('#selectAllUsers').on('change', function() {
@@ -306,10 +437,22 @@ $(document).ready(function() {
 
     $('#selectAllRows').on('change', function() {
         var checked = this.checked;
-        // Solo afectar filas visibles en la página actual
-        table.rows({ page: 'current' }).every(function() {
-            $(this.node()).find('.row-cb').prop('checked', checked);
-        });
+        if (table) {
+            // Solo afectar filas visibles en la página actual
+            table.rows({ page: 'current' }).every(function() {
+                $(this.node()).find('.row-cb').prop('checked', checked);
+            });
+        } else {
+            $('.row-cb').prop('checked', checked);
+        }
+        actualizarBulkBar();
+    });
+
+    // Checkbox de grupo (vista usuarios) - selecciona todas las del usuario
+    $(document).on('change', '.cb-grupo', function() {
+        var userId = $(this).data('user');
+        var checked = this.checked;
+        $('.row-cb[data-grupo="' + userId + '"]').prop('checked', checked);
         actualizarBulkBar();
     });
 

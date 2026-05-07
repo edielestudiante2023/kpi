@@ -121,6 +121,7 @@ class RutinasController extends BaseController
         $fCategoria = trim((string) $this->request->getGet('categoria'));
         $fFrecuencia = trim((string) $this->request->getGet('frecuencia'));
         $fEstado    = $this->request->getGet('estado'); // '', '1', '0'
+        $vista      = $this->request->getGet('vista') ?: 'lista'; // lista | usuarios
 
         $builder = $db->table('rutinas_asignaciones ra')
             ->select('ra.id_asignacion, ra.activa,
@@ -137,22 +138,96 @@ class RutinasController extends BaseController
         if ($fEstado === '1')   $builder->where('ra.activa', 1);
         if ($fEstado === '0')   $builder->where('ra.activa', 0);
 
-        $data['asignaciones'] = $builder->get()->getResultArray();
+        $asignaciones = $builder->get()->getResultArray();
 
-        $data['usuarios']    = $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll();
-        $data['actividades'] = $this->actividadModel->where('activa', 1)->orderBy('categoria, nombre')->findAll();
+        // ── % CUMPLIMIENTO DEL MES ACTUAL ──
+        // Calcular días hábiles transcurridos del mes actual
+        $hoy = date('Y-m-d');
+        $primerDiaMes = date('Y-m-01');
+        $cumplimiento = $this->calcularCumplimientoMes($db, $primerDiaMes, $hoy, $asignaciones);
+
+        // Inyectar cumplimiento en cada asignación
+        foreach ($asignaciones as &$a) {
+            $key = $a['id_users'] . '_' . $a['id_actividad'];
+            $a['cumplimiento_pct']  = $cumplimiento[$key]['pct']  ?? 0;
+            $a['cumplimiento_done'] = $cumplimiento[$key]['done'] ?? 0;
+            $a['cumplimiento_esp']  = $cumplimiento[$key]['esperados'] ?? 0;
+        }
+        unset($a);
+
+        $data['asignaciones'] = $asignaciones;
+        $data['usuarios']     = $this->userModel->where('activo', 1)->orderBy('nombre_completo')->findAll();
+        $data['actividades']  = $this->actividadModel->where('activa', 1)->orderBy('categoria, nombre')->findAll();
 
         // Categorías únicas para el filtro
         $cats = $db->query("SELECT DISTINCT categoria FROM rutinas_actividades WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria")->getResultArray();
         $data['categorias'] = array_column($cats, 'categoria');
 
-        // Filtros activos para mostrar en la vista
+        // Filtros activos
         $data['filtros'] = [
             'usuario' => $fUser, 'categoria' => $fCategoria,
-            'frecuencia' => $fFrecuencia, 'estado' => $fEstado,
+            'frecuencia' => $fFrecuencia, 'estado' => $fEstado, 'vista' => $vista,
         ];
 
+        // Mes que se está midiendo (para mostrar en vista)
+        $data['mesActual'] = strftime('%B %Y', strtotime($hoy)) ?: date('m/Y', strtotime($hoy));
+
         return view('rutinas/list_asignaciones', $data);
+    }
+
+    /**
+     * Calcula % cumplimiento del mes (hasta hoy) por user+actividad
+     * Para frecuencia L-V solo cuenta días hábiles, para 'diaria' todos los días
+     */
+    private function calcularCumplimientoMes(\CodeIgniter\Database\BaseConnection $db, string $desde, string $hasta, array $asignaciones): array
+    {
+        if (empty($asignaciones)) return [];
+
+        // Días totales y hábiles entre desde y hasta (inclusivo)
+        $diasTotales = 0;
+        $diasHabiles = 0;
+        $cursor = strtotime($desde);
+        $fin = strtotime($hasta);
+        while ($cursor <= $fin) {
+            $diasTotales++;
+            $dow = (int) date('N', $cursor);
+            if ($dow <= 5) $diasHabiles++;
+            $cursor += 86400;
+        }
+
+        // IDs únicos para query
+        $userIds = array_unique(array_column($asignaciones, 'id_users'));
+        $actIds  = array_unique(array_column($asignaciones, 'id_actividad'));
+        if (empty($userIds) || empty($actIds)) return [];
+
+        // Conteo de registros completados por user+actividad en el rango
+        $rows = $db->table('rutinas_registros')
+            ->select('id_users, id_actividad, COUNT(*) as completados')
+            ->where('completada', 1)
+            ->where('fecha >=', $desde)
+            ->where('fecha <=', $hasta)
+            ->whereIn('id_users', $userIds)
+            ->whereIn('id_actividad', $actIds)
+            ->groupBy('id_users, id_actividad')
+            ->get()->getResultArray();
+
+        $regs = [];
+        foreach ($rows as $r) {
+            $regs[$r['id_users'].'_'.$r['id_actividad']] = (int) $r['completados'];
+        }
+
+        // Calcular % por asignación según frecuencia
+        $resultado = [];
+        foreach ($asignaciones as $a) {
+            $key = $a['id_users'].'_'.$a['id_actividad'];
+            $esperados = ($a['frecuencia'] === 'diaria') ? $diasTotales : $diasHabiles;
+            $done = $regs[$key] ?? 0;
+            $pct = $esperados > 0 ? round(($done / $esperados) * 100) : 0;
+            if ($pct > 100) $pct = 100;
+            $resultado[$key] = ['done' => $done, 'esperados' => $esperados, 'pct' => $pct];
+        }
+
+        return $resultado;
     }
 
     public function addAsignacionPost()
