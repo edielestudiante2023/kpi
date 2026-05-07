@@ -18,8 +18,11 @@ $tieneActiva = !empty($actividadActiva);
                     Actividad <?= $actividadActiva['numero_actividad'] ?> en progreso
                 </div>
                 <div class="fw-bold mb-2"><?= esc($actividadActiva['descripcion']) ?></div>
-                <div class="text-muted small mb-2">
+                <div class="text-muted small mb-1">
                     <i class="bi bi-building"></i> <?= esc($actividadActiva['centro_costo_nombre'] ?? '') ?>
+                </div>
+                <div class="text-muted small mb-2">
+                    <i class="bi bi-person-badge"></i> <?= esc($actividadActiva['cliente'] ?? 'FRAMEWORK') ?>
                 </div>
 
                 <button class="btn btn-sm w-100 mb-3" style="background-color:#6f42c1;color:#fff;" id="btnDescartar"
@@ -72,6 +75,51 @@ $tieneActiva = !empty($actividadActiva);
                     </div>
                 </div>
 
+                <!-- ===== Cliente ===== -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Cliente</label>
+                    <div class="text-muted small mb-2" style="font-size:0.75rem;">
+                        Indique el cliente para el cual se está trabajando.
+                        Si es una actividad <strong>transversal</strong>, seleccione FRAMEWORK.
+                    </div>
+
+                    <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Tipo cliente">
+                        <input type="radio" class="btn-check" name="tipoCliente" id="tipoFramework" value="framework" checked>
+                        <label class="btn btn-outline-secondary" for="tipoFramework">
+                            <i class="bi bi-diagram-3"></i> FRAMEWORK
+                        </label>
+
+                        <input type="radio" class="btn-check" name="tipoCliente" id="tipoActivo" value="activo">
+                        <label class="btn btn-outline-success" for="tipoActivo">
+                            <i class="bi bi-building-check"></i> Activo
+                        </label>
+
+                        <input type="radio" class="btn-check" name="tipoCliente" id="tipoProspecto" value="prospecto">
+                        <label class="btn btn-outline-warning" for="tipoProspecto">
+                            <i class="bi bi-search"></i> Prospecto
+                        </label>
+                    </div>
+
+                    <!-- Modo Activo: origen + select remoto -->
+                    <div id="bloqueClienteActivo" class="d-none">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-sm" id="selOrigenCliente" style="max-width: 165px;">
+                                <option value="PH">Propiedad Horizontal</option>
+                                <option value="SST">Empresas SST</option>
+                            </select>
+                            <select class="form-select form-select-sm flex-grow-1" id="selClienteActivo">
+                                <option value="">Buscar cliente...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Modo Prospecto: input texto libre -->
+                    <div id="bloqueClienteProspecto" class="d-none">
+                        <input type="text" class="form-control form-control-sm" id="txtClienteProspecto"
+                               placeholder="Nombre del cliente prospecto" maxlength="150">
+                    </div>
+                </div>
+
                 <button class="btn btn-success btn-lg w-100" id="btnIniciar">
                     <i class="bi bi-play-circle me-1"></i> Iniciar
                 </button>
@@ -121,6 +169,9 @@ $tieneActiva = !empty($actividadActiva);
                     <span class="num"><?= $act['numero_actividad'] ?></span>
                     <div class="flex-grow-1">
                         <div class="fw-bold small"><?= esc($act['descripcion']) ?></div>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-person-badge"></i> <?= esc($act['cliente'] ?? 'FRAMEWORK') ?>
+                        </div>
                         <div class="text-muted" style="font-size: 0.75rem;">
                             <i class="bi bi-building"></i> <?= esc($act['centro_costo_nombre'] ?? '') ?>
                         </div>
@@ -201,6 +252,74 @@ $tieneActiva = !empty($actividadActiva);
             allowClear: true,
             width: '100%'
         });
+    }
+
+    // ---- Selector híbrido de Cliente (FRAMEWORK / Activo / Prospecto) ----
+    function inicializarSelectClientes(selectId) {
+        const $sel = $('#' + selectId);
+        if (!$sel.length || $sel.data('select2-initialized')) return;
+        $sel.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Buscar cliente...',
+            allowClear: true,
+            minimumInputLength: 2,
+            language: {
+                inputTooShort: function() { return 'Escribe al menos 2 letras...'; },
+                searching:     function() { return 'Buscando...'; },
+                noResults:     function() { return 'Sin coincidencias'; },
+                errorLoading:  function() { return 'Error al buscar'; }
+            },
+            ajax: {
+                url: BASE + 'bitacora/clientes/buscar',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    const origen = $('#selOrigenCliente').val() || 'PH';
+                    return { q: params.term || '', origen: origen };
+                },
+                processResults: function(data) {
+                    const items = (data && data.items) ? data.items : [];
+                    return {
+                        results: items.map(function(it) {
+                            return {
+                                id: it.nombre,
+                                text: it.nombre + (it.ciudad ? ' (' + it.ciudad + ')' : '')
+                            };
+                        })
+                    };
+                }
+            }
+        });
+        $sel.data('select2-initialized', true);
+    }
+
+    function actualizarVisibilidadCliente() {
+        const tipo = $('input[name="tipoCliente"]:checked').val();
+        $('#bloqueClienteActivo').toggleClass('d-none', tipo !== 'activo');
+        $('#bloqueClienteProspecto').toggleClass('d-none', tipo !== 'prospecto');
+        if (tipo === 'activo') inicializarSelectClientes('selClienteActivo');
+    }
+
+    $('input[name="tipoCliente"]').on('change', actualizarVisibilidadCliente);
+    // Reaplicar resultados al cambiar origen mientras el modo "activo" está activo
+    $('#selOrigenCliente').on('change', function() {
+        $('#selClienteActivo').val(null).trigger('change');
+    });
+    actualizarVisibilidadCliente();
+
+    // Lee el valor de cliente desde el formulario híbrido
+    function obtenerValorCliente() {
+        const tipo = $('input[name="tipoCliente"]:checked').val();
+        if (tipo === 'activo') {
+            const v = $('#selClienteActivo').val();
+            return v ? String(v).trim() : null;
+        }
+        if (tipo === 'prospecto') {
+            const v = ($('#txtClienteProspecto').val() || '').trim();
+            return v || null;
+        }
+        return 'FRAMEWORK';
     }
 
     let timerInterval = null;
@@ -402,14 +521,22 @@ $tieneActiva = !empty($actividadActiva);
         btnIniciar.addEventListener('click', function() {
             const desc = document.getElementById('txtDescripcion').value.trim();
             const cc   = $('#selCentroCosto').val();
+            const cli  = obtenerValorCliente();
 
             if (!desc) { alert('Escribe la descripción de la actividad'); return; }
             if (!cc)   { alert('Selecciona un centro de costo'); return; }
+            if (cli === null) {
+                const tipo = $('input[name="tipoCliente"]:checked').val();
+                alert(tipo === 'activo'
+                    ? 'Selecciona un cliente activo o cambia a Prospecto / FRAMEWORK'
+                    : 'Escribe el nombre del cliente prospecto o cambia a Activo / FRAMEWORK');
+                return;
+            }
 
             btnIniciar.disabled = true;
             btnIniciar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Iniciando...';
 
-            ajax('POST', 'bitacora/iniciar', { descripcion: desc, id_centro_costo: cc })
+            ajax('POST', 'bitacora/iniciar', { descripcion: desc, id_centro_costo: cc, cliente: cli })
                 .then(function(resp) {
                     if (resp.ok) {
                         location.reload();
@@ -530,8 +657,9 @@ $tieneActiva = !empty($actividadActiva);
                 denyButtonColor: '#198754',
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    // Mostrar segundo modal con textarea y centro de costo
+                    // Mostrar segundo modal con textarea, centro de costo y cliente
                     var ccActualId = <?= json_encode($actividadActiva['id_centro_costo'] ?? '') ?>;
+                    var clienteActual = <?= json_encode($actividadActiva['cliente'] ?? 'FRAMEWORK') ?>;
                     var opcionesCC = '';
                     <?php if (!empty($centrosCosto)): ?>
                     <?php foreach ($centrosCosto as $cc): ?>
@@ -539,19 +667,92 @@ $tieneActiva = !empty($actividadActiva);
                     <?php endforeach; ?>
                     <?php endif; ?>
 
+                    // Determinar tipo de cliente actual: framework / activo / prospecto
+                    var tipoCliInicial = 'framework';
+                    if (clienteActual && clienteActual !== 'FRAMEWORK') {
+                        // No podemos saber con certeza si era activo o prospecto;
+                        // por defecto mostramos como prospecto (texto libre) para preservar el valor
+                        tipoCliInicial = 'prospecto';
+                    }
+
                     Swal.fire({
                         title: 'Editar actividad',
+                        width: 520,
                         html:
                             '<label class="form-label small fw-bold text-start d-block mb-1">Descripción</label>' +
-                            '<textarea id="swalDescripcion" class="swal2-textarea" rows="4" style="font-size:0.95rem;display:block;">' + descActual.replace(/</g,'&lt;') + '</textarea>' +
+                            '<textarea id="swalDescripcion" class="swal2-textarea" rows="3" style="font-size:0.95rem;display:block;">' + descActual.replace(/</g,'&lt;') + '</textarea>' +
                             '<label class="form-label small fw-bold text-start d-block mb-1 mt-2">Centro de Costo</label>' +
                             '<select id="swalCentroCosto" class="swal2-select" style="display:block;">' +
                             '<option value="">Selecciona...</option>' +
                             opcionesCC +
-                            '</select>',
+                            '</select>' +
+                            '<label class="form-label small fw-bold text-start d-block mb-1 mt-2">Cliente</label>' +
+                            '<div class="text-muted small text-start mb-1" style="font-size:0.72rem;">Si es transversal: FRAMEWORK.</div>' +
+                            '<div class="btn-group btn-group-sm w-100 mb-2" role="group">' +
+                                '<input type="radio" class="btn-check" name="swalTipoCli" id="swalTipoFw" value="framework">' +
+                                '<label class="btn btn-outline-secondary" for="swalTipoFw">FRAMEWORK</label>' +
+                                '<input type="radio" class="btn-check" name="swalTipoCli" id="swalTipoAct" value="activo">' +
+                                '<label class="btn btn-outline-success" for="swalTipoAct">Activo</label>' +
+                                '<input type="radio" class="btn-check" name="swalTipoCli" id="swalTipoPro" value="prospecto">' +
+                                '<label class="btn btn-outline-warning" for="swalTipoPro">Prospecto</label>' +
+                            '</div>' +
+                            '<div id="swalBloqueActivo" class="d-none">' +
+                                '<div class="d-flex gap-2">' +
+                                    '<select id="swalOrigenCli" class="form-select form-select-sm" style="max-width:165px;">' +
+                                        '<option value="PH">Propiedad Horizontal</option>' +
+                                        '<option value="SST">Empresas SST</option>' +
+                                    '</select>' +
+                                    '<select id="swalCliActivo" class="form-select form-select-sm flex-grow-1"></select>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div id="swalBloqueProspecto" class="d-none">' +
+                                '<input type="text" id="swalCliProspecto" class="form-control form-control-sm" placeholder="Nombre del cliente prospecto" maxlength="150">' +
+                            '</div>',
                         didOpen: function() {
                             var sel = document.getElementById('swalCentroCosto');
                             if (sel && ccActualId) sel.value = ccActualId;
+
+                            // Marcar tipo de cliente inicial
+                            document.getElementById('swalTipoFw').checked  = (tipoCliInicial === 'framework');
+                            document.getElementById('swalTipoAct').checked = (tipoCliInicial === 'activo');
+                            document.getElementById('swalTipoPro').checked = (tipoCliInicial === 'prospecto');
+                            if (tipoCliInicial === 'prospecto') {
+                                document.getElementById('swalBloqueProspecto').classList.remove('d-none');
+                                document.getElementById('swalCliProspecto').value = clienteActual;
+                            }
+
+                            function swalToggleCli() {
+                                var t = document.querySelector('input[name="swalTipoCli"]:checked').value;
+                                document.getElementById('swalBloqueActivo').classList.toggle('d-none', t !== 'activo');
+                                document.getElementById('swalBloqueProspecto').classList.toggle('d-none', t !== 'prospecto');
+                                if (t === 'activo' && !$('#swalCliActivo').data('select2-initialized')) {
+                                    $('#swalCliActivo').select2({
+                                        theme: 'bootstrap-5',
+                                        width: '100%',
+                                        placeholder: 'Buscar cliente...',
+                                        allowClear: true,
+                                        minimumInputLength: 2,
+                                        dropdownParent: $('.swal2-popup'),
+                                        ajax: {
+                                            url: BASE + 'bitacora/clientes/buscar',
+                                            dataType: 'json',
+                                            delay: 250,
+                                            data: function(p) { return { q: p.term || '', origen: $('#swalOrigenCli').val() || 'PH' }; },
+                                            processResults: function(d) {
+                                                var its = (d && d.items) ? d.items : [];
+                                                return { results: its.map(function(it) {
+                                                    return { id: it.nombre, text: it.nombre + (it.ciudad ? ' (' + it.ciudad + ')' : '') };
+                                                }) };
+                                            }
+                                        }
+                                    });
+                                    $('#swalCliActivo').data('select2-initialized', true);
+                                    $('#swalOrigenCli').on('change', function() { $('#swalCliActivo').val(null).trigger('change'); });
+                                }
+                            }
+                            document.querySelectorAll('input[name="swalTipoCli"]').forEach(function(r) {
+                                r.addEventListener('change', swalToggleCli);
+                            });
                         },
                         preConfirm: function() {
                             var desc = document.getElementById('swalDescripcion').value;
@@ -564,7 +765,16 @@ $tieneActiva = !empty($actividadActiva);
                                 Swal.showValidationMessage('Debes seleccionar un centro de costo');
                                 return false;
                             }
-                            return { descripcion: desc, id_centro_costo: cc };
+                            var t = document.querySelector('input[name="swalTipoCli"]:checked').value;
+                            var cli = 'FRAMEWORK';
+                            if (t === 'activo') {
+                                cli = ($('#swalCliActivo').val() || '').trim();
+                                if (!cli) { Swal.showValidationMessage('Selecciona un cliente activo o cambia a Prospecto / FRAMEWORK'); return false; }
+                            } else if (t === 'prospecto') {
+                                cli = (document.getElementById('swalCliProspecto').value || '').trim();
+                                if (!cli) { Swal.showValidationMessage('Escribe el nombre del cliente prospecto o cambia a Activo / FRAMEWORK'); return false; }
+                            }
+                            return { descripcion: desc, id_centro_costo: cc, cliente: cli };
                         },
                         showCancelButton: true,
                         confirmButtonText: '<i class="bi bi-stop-circle me-1"></i> Terminar Actividad',
@@ -572,7 +782,7 @@ $tieneActiva = !empty($actividadActiva);
                         confirmButtonColor: '#dc3545',
                     }).then(function(result2) {
                         if (result2.isConfirmed) {
-                            finalizarActividad(id, result2.value.descripcion, result2.value.id_centro_costo);
+                            finalizarActividad(id, result2.value.descripcion, result2.value.id_centro_costo, result2.value.cliente);
                         }
                     });
                 } else if (result.isDenied) {
@@ -583,7 +793,7 @@ $tieneActiva = !empty($actividadActiva);
         });
     }
 
-    function finalizarActividad(id, nuevaDescripcion, nuevoCentroCosto) {
+    function finalizarActividad(id, nuevaDescripcion, nuevoCentroCosto, nuevoCliente) {
         btnTerminar.disabled = true;
         btnTerminar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Finalizando...';
         detenerCronometro();
@@ -594,6 +804,9 @@ $tieneActiva = !empty($actividadActiva);
         }
         if (nuevoCentroCosto) {
             datos.id_centro_costo = nuevoCentroCosto;
+        }
+        if (nuevoCliente) {
+            datos.cliente = nuevoCliente;
         }
 
         ajax('POST', 'bitacora/terminar/' + id, datos)
@@ -677,11 +890,13 @@ $tieneActiva = !empty($actividadActiva);
 
         conteo.textContent = equipoData.length;
         container.innerHTML = equipoData.map(function(item) {
+            var cliente = item.cliente || 'FRAMEWORK';
             return '<div class="equipo-item">' +
                 '<div class="equipo-avatar">' + getIniciales(item.nombre_completo) + '</div>' +
                 '<div class="flex-grow-1">' +
                     '<div class="fw-bold small" style="line-height:1.2">' + item.nombre_completo + '</div>' +
                     '<div class="text-muted" style="font-size:0.75rem"><i class="bi bi-lightning-charge-fill text-warning"></i> ' + item.descripcion + '</div>' +
+                    '<div class="text-muted" style="font-size:0.7rem"><i class="bi bi-person-badge"></i> ' + cliente + '</div>' +
                     (item.centro_costo_nombre ? '<div class="text-muted" style="font-size:0.7rem"><i class="bi bi-building"></i> ' + item.centro_costo_nombre + '</div>' : '') +
                 '</div>' +
                 '<div class="text-end" style="min-width:70px">' +

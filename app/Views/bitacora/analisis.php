@@ -71,7 +71,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
 <div class="card shadow-sm mb-3">
     <div class="card-body py-2">
         <div class="row g-2">
-            <div class="col-4">
+            <div class="col-6 col-md-3">
                 <label class="text-muted d-block" style="font-size:0.68rem; margin-bottom:2px;">
                     <i class="bi bi-calendar-week me-1"></i>Semana
                 </label>
@@ -79,7 +79,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
                     <option value="">Todas</option>
                 </select>
             </div>
-            <div class="col-4">
+            <div class="col-6 col-md-3">
                 <label class="text-muted d-block" style="font-size:0.68rem; margin-bottom:2px;">
                     <i class="bi bi-building me-1"></i>C. Costo
                 </label>
@@ -87,7 +87,15 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
                     <option value="">Todos</option>
                 </select>
             </div>
-            <div class="col-4">
+            <div class="col-6 col-md-3">
+                <label class="text-muted d-block" style="font-size:0.68rem; margin-bottom:2px;">
+                    <i class="bi bi-person-badge me-1"></i>Cliente
+                </label>
+                <select id="filtroCli" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
                 <label class="text-muted d-block" style="font-size:0.68rem; margin-bottom:2px;">
                     <i class="bi bi-tag me-1"></i>Actividad
                 </label>
@@ -144,6 +152,21 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         </h6>
         <div style="position:relative; height:180px; cursor:pointer;">
             <canvas id="chartDias"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Cliente: Tiempo por Cliente (barras clickeables) -->
+<div class="card shadow-sm mb-3" id="cardCli">
+    <div class="card-body">
+        <h6 class="card-title small text-muted mb-2">
+            <i class="bi bi-person-badge me-1"></i> Tiempo por Cliente
+            <span class="text-muted fw-normal" style="font-size:0.65rem; margin-left:4px;">
+                <i class="bi bi-hand-index me-1"></i>Toca una barra para filtrar
+            </span>
+        </h6>
+        <div style="position:relative; height:200px; cursor:pointer;">
+            <canvas id="chartCli"></canvas>
         </div>
     </div>
 </div>
@@ -231,6 +254,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     var SEMANAS  = <?= $semanasOpciones ?>;
     var CCS      = <?= $ccOpciones ?>;
     var DESC     = <?= $descOpciones ?>;
+    var CLIS     = <?= $cliOpciones ?>;
     var DIAS_MES = <?= $diasDelMes ?>;
 
     // Filtros por interacción directa en charts (sin dropdown)
@@ -248,11 +272,16 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     var elSemana = document.getElementById('filtroSemana');
     var elCC     = document.getElementById('filtroCC');
     var elDesc   = document.getElementById('filtroDesc');
+    var elCli    = document.getElementById('filtroCli');
 
     SEMANAS.forEach(function(s) {
         elSemana.add(new Option(s.label, s.week_num));
     });
     CCS.forEach(function(c) { elCC.add(new Option(c, c)); });
+    CLIS.forEach(function(c) {
+        var label = c.length > 30 ? c.substring(0, 30) + '…' : c;
+        elCli.add(new Option(label, c));
+    });
     DESC.forEach(function(d) {
         var label = d.length > 30 ? d.substring(0, 30) + '…' : d;
         elDesc.add(new Option(label, d));
@@ -317,6 +346,40 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
             scales: {
                 x: { ticks: { maxTicksLimit: 12, font: { size: 10 } }, grid: { display: false } },
                 y: { beginAtZero: true, ticks: { callback: function(v){ return v+'h'; }, font: { size: 10 } } }
+            }
+        }
+    });
+
+    // Chart Cliente: horizontal bar — barras clickeables
+    charts.cli = new Chart(document.getElementById('chartCli'), {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Horas', data: [],
+            backgroundColor: [], borderColor: [], borderWidth: 1, borderRadius: 3 }] },
+        options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            onClick: function(evt, elements) {
+                if (!elements.length) return;
+                var label = charts.cli.data.labels[elements[0].index];
+                if (label === 'Otros') return;
+                var actual = $('#filtroCli').val();
+                if (actual === label) {
+                    $('#filtroCli').val(null).trigger('change');
+                } else {
+                    $('#filtroCli').val(label).trigger('change');
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: function(c) {
+                    var total = c.dataset.data.reduce(function(a,b){ return a+b; }, 0);
+                    var pct = total > 0 ? ((c.parsed.x / total) * 100).toFixed(1) : 0;
+                    return c.parsed.x.toFixed(1) + 'h (' + pct + '%)';
+                }}}
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { callback: function(v){ return v+'h'; }, font: { size: 10 } } },
+                y: { ticks: { font: { size: 10 } } }
             }
         }
     });
@@ -418,17 +481,19 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         var semana = elSemana.value;
         var cc     = elCC.value;
         var desc   = elDesc.value;
+        var cli    = elCli.value;
 
         var datos = RAW.filter(function(r) {
             if (semana        !== '' && String(r.week_num) !== semana)          return false;
             if (cc            !== '' && r.centro_costo_nombre !== cc)           return false;
             if (desc          !== '' && r.descripcion !== desc)                 return false;
+            if (cli           !== '' && (r.cliente || 'FRAMEWORK') !== cli)     return false;
             if (filtroDia     !== null && Number(r.dia_num) !== filtroDia)      return false;
             if (filtroPersona !== null && r.nombre_completo !== filtroPersona)  return false;
             return true;
         });
 
-        var hayFiltro = semana !== '' || cc !== '' || desc !== '' || filtroDia !== null || filtroPersona !== null;
+        var hayFiltro = semana !== '' || cc !== '' || desc !== '' || cli !== '' || filtroDia !== null || filtroPersona !== null;
         var hayDatos  = datos.length > 0;
 
         // Stat cards
@@ -440,7 +505,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
 
         // Mostrar/ocultar empty state y charts
         document.getElementById('emptyFiltro').classList.toggle('d-none', !hayFiltro || hayDatos);
-        ['cardCC','cardSemanal','cardTop','cardPersonas'].forEach(function(id) {
+        ['cardCli','cardCC','cardSemanal','cardTop','cardPersonas'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.style.display = hayDatos ? '' : 'none';
         });
@@ -454,10 +519,50 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
         }
 
         actualizarChartDias(datos, semana);
+        actualizarChartCli(datos);
         actualizarChartCC(datos);
         actualizarChartSemanal(datos);
         actualizarChartTop(datos, desc);
         if (ES_ADMIN_TODOS && charts.personas) actualizarChartPersonas(datos);
+    }
+
+    /* ── Actualizar barras horizontales Cliente ─────── */
+    function actualizarChartCli(datos) {
+        var map = {};
+        datos.forEach(function(r) {
+            var k = r.cliente || 'FRAMEWORK';
+            if (!map[k]) map[k] = 0;
+            map[k] += parseFloat(r.total_minutos);
+        });
+        var top8 = topN(map, 8);
+        var resto = 0;
+        Object.keys(map).forEach(function(k) {
+            if (!top8.find(function(e){ return e.key === k; })) resto += map[k];
+        });
+
+        var labels = top8.map(function(e){ return e.key; });
+        var values = top8.map(function(e){ return minToH(e.val); });
+        if (resto > 0) { labels.push('Otros'); values.push(minToH(resto)); }
+
+        var colors = labels.map(function(_, i){ return COLORS[i % COLORS.length]; });
+        var cliActivo = $('#filtroCli').val();
+
+        var bgColors = labels.map(function(lbl, i) {
+            if (!cliActivo) return colors[i] + 'BF';
+            return lbl === cliActivo ? colors[i] : colors[i] + '40';
+        });
+        var bdColors = labels.map(function(lbl, i) {
+            return lbl === cliActivo ? colors[i] : colors[i] + '80';
+        });
+
+        var h = Math.max(100, labels.length * 30 + 20);
+        document.getElementById('chartCli').parentElement.style.height = h + 'px';
+
+        charts.cli.data.labels = labels;
+        charts.cli.data.datasets[0].data = values;
+        charts.cli.data.datasets[0].backgroundColor = bgColors;
+        charts.cli.data.datasets[0].borderColor = bdColors;
+        charts.cli.update('active');
     }
 
     /* ── Actualizar chart barras diarias ─────────────── */
@@ -469,6 +574,7 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
             if (elSemana.value !== '' && String(r.week_num) !== elSemana.value) return false;
             if (elCC.value     !== '' && r.centro_costo_nombre !== elCC.value)  return false;
             if (elDesc.value   !== '' && r.descripcion !== elDesc.value)        return false;
+            if (elCli.value    !== '' && (r.cliente || 'FRAMEWORK') !== elCli.value) return false;
             return true;
         });
 
@@ -626,16 +732,18 @@ $usuarioParam = ($esAdmin && $filtroUsuario) ? '?usuario=' . $filtroUsuario : ''
     };
     $('#filtroSemana').select2(Object.assign({}, s2opts, { placeholder: 'Todas' }));
     $('#filtroCC').select2(Object.assign({}, s2opts,     { placeholder: 'Todos' }));
+    $('#filtroCli').select2(Object.assign({}, s2opts,    { placeholder: 'Todos' }));
     $('#filtroDesc').select2(Object.assign({}, s2opts,   { placeholder: 'Todas' }));
 
     /* ── Listeners (jQuery — requerido por Select2) ──── */
-    $('#filtroSemana, #filtroCC, #filtroDesc').on('change', filtrar);
+    $('#filtroSemana, #filtroCC, #filtroCli, #filtroDesc').on('change', filtrar);
 
     document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
         filtroDia     = null;
         filtroPersona = null;
         $('#filtroSemana').val(null).trigger('change');
         $('#filtroCC').val(null).trigger('change');
+        $('#filtroCli').val(null).trigger('change');
         $('#filtroDesc').val(null).trigger('change');
     });
 

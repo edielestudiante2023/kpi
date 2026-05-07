@@ -198,6 +198,14 @@ class BitacoraController extends BaseController
         }
         sort($descSet);
 
+        // Opciones únicas de Cliente ordenadas
+        $cliSet = [];
+        foreach ($granular as $r) {
+            $cli = $r['cliente'] ?? 'FRAMEWORK';
+            if ($cli && !in_array($cli, $cliSet)) $cliSet[] = $cli;
+        }
+        sort($cliSet);
+
         // Admin viendo TODOS → habilitar anillo de participación por persona
         $esAdminTodos = $esAdmin && $filtroUsuario === null;
 
@@ -217,6 +225,7 @@ class BitacoraController extends BaseController
             'semanasOpciones' => json_encode($semanasOpciones),
             'ccOpciones'      => json_encode(array_values($ccSet)),
             'descOpciones'    => json_encode(array_values($descSet)),
+            'cliOpciones'     => json_encode(array_values($cliSet)),
         ];
 
         return view('bitacora/analisis', $data);
@@ -282,8 +291,85 @@ class BitacoraController extends BaseController
     }
 
     // ====================================
+    // HELPERS INTERNOS
+    // ====================================
+
+    /**
+     * Limpia y trunca el valor de cliente. Default 'FRAMEWORK' si viene vacío.
+     */
+    private function normalizarCliente($valor): string
+    {
+        $valor = trim((string) ($valor ?? ''));
+        if ($valor === '') return 'FRAMEWORK';
+        // Truncar a 150 chars (largo de la columna)
+        if (mb_strlen($valor) > 150) $valor = mb_substr($valor, 0, 150);
+        return $valor;
+    }
+
+    // ====================================
     // ENDPOINTS AJAX
     // ====================================
+
+    /**
+     * Búsqueda de clientes activos en bases externas (PH o SST).
+     * GET params: q (texto), origen (PH|SST)
+     * Devuelve: { ok: true, items: [{ id, nombre, ciudad }, ...] }
+     */
+    public function buscarClientes()
+    {
+        if (!$this->verificarAcceso()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $q      = trim($this->request->getGet('q') ?? '');
+        $origen = strtoupper(trim($this->request->getGet('origen') ?? ''));
+
+        if (!in_array($origen, ['PH', 'SST'], true)) {
+            return $this->response->setJSON(['error' => 'Origen inválido']);
+        }
+
+        $database = $origen === 'PH' ? 'propiedad_horizontal' : 'empresas_sst';
+
+        $host = env('EXT_DB_HOST', '127.0.0.1');
+        $port = (int) env('EXT_DB_PORT', 3306);
+        $user = env('EXT_DB_USER', 'root');
+        $pass = env('EXT_DB_PASS', '');
+
+        try {
+            $conn = new \mysqli($host, $user, $pass, $database, $port);
+            if ($conn->connect_error) {
+                return $this->response->setJSON(['ok' => false, 'error' => 'Conexión BD externa', 'items' => []]);
+            }
+            $conn->set_charset('utf8mb4');
+
+            $like  = '%' . $conn->real_escape_string($q) . '%';
+            $stmt  = $conn->prepare("
+                SELECT id_cliente, nombre_cliente, ciudad_cliente
+                FROM tbl_clientes
+                WHERE estado = 'activo' AND nombre_cliente LIKE ?
+                ORDER BY nombre_cliente ASC
+                LIMIT 30
+            ");
+            $stmt->bind_param('s', $like);
+            $stmt->execute();
+            $res = $stmt->get_result();
+
+            $items = [];
+            while ($row = $res->fetch_assoc()) {
+                $items[] = [
+                    'id'     => (int) $row['id_cliente'],
+                    'nombre' => $row['nombre_cliente'],
+                    'ciudad' => $row['ciudad_cliente'] ?? '',
+                ];
+            }
+            $stmt->close();
+            $conn->close();
+
+            return $this->response->setJSON(['ok' => true, 'items' => $items]);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON(['ok' => false, 'error' => $e->getMessage(), 'items' => []]);
+        }
+    }
 
     /**
      * Iniciar una nueva actividad
@@ -297,6 +383,7 @@ class BitacoraController extends BaseController
         $userId      = session()->get('id_users');
         $descripcion = trim($this->request->getPost('descripcion') ?? '');
         $centroCosto = (int) $this->request->getPost('id_centro_costo');
+        $cliente     = $this->normalizarCliente($this->request->getPost('cliente'));
 
         if (empty($descripcion) || $centroCosto <= 0) {
             return $this->response->setJSON(['error' => 'Descripción y centro de costo son obligatorios'])->setStatusCode(400);
@@ -316,6 +403,7 @@ class BitacoraController extends BaseController
             'id_usuario'        => $userId,
             'numero_actividad'  => $numActiv,
             'descripcion'       => $descripcion,
+            'cliente'           => $cliente,
             'id_centro_costo'   => $centroCosto,
             'fecha'             => $hoy,
             'hora_inicio'       => $ahora,
@@ -376,6 +464,12 @@ class BitacoraController extends BaseController
         $nuevoCentroCosto = $this->request->getPost('id_centro_costo');
         if ($nuevoCentroCosto !== null && $nuevoCentroCosto !== '') {
             $updateData['id_centro_costo'] = (int) $nuevoCentroCosto;
+        }
+
+        // Actualizar cliente si el usuario lo cambió al terminar
+        $nuevoCliente = $this->request->getPost('cliente');
+        if ($nuevoCliente !== null && trim($nuevoCliente) !== '') {
+            $updateData['cliente'] = $this->normalizarCliente($nuevoCliente);
         }
 
         $this->bitacoraModel->update($id, $updateData);
