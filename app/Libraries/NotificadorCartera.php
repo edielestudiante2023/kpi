@@ -110,7 +110,7 @@ class NotificadorCartera
         $bases = [
             ['db' => 'propiedad_horizontal', 'query' => "SELECT correo_cliente as email FROM tbl_clientes WHERE nit_cliente = {$nit} AND correo_cliente != '' LIMIT 1"],
             ['db' => 'empresas_sst',         'query' => "SELECT correo_cliente as email FROM tbl_clientes WHERE nit_cliente = {$nit} AND correo_cliente != '' LIMIT 1"],
-            ['db' => 'psyrisk',              'query' => "SELECT contact_email as email FROM companies WHERE nit = '{$nit}' AND contact_email != '' LIMIT 1"],
+            ['db' => 'psyrisk',              'query' => "SELECT contact_email as email FROM companies WHERE tenant_id = 1 AND nit = '{$nit}' AND contact_email != '' LIMIT 1"],
         ];
 
         foreach ($bases as $b) {
