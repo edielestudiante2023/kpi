@@ -106,6 +106,7 @@ $tieneActiva = !empty($actividadActiva);
                             <select class="form-select form-select-sm" id="selOrigenCliente" style="max-width: 165px;">
                                 <option value="PH">Propiedad Horizontal</option>
                                 <option value="SST">Empresas SST</option>
+                                <option value="PSY">Psyrisk</option>
                             </select>
                             <select class="form-select form-select-sm flex-grow-1" id="selClienteActivo">
                                 <option value="">Buscar cliente...</option>
@@ -701,6 +702,7 @@ $tieneActiva = !empty($actividadActiva);
                                     '<select id="swalOrigenCli" class="form-select form-select-sm" style="max-width:165px;">' +
                                         '<option value="PH">Propiedad Horizontal</option>' +
                                         '<option value="SST">Empresas SST</option>' +
+                                        '<option value="PSY">Psyrisk</option>' +
                                     '</select>' +
                                     '<select id="swalCliActivo" class="form-select form-select-sm flex-grow-1"></select>' +
                                 '</div>' +
