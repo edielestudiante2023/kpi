@@ -235,7 +235,7 @@
             $porUsuario[$a['id_users']]['user'] = $a;
             $porUsuario[$a['id_users']]['rutinas'][] = $a;
         }
-        $mesLabel = strftime('%B %Y') ?: date('m/Y');
+        $mesLabel = $mesActual ?? date('m/Y');
         ?>
         <div class="alert alert-info py-2 mb-3 small">
             <i class="bi bi-info-circle me-1"></i> Cumplimiento del mes actual (<?= esc($mesActual) ?>) calculado hasta hoy.
@@ -282,6 +282,8 @@
                                     <td><?= esc($a['actividad_nombre']) ?>
                                         <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
                                             <span class="text-muted small" data-bs-toggle="tooltip" title="Diaria">📅</span>
+                                        <?php elseif (($a['frecuencia'] ?? '') === 'semanal'): ?>
+                                            <span class="small" style="color:#6f42c1;" data-bs-toggle="tooltip" title="<?= (int)($a['meta_semanal'] ?? 1) ?>/sem">🗓️ <?= (int)($a['meta_semanal'] ?? 1) ?>/sem</span>
                                         <?php else: ?>
                                             <span class="text-muted small" data-bs-toggle="tooltip" title="L-V">📆</span>
                                         <?php endif; ?>

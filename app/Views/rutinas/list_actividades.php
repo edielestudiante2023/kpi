@@ -57,7 +57,9 @@
                         <td><?= esc($a['descripcion'] ?? '-') ?></td>
                         <td>
                             <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
-                                <span class="badge bg-info" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
+                                <span class="badge bg-primary" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
+                            <?php elseif (($a['frecuencia'] ?? '') === 'semanal'): ?>
+                                <span class="badge" style="background:#6f42c1;" data-bs-toggle="tooltip" title="<?= (int)($a['meta_semanal'] ?? 1) ?> veces por semana">🗓️ semanal · meta <?= (int)($a['meta_semanal'] ?? 1) ?>/sem</span>
                             <?php else: ?>
                                 <span class="badge bg-info" data-bs-toggle="tooltip" title="Lunes a Viernes">📆 L-V</span>
                             <?php endif; ?>
