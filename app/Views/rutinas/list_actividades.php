@@ -31,16 +31,16 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <table id="tblActividades" class="table table-striped table-hover nowrap" style="width:100%">
+            <table id="tblActividades" class="table table-striped table-hover" style="width:100%">
                 <thead class="table-dark">
                     <tr>
                         <th>Nombre</th>
                         <th>Categoria</th>
-                        <th>Descripcion</th>
+                        <th style="min-width:280px;">Descripcion</th>
                         <th>Frecuencia</th>
                         <th>Peso</th>
                         <th>Estado</th>
-                        <th class="text-center">Acciones</th>
+                        <th class="text-center" style="min-width:160px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,7 +54,7 @@
                     <tr>
                         <td><?= esc($a['nombre']) ?></td>
                         <td><span class="badge bg-<?= $colorCategoria($a['categoria'] ?? 'General') ?>"><?= esc($a['categoria'] ?? 'General') ?></span></td>
-                        <td><?= esc($a['descripcion'] ?? '-') ?></td>
+                        <td style="white-space:normal;"><?= esc($a['descripcion'] ?? '-') ?></td>
                         <td>
                             <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
                                 <span class="badge bg-primary" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
