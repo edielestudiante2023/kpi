@@ -12,6 +12,7 @@ class RutinaActividadModel extends Model
         'categoria',
         'descripcion',
         'frecuencia',
+        'meta_semanal',
         'peso',
         'activa',
     ];

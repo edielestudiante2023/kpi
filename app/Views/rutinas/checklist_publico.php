@@ -49,6 +49,17 @@
             background: #ffc107; color: #333; font-size: 11px; padding: 3px 10px;
             border-radius: 12px; font-weight: 600;
         }
+        .badge-week {
+            background: #6f42c1; color: #fff; font-size: 11px; padding: 3px 10px;
+            border-radius: 12px; font-weight: 600; margin-left: 4px;
+        }
+        .badge-week.complete { background: #28a745; }
+        .freq-tag {
+            display: inline-block; font-size: 10px; padding: 1px 8px; border-radius: 8px;
+            background: #e9ecef; color: #495057; margin-right: 4px; font-weight: 600;
+        }
+        .freq-tag.semanal { background: #6f42c1; color: #fff; }
+        .freq-tag.diaria { background: #0d6efd; color: #fff; }
 
         .empty-state {
             text-align: center; padding: 60px 20px; color: #28a745;
@@ -108,21 +119,45 @@
 
     <?php foreach ($actividades as $act):
         $done = isset($completados[$act['id_actividad']]);
+        $freq = $act['frecuencia'] ?? 'L-V';
+        $isSemanal = ($freq === 'semanal');
+        $semDone = $semanaProgreso[$act['id_actividad']] ?? 0;
+        $semMeta = (int)($act['meta_semanal'] ?? 1);
+        $semCompleta = $isSemanal && $semDone >= $semMeta;
+        $cardClass = $done ? 'cumple' : ($semCompleta ? 'cumple' : '');
     ?>
-        <div class="card <?= $done ? 'cumple' : '' ?>" id="card-<?= $act['id_actividad'] ?>">
+        <div class="card <?= $cardClass ?>" id="card-<?= $act['id_actividad'] ?>">
             <input type="checkbox" data-id="<?= $act['id_actividad'] ?>"
                    <?= $done ? 'checked disabled' : '' ?>>
             <div class="card-info">
-                <div class="nombre"><?= esc($act['nombre']) ?></div>
+                <div class="nombre">
+                    <?php if ($freq === 'semanal'): ?>
+                        <span class="freq-tag semanal">🗓️ semanal</span>
+                    <?php elseif ($freq === 'diaria'): ?>
+                        <span class="freq-tag diaria">📅 diaria</span>
+                    <?php else: ?>
+                        <span class="freq-tag">📆 L-V</span>
+                    <?php endif; ?>
+                    <?= esc($act['nombre']) ?>
+                </div>
                 <?php if ($act['descripcion']): ?>
                     <div class="desc"><?= esc($act['descripcion']) ?></div>
                 <?php endif; ?>
+                <?php if ($isSemanal): ?>
+                    <div class="desc" style="margin-top:4px;">
+                        <span class="badge-week <?= $semCompleta ? 'complete' : '' ?>"
+                              id="semana-<?= $act['id_actividad'] ?>">
+                            Semana: <?= $semDone ?> / <?= $semMeta ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
             </div>
             <div id="estado-<?= $act['id_actividad'] ?>">
-                <?= $done
-                    ? '<span class="badge-done"><i class="fa-solid fa-check"></i> Hecha</span>'
-                    : '<span class="badge-pending">Pendiente</span>'
-                ?>
+                <?php if ($done): ?>
+                    <span class="badge-done"><i class="fa-solid fa-check"></i> Hecha hoy</span>
+                <?php else: ?>
+                    <span class="badge-pending">Pendiente</span>
+                <?php endif; ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -165,11 +200,20 @@ document.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
                 var card   = document.getElementById('card-' + id);
                 var estado = document.getElementById('estado-' + id);
                 card.classList.add('cumple');
-                estado.innerHTML = '<span class="badge-done"><i class="fa-solid fa-check"></i> Hecha</span>';
+                estado.innerHTML = '<span class="badge-done"><i class="fa-solid fa-check"></i> Hecha hoy</span>';
                 pendienteCount--;
                 cerradoCount++;
                 document.getElementById('cntPendiente').textContent = pendienteCount;
                 document.getElementById('cntCerrado').textContent   = cerradoCount;
+
+                // Si es semanal, actualizar contador "Semana: X/Y"
+                var semBadge = document.getElementById('semana-' + id);
+                if (semBadge && data.semana) {
+                    semBadge.textContent = 'Semana: ' + data.semana.done + ' / ' + data.semana.meta;
+                    if (data.semana.done >= data.semana.meta) {
+                        semBadge.classList.add('complete');
+                    }
+                }
                 showToast('Marcada como completada');
             } else {
                 self.checked  = false;

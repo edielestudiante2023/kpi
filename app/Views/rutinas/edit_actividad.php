@@ -60,19 +60,26 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">Frecuencia *</label>
-                        <select name="frecuencia" class="form-select" required>
-                            <option value="L-V" <?= old('frecuencia', $actividad['frecuencia']) === 'L-V' ? 'selected' : '' ?>>L-V (Lunes a Viernes)</option>
-                            <option value="diaria" <?= old('frecuencia', $actividad['frecuencia']) === 'diaria' ? 'selected' : '' ?>>Diaria</option>
+                        <select name="frecuencia" id="frecuencia" class="form-select" required>
+                            <option value="L-V" <?= old('frecuencia', $actividad['frecuencia']) === 'L-V' ? 'selected' : '' ?>>📆 L-V</option>
+                            <option value="diaria" <?= old('frecuencia', $actividad['frecuencia']) === 'diaria' ? 'selected' : '' ?>>📅 Diaria</option>
+                            <option value="semanal" <?= old('frecuencia', $actividad['frecuencia']) === 'semanal' ? 'selected' : '' ?>>🗓️ Semanal</option>
                         </select>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3" id="campoMetaSemanal" style="display:none;">
+                        <label class="form-label fw-bold">Meta semanal *</label>
+                        <input type="number" name="meta_semanal" class="form-control" min="1" max="7"
+                               value="<?= old('meta_semanal', $actividad['meta_semanal'] ?? 2) ?>" placeholder="Ej: 2">
+                        <div class="form-text">Veces por semana</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">Peso *</label>
                         <input type="number" name="peso" class="form-control" step="0.01" min="0.01"
                                value="<?= old('peso', $actividad['peso']) ?>" required>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">Estado *</label>
                         <select name="activa" class="form-select" required>
                             <option value="1" <?= old('activa', $actividad['activa']) == 1 ? 'selected' : '' ?>>Activa</option>
@@ -80,6 +87,18 @@
                         </select>
                     </div>
                 </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var sel = document.getElementById('frecuencia');
+                        var campo = document.getElementById('campoMetaSemanal');
+                        function toggle() {
+                            campo.style.display = sel.value === 'semanal' ? '' : 'none';
+                        }
+                        sel.addEventListener('change', toggle);
+                        toggle();
+                    });
+                </script>
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Guardar</button>

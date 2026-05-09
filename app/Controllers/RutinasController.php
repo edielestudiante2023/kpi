@@ -52,17 +52,22 @@ class RutinasController extends BaseController
             'nombre'    => 'required|max_length[255]',
             'categoria' => 'permit_empty|max_length[100]',
             'descripcion' => 'permit_empty',
-            'frecuencia'  => 'required|in_list[L-V,diaria]',
+            'frecuencia'  => 'required|in_list[L-V,diaria,semanal]',
+            'meta_semanal' => 'permit_empty|integer|greater_than[0]|less_than[8]',
             'peso'        => 'required|decimal',
         ];
         if (! $this->validate($rules)) {
             return redirect()->back()->with('errors', $this->validator->getErrors())->withInput();
         }
+        $frecuencia = $this->request->getPost('frecuencia');
+        $metaSemanal = $frecuencia === 'semanal' ? (int)($this->request->getPost('meta_semanal') ?: 1) : null;
+
         $this->actividadModel->insert([
             'nombre'      => $this->request->getPost('nombre'),
             'categoria'   => trim($this->request->getPost('categoria') ?: 'General'),
             'descripcion' => $this->request->getPost('descripcion'),
-            'frecuencia'  => $this->request->getPost('frecuencia'),
+            'frecuencia'  => $frecuencia,
+            'meta_semanal' => $metaSemanal,
             'peso'        => $this->request->getPost('peso'),
             'activa'      => 1,
         ]);
@@ -84,18 +89,23 @@ class RutinasController extends BaseController
             'nombre'    => 'required|max_length[255]',
             'categoria' => 'permit_empty|max_length[100]',
             'descripcion' => 'permit_empty',
-            'frecuencia'  => 'required|in_list[L-V,diaria]',
+            'frecuencia'  => 'required|in_list[L-V,diaria,semanal]',
+            'meta_semanal' => 'permit_empty|integer|greater_than[0]|less_than[8]',
             'peso'        => 'required|decimal',
             'activa'      => 'required|in_list[0,1]',
         ];
         if (! $this->validate($rules)) {
             return redirect()->back()->with('errors', $this->validator->getErrors())->withInput();
         }
+        $frecuencia = $this->request->getPost('frecuencia');
+        $metaSemanal = $frecuencia === 'semanal' ? (int)($this->request->getPost('meta_semanal') ?: 1) : null;
+
         $this->actividadModel->update($id, [
             'nombre'      => $this->request->getPost('nombre'),
             'categoria'   => trim($this->request->getPost('categoria') ?: 'General'),
             'descripcion' => $this->request->getPost('descripcion'),
-            'frecuencia'  => $this->request->getPost('frecuencia'),
+            'frecuencia'  => $frecuencia,
+            'meta_semanal' => $metaSemanal,
             'peso'        => $this->request->getPost('peso'),
             'activa'      => $this->request->getPost('activa'),
         ]);
@@ -127,7 +137,7 @@ class RutinasController extends BaseController
             ->select('ra.id_asignacion, ra.activa,
                       u.id_users, u.nombre_completo, u.correo,
                       a.id_actividad, a.nombre AS actividad_nombre,
-                      a.categoria, a.frecuencia, a.peso')
+                      a.categoria, a.frecuencia, a.meta_semanal, a.peso')
             ->join('users u', 'u.id_users = ra.id_users')
             ->join('rutinas_actividades a', 'a.id_actividad = ra.id_actividad')
             ->orderBy('u.nombre_completo, a.categoria, a.nombre');
@@ -170,37 +180,43 @@ class RutinasController extends BaseController
         ];
 
         // Mes que se está midiendo (para mostrar en vista)
-        $data['mesActual'] = strftime('%B %Y', strtotime($hoy)) ?: date('m/Y', strtotime($hoy));
+        $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        $data['mesActual'] = $meses[(int)date('n', strtotime($hoy)) - 1] . ' ' . date('Y', strtotime($hoy));
 
         return view('rutinas/list_asignaciones', $data);
     }
 
     /**
      * Calcula % cumplimiento del mes (hasta hoy) por user+actividad
-     * Para frecuencia L-V solo cuenta días hábiles, para 'diaria' todos los días
+     * - L-V: días hábiles del rango
+     * - diaria: todos los días del rango
+     * - semanal: por semana ISO, cuenta días distintos completados vs meta_semanal,
+     *           promedia el % entre las semanas del rango
      */
     private function calcularCumplimientoMes(\CodeIgniter\Database\BaseConnection $db, string $desde, string $hasta, array $asignaciones): array
     {
         if (empty($asignaciones)) return [];
 
-        // Días totales y hábiles entre desde y hasta (inclusivo)
+        // Pre-cálculo: días totales, hábiles, y semanas ISO en el rango
         $diasTotales = 0;
         $diasHabiles = 0;
+        $semanasISO  = []; // ['YYYY-WW' => num_dias_semana_dentro_del_rango]
         $cursor = strtotime($desde);
         $fin = strtotime($hasta);
         while ($cursor <= $fin) {
             $diasTotales++;
             $dow = (int) date('N', $cursor);
             if ($dow <= 5) $diasHabiles++;
+            $isoKey = date('o-W', $cursor); // ISO year-week (W01..W53)
+            $semanasISO[$isoKey] = ($semanasISO[$isoKey] ?? 0) + 1;
             $cursor += 86400;
         }
 
-        // IDs únicos para query
         $userIds = array_unique(array_column($asignaciones, 'id_users'));
         $actIds  = array_unique(array_column($asignaciones, 'id_actividad'));
         if (empty($userIds) || empty($actIds)) return [];
 
-        // Conteo de registros completados por user+actividad en el rango
+        // Conteo total de registros (para L-V y diaria)
         $rows = $db->table('rutinas_registros')
             ->select('id_users, id_actividad, COUNT(*) as completados')
             ->where('completada', 1)
@@ -216,15 +232,60 @@ class RutinasController extends BaseController
             $regs[$r['id_users'].'_'.$r['id_actividad']] = (int) $r['completados'];
         }
 
-        // Calcular % por asignación según frecuencia
+        // Detalle por semana para frecuencia semanal: días completados por semana ISO
+        $hasSemanal = false;
+        foreach ($asignaciones as $a) {
+            if ($a['frecuencia'] === 'semanal') { $hasSemanal = true; break; }
+        }
+
+        $regsPorSemana = []; // [user_act => ['YYYY-WW' => count_dias]]
+        if ($hasSemanal) {
+            $rowsSem = $db->table('rutinas_registros')
+                ->select("id_users, id_actividad, fecha")
+                ->where('completada', 1)
+                ->where('fecha >=', $desde)
+                ->where('fecha <=', $hasta)
+                ->whereIn('id_users', $userIds)
+                ->whereIn('id_actividad', $actIds)
+                ->get()->getResultArray();
+            foreach ($rowsSem as $r) {
+                $isoKey = date('o-W', strtotime($r['fecha']));
+                $key = $r['id_users'].'_'.$r['id_actividad'];
+                $regsPorSemana[$key][$isoKey] = ($regsPorSemana[$key][$isoKey] ?? 0) + 1;
+            }
+        }
+
         $resultado = [];
         foreach ($asignaciones as $a) {
             $key = $a['id_users'].'_'.$a['id_actividad'];
-            $esperados = ($a['frecuencia'] === 'diaria') ? $diasTotales : $diasHabiles;
-            $done = $regs[$key] ?? 0;
-            $pct = $esperados > 0 ? round(($done / $esperados) * 100) : 0;
-            if ($pct > 100) $pct = 100;
-            $resultado[$key] = ['done' => $done, 'esperados' => $esperados, 'pct' => $pct];
+
+            if ($a['frecuencia'] === 'semanal') {
+                $meta = max(1, (int)($a['meta_semanal'] ?? 1));
+                $sumPct = 0; $nSem = 0;
+                $totalDias = 0;
+                foreach ($semanasISO as $isoKey => $diasEnRango) {
+                    $done = $regsPorSemana[$key][$isoKey] ?? 0;
+                    $totalDias += $done;
+                    // % de la semana basado en min(done, meta)/meta — capa al 100%
+                    $pctSem = round((min($done, $meta) / $meta) * 100);
+                    $sumPct += $pctSem;
+                    $nSem++;
+                }
+                $pct = $nSem > 0 ? round($sumPct / $nSem) : 0;
+                $resultado[$key] = [
+                    'done' => $totalDias,
+                    'esperados' => $meta * $nSem,
+                    'pct' => $pct,
+                    'meta_semanal' => $meta,
+                    'semanas' => $nSem,
+                ];
+            } else {
+                $esperados = ($a['frecuencia'] === 'diaria') ? $diasTotales : $diasHabiles;
+                $done = $regs[$key] ?? 0;
+                $pct = $esperados > 0 ? round(($done / $esperados) * 100) : 0;
+                if ($pct > 100) $pct = 100;
+                $resultado[$key] = ['done' => $done, 'esperados' => $esperados, 'pct' => $pct];
+            }
         }
 
         return $resultado;
@@ -488,14 +549,15 @@ class RutinasController extends BaseController
             return view('rutinas/checklist_error', ['mensaje' => 'Usuario no encontrado.']);
         }
 
-        // Actividades asignadas
+        // Actividades asignadas (incluye categoría, frecuencia y meta_semanal)
         $db = \Config\Database::connect();
         $actividades = $db->query("
-            SELECT a.id_actividad, a.nombre, a.descripcion, a.peso
+            SELECT a.id_actividad, a.nombre, a.descripcion, a.categoria,
+                   a.frecuencia, a.meta_semanal, a.peso
             FROM rutinas_asignaciones ra
             JOIN rutinas_actividades a ON a.id_actividad = ra.id_actividad
             WHERE ra.id_users = ? AND ra.activa = 1 AND a.activa = 1
-            ORDER BY a.nombre
+            ORDER BY a.categoria, a.nombre
         ", [$userId])->getResultArray();
 
         // Registros ya completados hoy
@@ -509,12 +571,39 @@ class RutinasController extends BaseController
             $completados[$r['id_actividad']] = true;
         }
 
+        // Para actividades semanales: progreso de la semana ISO actual
+        $semanaProgreso = []; // [id_actividad => ['done' => N, 'meta' => M]]
+        $hasSemanal = false;
+        foreach ($actividades as $a) {
+            if ($a['frecuencia'] === 'semanal') { $hasSemanal = true; break; }
+        }
+        if ($hasSemanal) {
+            // Lunes y domingo de la semana ISO de la fecha
+            $ts = strtotime($fecha);
+            $dow = (int) date('N', $ts); // 1=Lun..7=Dom
+            $lunes  = date('Y-m-d', strtotime('-' . ($dow - 1) . ' days', $ts));
+            $domingo = date('Y-m-d', strtotime('+' . (7 - $dow) . ' days', $ts));
+
+            $rowsSem = $db->table('rutinas_registros')
+                ->select('id_actividad, COUNT(DISTINCT fecha) as dias')
+                ->where('id_users', $userId)
+                ->where('completada', 1)
+                ->where('fecha >=', $lunes)
+                ->where('fecha <=', $domingo)
+                ->groupBy('id_actividad')
+                ->get()->getResultArray();
+            foreach ($rowsSem as $r) {
+                $semanaProgreso[$r['id_actividad']] = (int)$r['dias'];
+            }
+        }
+
         return view('rutinas/checklist_publico', [
-            'usuario'     => $usuario,
-            'fecha'       => $fecha,
-            'token'       => $token,
-            'actividades' => $actividades,
-            'completados' => $completados,
+            'usuario'         => $usuario,
+            'fecha'           => $fecha,
+            'token'           => $token,
+            'actividades'     => $actividades,
+            'completados'     => $completados,
+            'semanaProgreso'  => $semanaProgreso,
         ]);
     }
 
@@ -549,8 +638,8 @@ class RutinasController extends BaseController
             ->first();
 
         if ($existe) {
-            // Ya marcado, no hacer nada
-            return $this->response->setJSON(['success' => true]);
+            // Ya marcado, devolver progreso semanal si aplica
+            return $this->response->setJSON(array_merge(['success' => true], $this->progresoSemanal($userId, $idAct, $fecha)));
         }
 
         // Insertar registro
@@ -562,6 +651,37 @@ class RutinasController extends BaseController
             'hora_completado'  => date('Y-m-d H:i:s'),
         ]);
 
-        return $this->response->setJSON(['success' => true]);
+        return $this->response->setJSON(array_merge(['success' => true], $this->progresoSemanal($userId, $idAct, $fecha)));
+    }
+
+    /**
+     * Devuelve el progreso semanal {semana:{done,meta}} si la actividad es semanal
+     */
+    private function progresoSemanal(int $userId, int $idAct, string $fecha): array
+    {
+        $act = $this->actividadModel->find($idAct);
+        if (!$act || ($act['frecuencia'] ?? '') !== 'semanal') return [];
+
+        $ts = strtotime($fecha);
+        $dow = (int) date('N', $ts);
+        $lunes  = date('Y-m-d', strtotime('-' . ($dow - 1) . ' days', $ts));
+        $domingo = date('Y-m-d', strtotime('+' . (7 - $dow) . ' days', $ts));
+
+        $db = \Config\Database::connect();
+        $row = $db->table('rutinas_registros')
+            ->select('COUNT(DISTINCT fecha) as dias')
+            ->where('id_users', $userId)
+            ->where('id_actividad', $idAct)
+            ->where('completada', 1)
+            ->where('fecha >=', $lunes)
+            ->where('fecha <=', $domingo)
+            ->get()->getRow();
+
+        return [
+            'semana' => [
+                'done' => (int)($row->dias ?? 0),
+                'meta' => (int)($act['meta_semanal'] ?? 1),
+            ],
+        ];
     }
 }
