@@ -6,6 +6,7 @@ use App\Models\RutinaActividadModel;
 use App\Models\RutinaAsignacionModel;
 use App\Models\RutinaRegistroModel;
 use App\Models\UserModel;
+use App\Models\DiaFestivoModel;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -17,6 +18,7 @@ class RutinasController extends BaseController
     protected $asignacionModel;
     protected $registroModel;
     protected $userModel;
+    protected $festivoModel;
 
     public function initController(
         RequestInterface $request,
@@ -29,6 +31,25 @@ class RutinasController extends BaseController
         $this->asignacionModel = new RutinaAsignacionModel();
         $this->registroModel   = new RutinaRegistroModel();
         $this->userModel       = new UserModel();
+        $this->festivoModel    = new DiaFestivoModel();
+    }
+
+    /**
+     * Devuelve fechas festivas (Y-m-d) entre dos fechas. Cache por request.
+     */
+    private function getFestivosRango(string $desde, string $hasta): array
+    {
+        static $cache = [];
+        $key = $desde.'|'.$hasta;
+        if (isset($cache[$key])) return $cache[$key];
+
+        $rows = $this->festivoModel
+            ->where('fecha >=', $desde)
+            ->where('fecha <=', $hasta)
+            ->findAll();
+        $fechas = array_column($rows, 'fecha');
+        $cache[$key] = array_flip($fechas); // [fecha => 0] para isset() rápido
+        return $cache[$key];
     }
 
     // =========================================================
@@ -197,6 +218,9 @@ class RutinasController extends BaseController
     {
         if (empty($asignaciones)) return [];
 
+        // Festivos del rango (excluidos del conteo de hábiles y diarios)
+        $festivos = $this->getFestivosRango($desde, $hasta);
+
         // Pre-cálculo: días totales, hábiles, y semanas ISO en el rango
         $diasTotales = 0;
         $diasHabiles = 0;
@@ -204,9 +228,11 @@ class RutinasController extends BaseController
         $cursor = strtotime($desde);
         $fin = strtotime($hasta);
         while ($cursor <= $fin) {
-            $diasTotales++;
+            $fechaIter = date('Y-m-d', $cursor);
+            $esFestivo = isset($festivos[$fechaIter]);
+            if (!$esFestivo) $diasTotales++;
             $dow = (int) date('N', $cursor);
-            if ($dow <= 5) $diasHabiles++;
+            if ($dow <= 5 && !$esFestivo) $diasHabiles++;
             $isoKey = date('o-W', $cursor); // ISO year-week (W01..W53)
             $semanasISO[$isoKey] = ($semanasISO[$isoKey] ?? 0) + 1;
             $cursor += 86400;
@@ -398,13 +424,17 @@ class RutinasController extends BaseController
         $anio = (int) ($this->request->getGet('anio') ?: date('Y'));
         $idUser = (int) ($this->request->getGet('usuario') ?: 0);
 
-        // Días hábiles (L-V) del mes
+        // Días hábiles (L-V) del mes — excluyendo festivos
         $diasHabiles = [];
         $totalDias = (int) date('t', strtotime(sprintf('%04d-%02d-01', $anio, $mes)));
+        $primerDiaMes = sprintf('%04d-%02d-01', $anio, $mes);
+        $ultimoDiaMes = sprintf('%04d-%02d-%02d', $anio, $mes, $totalDias);
+        $festivos = $this->getFestivosRango($primerDiaMes, $ultimoDiaMes);
+
         for ($d = 1; $d <= $totalDias; $d++) {
             $fecha = sprintf('%04d-%02d-%02d', $anio, $mes, $d);
-            $dow = (int) date('N', strtotime($fecha)); // 1=Lun .. 5=Vie
-            if ($dow <= 5) {
+            $dow = (int) date('N', strtotime($fecha));
+            if ($dow <= 5 && !isset($festivos[$fecha])) {
                 $diasHabiles[] = [
                     'fecha'     => $fecha,
                     'dia'       => $d,

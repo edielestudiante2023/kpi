@@ -84,7 +84,12 @@
     $pendientes = 0;
     $cerrados = 0;
     foreach ($actividades as $act) {
-        if (isset($completados[$act['id_actividad']])) {
+        $isSemanal = ($act['frecuencia'] ?? '') === 'semanal';
+        $semDoneCnt = $semanaProgreso[$act['id_actividad']] ?? 0;
+        $semMetaCnt = (int)($act['meta_semanal'] ?? 1);
+        $semCompletaCnt = $isSemanal && $semDoneCnt >= $semMetaCnt;
+
+        if (isset($completados[$act['id_actividad']]) || $semCompletaCnt) {
             $cerrados++;
         } else {
             $pendientes++;
@@ -124,11 +129,15 @@
         $semDone = $semanaProgreso[$act['id_actividad']] ?? 0;
         $semMeta = (int)($act['meta_semanal'] ?? 1);
         $semCompleta = $isSemanal && $semDone >= $semMeta;
-        $cardClass = $done ? 'cumple' : ($semCompleta ? 'cumple' : '');
+        // Si la rutina semanal ya cumplió la meta, se considera "completada" sin checkbox interactivo
+        $cardClass = ($done || $semCompleta) ? 'cumple' : '';
+        $checkboxDisabled = $done || $semCompleta;
+        $checkboxChecked = $done || $semCompleta;
     ?>
         <div class="card <?= $cardClass ?>" id="card-<?= $act['id_actividad'] ?>">
             <input type="checkbox" data-id="<?= $act['id_actividad'] ?>"
-                   <?= $done ? 'checked disabled' : '' ?>>
+                   <?= $checkboxChecked ? 'checked' : '' ?> <?= $checkboxDisabled ? 'disabled' : '' ?>
+                   data-semanal="<?= $isSemanal ? '1' : '0' ?>">
             <div class="card-info">
                 <div class="nombre">
                     <?php if ($freq === 'semanal'): ?>
@@ -153,7 +162,9 @@
                 <?php endif; ?>
             </div>
             <div id="estado-<?= $act['id_actividad'] ?>">
-                <?php if ($done): ?>
+                <?php if ($semCompleta && !$done): ?>
+                    <span class="badge-done"><i class="fa-solid fa-check"></i> Meta semanal cumplida</span>
+                <?php elseif ($done): ?>
                     <span class="badge-done"><i class="fa-solid fa-check"></i> Hecha hoy</span>
                 <?php else: ?>
                     <span class="badge-pending">Pendiente</span>
