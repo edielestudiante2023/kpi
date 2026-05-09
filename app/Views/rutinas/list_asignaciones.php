@@ -166,8 +166,9 @@
                     <label class="form-label small mb-1">Frecuencia</label>
                     <select name="frecuencia" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">Todas</option>
-                        <option value="L-V" <?= ($filtros['frecuencia'] ?? '') === 'L-V' ? 'selected' : '' ?>>L-V</option>
-                        <option value="diaria" <?= ($filtros['frecuencia'] ?? '') === 'diaria' ? 'selected' : '' ?>>Diaria</option>
+                        <option value="L-V" <?= ($filtros['frecuencia'] ?? '') === 'L-V' ? 'selected' : '' ?>>📆 L-V</option>
+                        <option value="diaria" <?= ($filtros['frecuencia'] ?? '') === 'diaria' ? 'selected' : '' ?>>📅 Diaria</option>
+                        <option value="semanal" <?= ($filtros['frecuencia'] ?? '') === 'semanal' ? 'selected' : '' ?>>🗓️ Semanal</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -349,7 +350,9 @@
                             <td><?= esc($a['actividad_nombre']) ?></td>
                             <td>
                                 <?php if (($a['frecuencia'] ?? '') === 'diaria'): ?>
-                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
+                                    <span class="badge bg-primary" data-bs-toggle="tooltip" title="Diaria (incluye fines de semana)">📅 diaria</span>
+                                <?php elseif (($a['frecuencia'] ?? '') === 'semanal'): ?>
+                                    <span class="badge" style="background:#6f42c1;" data-bs-toggle="tooltip" title="<?= (int)($a['meta_semanal'] ?? 1) ?> veces por semana">🗓️ semanal · <?= (int)($a['meta_semanal'] ?? 1) ?>/sem</span>
                                 <?php else: ?>
                                     <span class="badge bg-info" data-bs-toggle="tooltip" title="Lunes a Viernes">📆 L-V</span>
                                 <?php endif; ?>
