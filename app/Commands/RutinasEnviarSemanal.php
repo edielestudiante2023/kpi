@@ -6,37 +6,33 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use App\Libraries\NotificadorRutinas;
 
-class RutinasEnviarDiario extends BaseCommand
+class RutinasEnviarSemanal extends BaseCommand
 {
     protected $group       = 'Rutinas';
-    protected $name        = 'rutinas:enviar-diario';
-    protected $description = 'Envia el email diario de rutinas a cada usuario con actividades asignadas (L-V)';
-    protected $usage       = 'rutinas:enviar-diario [fecha]';
+    protected $name        = 'rutinas:enviar-semanal';
+    protected $description = 'Envia el resumen semanal de rutinas (cumplimiento semana anterior + meta nueva). Solo lunes salvo modo manual.';
+    protected $usage       = 'rutinas:enviar-semanal [fecha]';
     protected $arguments   = [
-        'fecha' => 'Fecha de la rutina (YYYY-MM-DD). Si no se indica, usa hoy.',
+        'fecha' => 'Fecha de referencia (YYYY-MM-DD, debe ser un lunes para envio automatico). Si no se indica, usa hoy.',
     ];
 
     public function run(array $params)
     {
         $fecha = $params[0] ?? null;
 
-        CLI::write('=== Rutinas: Envio diario ===', 'yellow');
+        CLI::write('=== Rutinas: Resumen semanal ===', 'yellow');
         if ($fecha) {
             CLI::write("Fecha manual: {$fecha}", 'white');
         }
 
         $notificador = new NotificadorRutinas();
-        $resultado = $notificador->enviarRecordatoriosDiarios($fecha);
+        $resultado = $notificador->enviarResumenSemanal($fecha);
 
         CLI::write('');
         CLI::write("Fecha: {$resultado['fecha']}", 'white');
 
-        if ($resultado['omitidos'] === -1) {
-            CLI::write('Fin de semana — no se envian emails.', 'yellow');
-            return;
-        }
-        if ($resultado['omitidos'] === -2) {
-            CLI::write('Dia festivo — no se envian emails.', 'yellow');
+        if (($resultado['omitidos'] ?? 0) === -1) {
+            CLI::write('Hoy no es lunes — no se envian emails.', 'yellow');
             return;
         }
 
