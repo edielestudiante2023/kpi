@@ -172,16 +172,20 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">FACTURADO <?= esc($titulo) ?> BASE GRAVABLE — por mes (<?= $anio ?>)</small>
-                    <canvas id="chartFact" height="180"></canvas>
+                    <small class="text-muted d-block mb-2">FACTURADO <?= esc($titulo) ?> BASE GRAVABLE — por mes (<?= $anio === 'todos' ? 'todos los años' : $anio ?>)</small>
+                    <div style="position:relative; height:300px;">
+                        <canvas id="chartFact"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">RECAUDO <?= esc($titulo) ?> — por mes (<?= $anio ?>)</small>
-                    <canvas id="chartRec" height="180"></canvas>
+                    <small class="text-muted d-block mb-2">RECAUDO <?= esc($titulo) ?> — por mes (<?= $anio === 'todos' ? 'todos los años' : $anio ?>)</small>
+                    <div style="position:relative; height:300px;">
+                        <canvas id="chartRec"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -243,7 +247,13 @@ const lineOpts = {
         }
     },
     scales: {
+        x: {
+            ticks: { autoSkip: true, maxRotation: 45, minRotation: 0 }
+        },
         y: {
+            beginAtZero: true,
+            min: 0,
+            grace: '10%',
             ticks: { callback: v => formatCOP(v) }
         }
     }
