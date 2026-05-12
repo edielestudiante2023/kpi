@@ -437,6 +437,28 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('balance/cerrar', 'BalanceController::cerrarMes');
     $routes->get('balance/historico', 'BalanceController::historico');
     $routes->get('balance/eliminar-snapshot/(:num)', 'BalanceController::eliminarSnapshot/$1');
+
+    // Asesoría Financiera IA (Claude Sonnet 4.6)
+    $routes->get('asesoria-ia', 'AsesoriaIaController::index');
+    $routes->post('asesoria-ia/analizar', 'AsesoriaIaController::analizar');
+    $routes->get('asesoria-ia/ver/(:num)', 'AsesoriaIaController::ver/$1');
+    $routes->get('asesoria-ia/eliminar/(:num)', 'AsesoriaIaController::eliminar/$1');
+    // Widget flotante OTTO (AJAX)
+    $routes->post('asesoria-ia/widget/iniciar', 'AsesoriaIaController::widgetIniciar');
+    $routes->post('asesoria-ia/widget/enviar', 'AsesoriaIaController::widgetEnviar');
+    $routes->get('asesoria-ia/widget/mensajes/(:num)', 'AsesoriaIaController::widgetMensajes/$1');
+
+    // Cuentas de Cobro (contratistas / personas naturales) — con upload PDF
+    $routes->get('cuentas-cobro', 'CuentaCobroController::index');
+    $routes->get('cuentas-cobro/crear', 'CuentaCobroController::crear');
+    $routes->post('cuentas-cobro/crear', 'CuentaCobroController::crearPost');
+    $routes->get('cuentas-cobro/ver/(:num)', 'CuentaCobroController::ver/$1');
+    $routes->get('cuentas-cobro/editar/(:num)', 'CuentaCobroController::editar/$1');
+    $routes->post('cuentas-cobro/editar/(:num)', 'CuentaCobroController::editarPost/$1');
+    $routes->post('cuentas-cobro/pagar/(:num)', 'CuentaCobroController::marcarPagada/$1');
+    $routes->get('cuentas-cobro/eliminar/(:num)', 'CuentaCobroController::eliminar/$1');
+    $routes->get('cuentas-cobro/pdf/(:num)', 'CuentaCobroController::visualizarPdf/$1');
+    $routes->get('cuentas-cobro/descargar/(:num)', 'CuentaCobroController::descargarPdf/$1');
 });
 
 // ====================================

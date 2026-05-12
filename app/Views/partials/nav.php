@@ -219,6 +219,9 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <li><a class="dropdown-item fw-bold" href="<?= base_url('conciliaciones/balance') ?>">
                             <i class="bi bi-clipboard-data me-2"></i>Estado de la Empresa
                         </a></li>
+                        <li><a class="dropdown-item fw-bold text-primary" href="<?= base_url('conciliaciones/asesoria-ia') ?>">
+                            <i class="bi bi-robot me-2"></i>Asesoría IA <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/presupuestos') ?>">
                             <i class="bi bi-cash-stack me-2"></i>Presupuestos Portafolio
                         </a></li>
@@ -242,6 +245,9 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <li class="dropdown-header">Obligaciones</li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/deudas') ?>">
                             <i class="bi bi-cash-stack me-2"></i>Deudas
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cuentas-cobro') ?>">
+                            <i class="bi bi-file-earmark-pdf me-2"></i>Cuentas de Cobro <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Maestras</li>
@@ -300,3 +306,6 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
         </div>
     </div>
 </nav>
+
+<!-- Widget flotante OTTO (asesor financiero IA) -->
+<?= $this->include('partials/otto_widget') ?>
