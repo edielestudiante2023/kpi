@@ -421,6 +421,16 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('bancaria/upload', 'ConciliacionBancariaController::uploadPost');
     $routes->get('bancaria/truncar/(:num)', 'ConciliacionBancariaController::truncar/$1');
     $routes->get('bancaria/exportar', 'ConciliacionBancariaController::exportarCsv');
+
+    // Dashboard de cumplimiento por portafolio
+    $routes->get('dashboard-portafolio', 'DashboardPortafolioController::index');
+
+    // CRUD Presupuestos por portafolio
+    $routes->get('presupuestos', 'PresupuestoPortafolioController::listPresupuesto');
+    $routes->post('presupuestos/inicializar', 'PresupuestoPortafolioController::inicializarAnio');
+    $routes->post('presupuestos/actualizar', 'PresupuestoPortafolioController::actualizarMes');
+    $routes->post('presupuestos/aplicar-todos', 'PresupuestoPortafolioController::aplicarATodos');
+    $routes->get('presupuestos/eliminar/(:num)/(:num)', 'PresupuestoPortafolioController::eliminarAnio/$1/$2');
 });
 
 // ====================================
