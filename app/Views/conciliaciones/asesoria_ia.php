@@ -45,7 +45,14 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h4 mb-0"><i class="bi bi-robot me-2"></i>Asesoría Financiera IA</h1>
+            <h1 class="h4 mb-0 d-flex align-items-center gap-2">
+                <span class="d-inline-flex align-items-center justify-content-center"
+                      style="background:#1d2638; width:40px; height:40px; border-radius:50%; flex-shrink:0;">
+                    <img src="<?= base_url('img/otto-avatar.png') ?>" alt="OTTO" style="width:28px; height:28px;">
+                </span>
+                Asesoría Financiera IA
+                <i class="bi bi-robot ms-1"></i>
+            </h1>
             <small class="text-muted">Análisis ejecutivo del estado de Cycloid Talent con Claude Sonnet</small>
         </div>
         <?php if ((int) session()->get('id_roles') !== 5): ?>
