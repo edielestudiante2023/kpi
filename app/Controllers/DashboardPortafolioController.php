@@ -106,7 +106,7 @@ class DashboardPortafolioController extends BaseController
         $data['titulo']        = $titulo ?: 'PORTAFOLIO';
         $data['colorPrimario'] = $colorPrimario;
 
-        if (empty($portafoliosFiltro)) {
+        if (empty($portafoliosFiltro) || empty($meses)) {
             $data['presupuestoTotal'] = 0;
             $data['facturadoTotal']   = 0;
             $data['recaudoTotal']     = 0;
