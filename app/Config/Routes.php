@@ -443,6 +443,10 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('asesoria-ia/analizar', 'AsesoriaIaController::analizar');
     $routes->get('asesoria-ia/ver/(:num)', 'AsesoriaIaController::ver/$1');
     $routes->get('asesoria-ia/eliminar/(:num)', 'AsesoriaIaController::eliminar/$1');
+    // Widget flotante OTTO (AJAX)
+    $routes->post('asesoria-ia/widget/iniciar', 'AsesoriaIaController::widgetIniciar');
+    $routes->post('asesoria-ia/widget/enviar', 'AsesoriaIaController::widgetEnviar');
+    $routes->get('asesoria-ia/widget/mensajes/(:num)', 'AsesoriaIaController::widgetMensajes/$1');
 });
 
 // ====================================

@@ -305,3 +305,6 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
         </div>
     </div>
 </nav>
+
+<!-- Widget flotante OTTO (asesor financiero IA) -->
+<?= $this->include('partials/otto_widget') ?>

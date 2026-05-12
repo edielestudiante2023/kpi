@@ -18,36 +18,48 @@ class AsesoriaIaController extends BaseController
     protected $snapModel;
     protected $rolesPermitidos = [1, 2, 3]; // superadmin, admin, jefatura
 
+    /** Identidad base de OTTO — se prepende a todos los system prompts */
+    private const OTTO_IDENTITY = "Eres **OTTO**, el asesor financiero IA de **Cycloid Talent** (empresa colombiana de servicios SST y reclutamiento RPS). Hablas en español Colombia con tono ejecutivo, claro y directo. Te refieres a montos en pesos colombianos con separador de miles (\$1.234.567). Tienes acceso a los datos reales del sistema vía herramientas que debes usar antes de responder con números. NUNCA inventes cifras: si no podés obtenerlas con tus tools, dilo explícitamente. Sé conciso pero accionable.\n\n";
+
+    /** Prompt del modo conversacional libre del widget */
+    private const SYSTEM_LIBRE = self::OTTO_IDENTITY .
+        "Estás en modo conversacional dentro del widget de chat. Reglas:\n" .
+        "- Antes de dar números, llama a las tools relevantes\n" .
+        "- Para responder usa Markdown corto (negritas, listas, tablas pequeñas)\n" .
+        "- Responde en máximo 250 palabras salvo que la pregunta exija más detalle\n" .
+        "- Si la pregunta es ambigua, hace 1 sola contra-pregunta clarificadora\n" .
+        "- Si la pregunta no tiene que ver con finanzas de Cycloid, redirige amablemente";
+
     /** System prompts y modelo por preset */
     private const PRESETS = [
         'diagnostico' => [
             'titulo' => '🩺 Diagnóstico de salud financiera',
             'descripcion' => 'Resumen ejecutivo del estado actual + alertas críticas',
-            'system' => "Eres un CFO virtual senior asesorando a la gerencia de **Cycloid Talent**, una empresa de servicios de Salud y Seguridad en el Trabajo (SST) y Reclutamiento de Personal (RPS) en Colombia. Tu rol es entregar un diagnóstico ejecutivo de la salud financiera de la empresa al día de hoy.\n\nINSTRUCCIONES:\n1. Llama primero a `obtener_balance_al_corte` para conocer la posición consolidada actual.\n2. Si detectas un estado negativo o cartera elevada, llama a tools adicionales para profundizar (`obtener_deudas_activas`, `obtener_cartera_detalle`).\n3. Entrega un diagnóstico estructurado en español ejecutivo, máximo 400 palabras:\n   - **Veredicto** (1 línea: SANA / EN ALERTA / CRÍTICA)\n   - **Top 3 indicadores clave** con valor y comentario corto\n   - **2-3 alertas** prioritarias si las hay\n   - **Próximo paso recomendado** (acción concreta)\n4. Usa formato Markdown con headers ##, bullets y negritas. Montos siempre en pesos colombianos con separador de miles (ej: $1.234.567).",
+            'system' => self::OTTO_IDENTITY . "Tu tarea ahora es entregar un **diagnóstico ejecutivo de salud financiera**.\n\nPROCEDIMIENTO:\n1. Llama primero a `obtener_balance_al_corte` para conocer la posición consolidada actual.\n2. Si detectas estado negativo o cartera elevada, profundiza con `obtener_deudas_activas` y `obtener_cartera_detalle`.\n3. Entrega un diagnóstico estructurado (máximo 400 palabras):\n   - **Veredicto** (1 línea: SANA / EN ALERTA / CRÍTICA)\n   - **Top 3 indicadores clave** con valor y comentario corto\n   - **2-3 alertas** prioritarias si las hay\n   - **Próximo paso recomendado** (acción concreta)\nFormato Markdown con headers, bullets y negritas.",
             'usuario_inicial' => 'Realiza el diagnóstico de salud financiera de Cycloid Talent al día de hoy. Incluye veredicto, indicadores clave, alertas y próximo paso recomendado.',
         ],
         'analisis_cierre' => [
             'titulo' => '📊 Análisis del último cierre mensual',
             'descripcion' => 'Análisis profundo del snapshot más reciente',
-            'system' => "Eres un analista financiero senior revisando el cierre mensual de **Cycloid Talent**. Tu trabajo es interpretar el snapshot del mes y compararlo con meses anteriores para identificar patrones.\n\nINSTRUCCIONES:\n1. Llama a `obtener_balance_al_corte` con la fecha indicada para ver el snapshot.\n2. Llama a `obtener_facturado_recaudo_por_mes` para SST y para RPS para ver tendencias del año.\n3. Si hay cartera relevante, profundiza con `obtener_cartera_detalle`.\n4. Entrega un análisis en español ejecutivo (~500 palabras) con:\n   - **Hechos del mes** (qué pasó con cartera, bancos, deudas)\n   - **Comparativo vs meses anteriores** (qué cambió, tendencia)\n   - **Cumplimiento de presupuesto** del año hasta el mes\n   - **Recomendaciones** específicas para el siguiente mes\nFormato Markdown. Pesos colombianos con separador de miles. Sé concreto, evita generalidades.",
-            'usuario_inicial' => null, // se rellena dinámicamente con fecha del snapshot
+            'system' => self::OTTO_IDENTITY . "Tu tarea es interpretar un cierre mensual congelado y compararlo con la tendencia del año.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_balance_al_corte` con la fecha exacta del snapshot.\n2. Llama a `obtener_facturado_recaudo_por_mes` para SST y para RPS.\n3. Si hay cartera relevante, profundiza con `obtener_cartera_detalle`.\n4. Entrega análisis (~500 palabras):\n   - **Hechos del mes**\n   - **Comparativo vs meses anteriores**\n   - **Cumplimiento de presupuesto del año hasta el mes**\n   - **Recomendaciones específicas para el siguiente mes**\nFormato Markdown. Sé concreto, evita generalidades.",
+            'usuario_inicial' => null,
         ],
         'comparativo' => [
             'titulo' => '📈 Comparativo de períodos',
             'descripcion' => 'Compara dos snapshots o períodos y resalta tendencias',
-            'system' => "Eres un analista comparativo de **Cycloid Talent**. Tu objetivo es comparar dos períodos y entregar un análisis de variaciones, tendencias y patrones.\n\nINSTRUCCIONES:\n1. Obtén balances de las dos fechas con `obtener_balance_al_corte`.\n2. Calcula variaciones absolutas y porcentuales en cada KPI.\n3. Usa `obtener_facturado_recaudo_por_mes` si necesitas ver la curva mensual entre los dos cortes.\n4. Entrega tabla comparativa + análisis textual (~400 palabras):\n   - **Tabla comparativa** (markdown) con variaciones\n   - **Lectura ejecutiva** (qué mejoró, qué empeoró)\n   - **Conclusión** y posible causa de las variaciones más significativas\nFormato Markdown. Pesos colombianos con separador de miles.",
+            'system' => self::OTTO_IDENTITY . "Tu tarea es comparar dos períodos y resaltar variaciones, tendencias y posibles causas.\n\nPROCEDIMIENTO:\n1. Obtén balances de ambas fechas con `obtener_balance_al_corte`.\n2. Calcula variaciones absolutas y porcentuales.\n3. Si necesitás el detalle mensual entre ambas, usa `obtener_facturado_recaudo_por_mes`.\n4. Entrega (~400 palabras):\n   - **Tabla comparativa Markdown** con variaciones\n   - **Lectura ejecutiva** (qué mejoró, qué empeoró)\n   - **Conclusión** y posible causa de variaciones más significativas",
             'usuario_inicial' => null,
         ],
         'cartera' => [
             'titulo' => '💰 Priorización de gestión de cobro',
             'descripcion' => 'Identifica facturas a priorizar por monto × antigüedad',
-            'system' => "Eres un asesor de cobranzas senior para **Cycloid Talent**. Tu objetivo es priorizar la gestión de cobro identificando facturas estratégicas a perseguir.\n\nINSTRUCCIONES:\n1. Llama a `obtener_cartera_detalle` para SST y RPS (límite 50 cada uno).\n2. Identifica facturas a priorizar según: (a) días de mora, (b) monto del saldo, (c) cliente recurrente.\n3. Entrega (~350 palabras):\n   - **Top 5 facturas críticas** (tabla markdown con cliente, días mora, saldo, prioridad)\n   - **Clientes con cartera concentrada** (si algún cliente tiene >20% del total)\n   - **Estrategia de cobro recomendada** (cómo abordar cada grupo)\n   - **Monto recuperable estimado** si se persiguen las top 5\nFormato Markdown. Pesos colombianos con separador de miles.",
+            'system' => self::OTTO_IDENTITY . "Tu tarea es priorizar la gestión de cobro identificando facturas estratégicas.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_cartera_detalle` para SST y RPS (límite 50 cada uno).\n2. Identifica facturas a priorizar según: (a) días de mora, (b) monto del saldo, (c) cliente recurrente.\n3. Entrega (~350 palabras):\n   - **Top 5 facturas críticas** (tabla con cliente, días mora, saldo, prioridad)\n   - **Clientes con cartera concentrada** (si algún cliente tiene >20% del total)\n   - **Estrategia de cobro** (cómo abordar cada grupo)\n   - **Monto recuperable estimado** si se persiguen las top 5",
             'usuario_inicial' => 'Analiza la cartera pendiente de SST y RPS, identifica las facturas que debemos priorizar para cobro y dame una estrategia concreta.',
         ],
         'estrategia' => [
             'titulo' => '🎯 Recomendaciones estratégicas',
-            'descripcion' => 'Análisis profundo + roadmap accionable (modelo premium)',
-            'system' => "Eres un consultor estratégico senior para **Cycloid Talent**. La gerente te pide recomendaciones de alto nivel para mejorar la salud financiera y alcanzar los presupuestos anuales. Tienes acceso a TODOS los datos del sistema.\n\nINSTRUCCIONES:\n1. Empieza con un panorama completo: balance actual (`obtener_balance_al_corte`), tendencias de facturación y recaudo por portafolio (`obtener_facturado_recaudo_por_mes` para SST, RPS y FRAMEWORK), deudas (`obtener_deudas_activas`) y muestreo de cartera (`obtener_cartera_detalle`).\n2. Identifica los 3 problemas/oportunidades más significativos basándote en evidencia numérica.\n3. Para cada uno propón una recomendación concreta con: acción, plazo (corto/medio plazo), impacto esperado en pesos, riesgo asumido.\n4. Entrega (~700 palabras) con esta estructura:\n   - **Resumen ejecutivo** (3-4 líneas con el panorama)\n   - **Análisis de cumplimiento de presupuesto** del año\n   - **3 recomendaciones estratégicas accionables**, cada una con: descripción, plazo, impacto estimado en COP, riesgos\n   - **Roadmap propuesto** para los próximos 3 meses\n   - **KPIs a vigilar** semana a semana\nFormato Markdown, tono ejecutivo CFO. Pesos colombianos con separador de miles.",
+            'descripcion' => 'Análisis profundo + roadmap accionable',
+            'system' => self::OTTO_IDENTITY . "Tu tarea es dar recomendaciones estratégicas de alto nivel para mejorar la salud financiera y alcanzar el presupuesto anual.\n\nPROCEDIMIENTO:\n1. Construí el panorama completo: balance actual, tendencias de facturación y recaudo de SST, RPS y FRAMEWORK, deudas activas, muestreo de cartera.\n2. Identifica los 3 problemas/oportunidades más significativos con evidencia numérica.\n3. Para cada uno propón: acción concreta, plazo, impacto esperado en COP, riesgos.\n4. Entrega (~700 palabras):\n   - **Resumen ejecutivo** (3-4 líneas)\n   - **Análisis de cumplimiento de presupuesto del año**\n   - **3 recomendaciones estratégicas accionables** con descripción, plazo, impacto en COP, riesgos\n   - **Roadmap propuesto** para los próximos 3 meses\n   - **KPIs a vigilar** semana a semana",
             'usuario_inicial' => 'Quiero recomendaciones estratégicas para mejorar la salud financiera de Cycloid Talent y alcanzar el presupuesto anual. Analiza la situación completa y dame un roadmap de los próximos 3 meses.',
         ],
     ];
@@ -230,6 +242,200 @@ class AsesoriaIaController extends BaseController
         $this->convModel->delete((int) $id); // borra mensajes por FK CASCADE
         return redirect()->to('/conciliaciones/asesoria-ia')
             ->with('success', 'Conversación eliminada.');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WIDGET FLOTANTE OTTO — endpoints AJAX
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * AJAX: Inicia una conversación nueva del widget desde un preset
+     */
+    public function widgetIniciar()
+    {
+        if (! $this->checkRolJson()) return $this->response->setJSON(['ok' => false, 'error' => 'Sin permisos']);
+
+        $preset = $this->request->getPost('preset');
+        if (! isset(self::PRESETS[$preset])) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Preset inválido']);
+        }
+
+        if (! $this->dentroDelBudget()) {
+            return $this->budgetExcedidoJson();
+        }
+
+        $cfg = self::PRESETS[$preset];
+        $userMsg = $cfg['usuario_inicial']
+            ?? "Realiza el análisis '{$cfg['titulo']}' con los datos actuales del sistema.";
+
+        return $this->ejecutarConsulta(
+            null,
+            $cfg['system'],
+            [['role' => 'user', 'content' => $userMsg]],
+            $userMsg,
+            $cfg['titulo']
+        );
+    }
+
+    /**
+     * AJAX: Envía un mensaje del usuario en una conversación (libre o existente)
+     */
+    public function widgetEnviar()
+    {
+        if (! $this->checkRolJson()) return $this->response->setJSON(['ok' => false, 'error' => 'Sin permisos']);
+
+        $mensaje = trim((string) $this->request->getPost('mensaje'));
+        $idConv  = (int) ($this->request->getPost('id_conversacion') ?? 0);
+
+        if ($mensaje === '') {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Mensaje vacío']);
+        }
+        if (mb_strlen($mensaje) > 2000) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Mensaje demasiado largo (máx 2000 caracteres)']);
+        }
+        if (! $this->dentroDelBudget()) {
+            return $this->budgetExcedidoJson();
+        }
+
+        // Construir historial de la conversación si existe
+        $messages = [];
+        $convExistente = $idConv ? $this->convModel->find($idConv) : null;
+        if ($convExistente) {
+            $previos = $this->msgModel
+                ->select('rol, contenido')
+                ->where('id_conversacion', $idConv)
+                ->whereIn('rol', ['user', 'assistant'])
+                ->orderBy('created_at', 'ASC')
+                ->findAll();
+            foreach ($previos as $p) {
+                if (empty($p['contenido'])) continue;
+                $messages[] = ['role' => $p['rol'], 'content' => $p['contenido']];
+            }
+        }
+        $messages[] = ['role' => 'user', 'content' => $mensaje];
+
+        return $this->ejecutarConsulta(
+            $convExistente ? $idConv : null,
+            self::SYSTEM_LIBRE,
+            $messages,
+            $mensaje,
+            'Chat libre — ' . date('d/m/Y H:i')
+        );
+    }
+
+    /**
+     * AJAX: Carga mensajes previos de una conversación
+     */
+    public function widgetMensajes($id)
+    {
+        if (! $this->checkRolJson()) return $this->response->setJSON(['ok' => false, 'error' => 'Sin permisos']);
+
+        $conv = $this->convModel->find((int) $id);
+        if (! $conv) return $this->response->setJSON(['ok' => false, 'error' => 'Conversación no encontrada']);
+
+        $mensajes = $this->msgModel
+            ->select('rol, contenido')
+            ->where('id_conversacion', (int) $id)
+            ->whereIn('rol', ['user', 'assistant'])
+            ->orderBy('created_at', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON([
+            'ok' => true,
+            'id_conversacion' => (int) $id,
+            'mensajes' => $mensajes,
+            'costo_mes' => round($this->msgModel->costoMesActual(), 4),
+            'budget_mes' => (float) env('IA_BUDGET_MES_USD', 5.0),
+        ]);
+    }
+
+    /**
+     * Helper compartido: ejecuta la llamada a Claude, guarda mensajes y retorna JSON.
+     */
+    private function ejecutarConsulta(?int $idConvExistente, string $systemPrompt, array $messages, string $userMsg, string $tituloPorDefecto)
+    {
+        try {
+            $ant = new AnthropicService();
+            $fts = new FinancialToolsService();
+            $tools = $fts->definiciones();
+
+            $resultado = $ant->analizar(
+                $systemPrompt,
+                $tools,
+                $messages,
+                fn(string $name, array $input) => $fts->ejecutar($name, $input),
+                6
+            );
+        } catch (\Throwable $e) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Error IA: ' . $e->getMessage()]);
+        }
+
+        $usuario = session()->get('nombre_completo') ?? session()->get('email') ?? 'sistema';
+
+        // Crear conversación si es nueva
+        if ($idConvExistente) {
+            $idConv = $idConvExistente;
+        } else {
+            $idConv = $this->convModel->insert([
+                'titulo'     => $tituloPorDefecto,
+                'tipo'       => 'libre',
+                'creado_por' => $usuario,
+            ], true);
+        }
+
+        // Guardar el mensaje del usuario
+        $this->msgModel->insert([
+            'id_conversacion' => $idConv,
+            'rol'             => 'user',
+            'contenido'       => $userMsg,
+        ]);
+
+        // Guardar respuesta del assistant
+        $this->msgModel->insert([
+            'id_conversacion'    => $idConv,
+            'rol'                => 'assistant',
+            'contenido'          => $resultado['final_text'],
+            'tool_calls'         => json_encode($this->extraerToolCalls($resultado['messages_acumulados']), JSON_UNESCAPED_UNICODE),
+            'tokens_input'       => $resultado['tokens_input_total'],
+            'tokens_output'      => $resultado['tokens_output_total'],
+            'tokens_cache_read'  => $resultado['tokens_cache_read_total'],
+            'tokens_cache_write' => $resultado['tokens_cache_write_total'],
+            'modelo'             => $ant->modelo(),
+            'costo_usd'          => round($resultado['costo_total_usd'], 6),
+        ]);
+
+        return $this->response->setJSON([
+            'ok'              => true,
+            'id_conversacion' => $idConv,
+            'respuesta'       => $resultado['final_text'],
+            'costo_mes'       => round($this->msgModel->costoMesActual(), 4),
+            'budget_mes'      => (float) env('IA_BUDGET_MES_USD', 5.0),
+        ]);
+    }
+
+    private function checkRolJson(): bool
+    {
+        $rolId = (int) (session()->get('rol_id') ?? 0);
+        return in_array($rolId, $this->rolesPermitidos, true);
+    }
+
+    private function dentroDelBudget(): bool
+    {
+        $costo = $this->msgModel->costoMesActual();
+        $budget = (float) env('IA_BUDGET_MES_USD', 5.0);
+        return $costo < $budget;
+    }
+
+    private function budgetExcedidoJson()
+    {
+        $costo = $this->msgModel->costoMesActual();
+        $budget = (float) env('IA_BUDGET_MES_USD', 5.0);
+        return $this->response->setJSON([
+            'ok' => false,
+            'error' => sprintf("Límite mensual alcanzado (\$%.2f / \$%.2f USD). OTTO se reactivará el próximo mes.", $costo, $budget),
+            'costo_mes' => round($costo, 4),
+            'budget_mes' => $budget,
+        ]);
     }
 
     /**
