@@ -9,9 +9,11 @@ $dashboardUrls = [
     1 => 'superadmin/superadmindashboard',
     2 => 'admin/admindashboard',
     3 => 'jefatura/jefaturadashboard',
-    4 => 'trabajador/trabajadordashboard'
+    4 => 'trabajador/trabajadordashboard',
+    5 => 'conciliaciones/dashboard', // Contador externo: arranca en el dashboard financiero
 ];
 $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
+$esContador = ((int) $rolId === 5);
 ?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom shadow-sm">
@@ -36,6 +38,8 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <i class="bi bi-house-door me-1"></i>Dashboard
                     </a>
                 </li>
+
+                <?php if (! $esContador): // Contador externo solo ve Conciliaciones ?>
 
                 <?php if ($rolId == 4): // Trabajador ?>
                     <li class="nav-item dropdown">
@@ -204,6 +208,8 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                     <?php endif; ?>
                 <?php endif; ?>
 
+                <?php endif; // fin !$esContador ?>
+
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?= strpos($currentUrl, 'conciliaciones') !== false ? 'active fw-bold' : '' ?>"
                        href="#" data-bs-toggle="dropdown">
@@ -266,6 +272,7 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                     </ul>
                 </li>
 
+                <?php if (! $esContador): ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?= strpos($currentUrl, 'rutinas') !== false ? 'active fw-bold' : '' ?>"
                        href="#" data-bs-toggle="dropdown">
@@ -286,7 +293,9 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                     </ul>
                 </li>
 
-                <?php if ($session->get('bitacora_habilitada')): ?>
+                <?php endif; // fin !$esContador (cierra wrap de Rutinas) ?>
+
+                <?php if (! $esContador && $session->get('bitacora_habilitada')): ?>
                 <li class="nav-item">
                     <a class="nav-link" href="<?= base_url('bitacora') ?>" target="_blank">
                         <i class="bi bi-stopwatch me-1"></i>Bitacora

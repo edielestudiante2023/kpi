@@ -36,6 +36,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'auth' => \App\Filters\Auth::class,
         'sesiontracking' => \App\Filters\SesionTrackingFilter::class,
+        'readonly_conciliaciones' => \App\Filters\ReadOnlyConciliaciones::class,
     ];
 
     /**

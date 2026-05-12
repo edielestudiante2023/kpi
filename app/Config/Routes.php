@@ -348,7 +348,7 @@ $routes->post('bitacora-correccion/rechazar/(:segment)', 'BitacoraController::re
 // ====================================
 // MÓDULO CONCILIACIONES
 // ====================================
-$routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($routes) {
+$routes->group('conciliaciones', ['namespace' => 'App\Controllers', 'filter' => 'readonly_conciliaciones'], function($routes) {
     // Portafolios
     $routes->get('portafolios', 'PortafolioController::listPortafolio');
     $routes->get('portafolios/add', 'PortafolioController::addPortafolio');

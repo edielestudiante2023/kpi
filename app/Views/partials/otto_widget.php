@@ -441,7 +441,11 @@ if (! str_starts_with(uri_string(), 'conciliaciones')) return;
         }
     }
 
+    const OCULTAR_COSTO = <?= ((int) session()->get('id_roles') === 5) ? 'true' : 'false' ?>;
+    if (OCULTAR_COSTO) { $cost.style.display = 'none'; }
+
     function actualizarCosto(actual, budget) {
+        if (OCULTAR_COSTO) return;
         if (actual == null || budget == null) return;
         const pct = budget > 0 ? Math.min(100, (actual / budget) * 100) : 0;
         const cls = pct > 80 ? 'over' : '';

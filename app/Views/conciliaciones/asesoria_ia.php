@@ -48,6 +48,7 @@
             <h1 class="h4 mb-0"><i class="bi bi-robot me-2"></i>Asesoría Financiera IA</h1>
             <small class="text-muted">Análisis ejecutivo del estado de Cycloid Talent con Claude Sonnet</small>
         </div>
+        <?php if ((int) session()->get('id_roles') !== 5): ?>
         <div class="text-end" style="min-width:230px;">
             <small class="text-muted">Consumo del mes</small>
             <div class="progress" style="height:18px;">
@@ -57,6 +58,7 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <!-- Cards presets -->
