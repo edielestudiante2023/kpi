@@ -219,6 +219,11 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <li><a class="dropdown-item fw-bold" href="<?= base_url('conciliaciones/balance') ?>">
                             <i class="bi bi-clipboard-data me-2"></i>Estado de la Empresa
                         </a></li>
+                        <?php if (in_array((int)($session->get('rol_id') ?? 0), [1, 2, 3], true)): ?>
+                        <li><a class="dropdown-item fw-bold text-primary" href="<?= base_url('conciliaciones/asesoria-ia') ?>">
+                            <i class="bi bi-robot me-2"></i>Asesoría IA <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
+                        <?php endif; ?>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/presupuestos') ?>">
                             <i class="bi bi-cash-stack me-2"></i>Presupuestos Portafolio
                         </a></li>

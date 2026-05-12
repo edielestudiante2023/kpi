@@ -437,6 +437,12 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('balance/cerrar', 'BalanceController::cerrarMes');
     $routes->get('balance/historico', 'BalanceController::historico');
     $routes->get('balance/eliminar-snapshot/(:num)', 'BalanceController::eliminarSnapshot/$1');
+
+    // Asesoría Financiera IA (Claude Sonnet 4.6)
+    $routes->get('asesoria-ia', 'AsesoriaIaController::index');
+    $routes->post('asesoria-ia/analizar', 'AsesoriaIaController::analizar');
+    $routes->get('asesoria-ia/ver/(:num)', 'AsesoriaIaController::ver/$1');
+    $routes->get('asesoria-ia/eliminar/(:num)', 'AsesoriaIaController::eliminar/$1');
 });
 
 // ====================================
