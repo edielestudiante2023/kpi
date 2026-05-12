@@ -273,6 +273,16 @@ document.getElementById('valor_neto').addEventListener('blur', e => {
 });
 recalcular();
 
+// Antes de submit: normalizar campos monetarios a entero puro
+// para que el server reciba "9600" en vez de "9.600" y evite parsing ambiguo
+document.getElementById('formCC').addEventListener('submit', () => {
+    const monetarios = ['valor_bruto','ret_fuente','ret_iva','ret_ica','otras_ded','valor_neto'];
+    monetarios.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = String(parseMonto(el.value));
+    });
+});
+
 // Dropzone PDF
 const $dz = document.getElementById('dropzone');
 const $file = document.getElementById('archivo_pdf');

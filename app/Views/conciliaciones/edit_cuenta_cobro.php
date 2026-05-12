@@ -41,7 +41,7 @@
         </a>
     </div>
 
-    <form method="post" action="<?= base_url('conciliaciones/cuentas-cobro/editar/' . $cc['id_cuenta_cobro']) ?>" enctype="multipart/form-data">
+    <form method="post" action="<?= base_url('conciliaciones/cuentas-cobro/editar/' . $cc['id_cuenta_cobro']) ?>" enctype="multipart/form-data" id="formCCedit">
         <?= csrf_field() ?>
         <div class="row g-3">
             <div class="col-md-8">
@@ -230,6 +230,14 @@ document.getElementById('valor_neto').addEventListener('blur', e => {
     e.target.value = n > 0 ? new Intl.NumberFormat('es-CO').format(n) : '';
 });
 recalc();
+
+// Antes de submit: normalizar campos monetarios a entero puro
+document.getElementById('formCCedit').addEventListener('submit', () => {
+    ['valor_bruto','ret_fuente','ret_iva','ret_ica','otras_ded','valor_neto'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = String(parseMonto(el.value));
+    });
+});
 
 const $dz=document.getElementById('dropzone'),$file=document.getElementById('archivo_pdf'),$text=document.getElementById('dz-text');
 $dz.addEventListener('click',()=>$file.click());
