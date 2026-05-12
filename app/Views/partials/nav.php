@@ -246,6 +246,9 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/deudas') ?>">
                             <i class="bi bi-cash-stack me-2"></i>Deudas
                         </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cuentas-cobro') ?>">
+                            <i class="bi bi-file-earmark-pdf me-2"></i>Cuentas de Cobro <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Maestras</li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/clasificacion') ?>">

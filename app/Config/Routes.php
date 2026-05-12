@@ -447,6 +447,18 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('asesoria-ia/widget/iniciar', 'AsesoriaIaController::widgetIniciar');
     $routes->post('asesoria-ia/widget/enviar', 'AsesoriaIaController::widgetEnviar');
     $routes->get('asesoria-ia/widget/mensajes/(:num)', 'AsesoriaIaController::widgetMensajes/$1');
+
+    // Cuentas de Cobro (contratistas / personas naturales) — con upload PDF
+    $routes->get('cuentas-cobro', 'CuentaCobroController::index');
+    $routes->get('cuentas-cobro/crear', 'CuentaCobroController::crear');
+    $routes->post('cuentas-cobro/crear', 'CuentaCobroController::crearPost');
+    $routes->get('cuentas-cobro/ver/(:num)', 'CuentaCobroController::ver/$1');
+    $routes->get('cuentas-cobro/editar/(:num)', 'CuentaCobroController::editar/$1');
+    $routes->post('cuentas-cobro/editar/(:num)', 'CuentaCobroController::editarPost/$1');
+    $routes->post('cuentas-cobro/pagar/(:num)', 'CuentaCobroController::marcarPagada/$1');
+    $routes->get('cuentas-cobro/eliminar/(:num)', 'CuentaCobroController::eliminar/$1');
+    $routes->get('cuentas-cobro/pdf/(:num)', 'CuentaCobroController::visualizarPdf/$1');
+    $routes->get('cuentas-cobro/descargar/(:num)', 'CuentaCobroController::descargarPdf/$1');
 });
 
 // ====================================
