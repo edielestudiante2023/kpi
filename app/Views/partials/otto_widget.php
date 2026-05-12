@@ -202,14 +202,14 @@ if (! in_array($rolId, [1, 2, 3], true)) return;
 
 <!-- Botón flotante -->
 <button id="otto-launcher" title="Hablar con OTTO" type="button">
-    <img src="<?= base_url('img/OTTO AVATAR LOGOTIPO.png') ?>" alt="OTTO">
+    <img src="<?= base_url('img/otto-avatar.png') ?>" alt="OTTO">
     <span class="otto-badge" id="otto-badge">!</span>
 </button>
 
 <!-- Panel chat -->
 <div id="otto-panel">
     <div class="otto-header">
-        <img src="<?= base_url('img/OTTO AVATAR LOGOTIPO.png') ?>" alt="OTTO">
+        <img src="<?= base_url('img/otto-avatar.png') ?>" alt="OTTO">
         <div>
             <div class="otto-name">OTTO</div>
             <div class="otto-subtitle">Asesor financiero IA · Cycloid Talent</div>
@@ -313,7 +313,7 @@ if (! in_array($rolId, [1, 2, 3], true)) return;
         avatar.className = 'avatar';
         if (rol === 'assistant') {
             const img = document.createElement('img');
-            img.src = "<?= base_url('img/OTTO AVATAR LOGOTIPO.png') ?>";
+            img.src = "<?= base_url('img/otto-avatar.png') ?>";
             avatar.appendChild(img);
         } else {
             avatar.innerHTML = '<i class="bi bi-person-fill"></i>';
@@ -337,7 +337,7 @@ if (! in_array($rolId, [1, 2, 3], true)) return;
         msg.id = 'otto-typing';
         msg.className = 'otto-msg assistant';
         msg.innerHTML = `
-            <div class="avatar"><img src="<?= base_url('img/OTTO AVATAR LOGOTIPO.png') ?>"></div>
+            <div class="avatar"><img src="<?= base_url('img/otto-avatar.png') ?>"></div>
             <div class="otto-bubble">
                 <div class="otto-typing"><span></span><span></span><span></span></div>
             </div>`;
