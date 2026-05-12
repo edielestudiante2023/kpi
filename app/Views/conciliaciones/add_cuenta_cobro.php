@@ -6,7 +6,11 @@
     <title>Nueva Cuenta de Cobro – Kpi Cycloid</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <style>
+        .select2-container--bootstrap-5 .select2-selection { font-size: 0.875rem; min-height: 31px; padding: 2px 6px; }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { line-height: 1.5; padding: 0 4px; }
         .monto-input { text-align: right; font-family: monospace; }
         .dropzone-pdf {
             border: 2px dashed #ced4da; border-radius: 8px; padding: 24px;
@@ -87,7 +91,7 @@
                         <div class="row g-2">
                             <div class="col-md-6">
                                 <label class="form-label small">Centro de costo *</label>
-                                <select name="id_centro_costo" class="form-select form-select-sm" required>
+                                <select name="id_centro_costo" id="sel_centro" class="form-select form-select-sm select2-cc" required>
                                     <option value="">Seleccione...</option>
                                     <?php foreach ($centros as $c): ?>
                                         <option value="<?= $c['id_centro_costo'] ?>" <?= old('id_centro_costo') == $c['id_centro_costo'] ? 'selected' : '' ?>><?= esc($c['centro_costo']) ?></option>
@@ -96,7 +100,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">Clasificación de costo (opcional)</label>
-                                <select name="id_clasificacion" class="form-select form-select-sm">
+                                <select name="id_clasificacion" id="sel_clasif" class="form-select form-select-sm select2-cc">
                                     <option value="">— Sin clasificar —</option>
                                     <?php foreach ($clasificaciones as $cl): ?>
                                         <option value="<?= $cl['id_clasificacion'] ?>"><?= esc($cl['categoria'] . ' / ' . $cl['llave_item']) ?></option>
@@ -205,8 +209,20 @@
     </form>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
 <script>
+$(function () {
+    $('.select2-cc').select2({
+        theme: 'bootstrap-5',
+        language: 'es',
+        placeholder: 'Buscar...',
+        allowClear: true,
+        width: '100%',
+    });
+});
 function parseMonto(str) {
     if (!str) return 0;
     let s = String(str).replace(/[\$\s]/g, '');

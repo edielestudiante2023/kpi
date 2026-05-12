@@ -6,11 +6,15 @@
     <title>Editar Cuenta de Cobro #<?= $cc['id_cuenta_cobro'] ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <style>
         .monto-input { text-align: right; font-family: monospace; }
         .dropzone-pdf { border:2px dashed #ced4da; border-radius:8px; padding:18px; text-align:center; cursor:pointer; }
         .dropzone-pdf:hover, .dropzone-pdf.dragover { background:#e7f1ff; border-color:#0d6efd; }
         .resumen-card { background:#f6f8fa; border-radius:8px; padding:12px; }
+        .select2-container--bootstrap-5 .select2-selection { font-size: 0.875rem; min-height: 31px; padding: 2px 6px; }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { line-height: 1.5; padding: 0 4px; }
     </style>
 </head>
 <body class="bg-light">
@@ -73,14 +77,14 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <div class="col-md-6"><label class="form-label small">Centro de costo *</label>
-                                <select name="id_centro_costo" class="form-select form-select-sm" required>
+                                <select name="id_centro_costo" class="form-select form-select-sm select2-cc" required>
                                     <?php foreach ($centros as $c): ?>
                                         <option value="<?= $c['id_centro_costo'] ?>" <?= $cc['id_centro_costo'] == $c['id_centro_costo'] ? 'selected' : '' ?>><?= esc($c['centro_costo']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-6"><label class="form-label small">Clasificación</label>
-                                <select name="id_clasificacion" class="form-select form-select-sm">
+                                <select name="id_clasificacion" class="form-select form-select-sm select2-cc">
                                     <option value="">— Sin clasificar —</option>
                                     <?php foreach ($clasificaciones as $cl): ?>
                                         <option value="<?= $cl['id_clasificacion'] ?>" <?= $cc['id_clasificacion'] == $cl['id_clasificacion'] ? 'selected' : '' ?>><?= esc($cl['categoria'] . ' / ' . $cl['llave_item']) ?></option>
@@ -185,8 +189,20 @@
     </form>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
 <script>
+$(function () {
+    $('.select2-cc').select2({
+        theme: 'bootstrap-5',
+        language: 'es',
+        placeholder: 'Buscar...',
+        allowClear: true,
+        width: '100%',
+    });
+});
 function parseMonto(str) { if (!str) return 0; let s = String(str).replace(/[\$\s]/g,''); if (s.indexOf(',') !== -1) s = s.replace(/\./g,'').replace(',','.'); else if ((s.match(/\./g)||[]).length > 1) s = s.replace(/\./g,''); return parseFloat(s) || 0; }
 function fmtMonto(n) { return '$' + new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(n); }
 const ids = ['valor_bruto','ret_fuente','ret_iva','ret_ica','otras_ded'];
