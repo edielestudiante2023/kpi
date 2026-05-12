@@ -105,6 +105,8 @@ class AuthController extends BaseController
                 return redirect()->to('jefatura/jefaturadashboard');
             case 4:
                 return redirect()->to('trabajador/trabajadordashboard');
+            case 5: // Contador externo: arranca en el dashboard financiero
+                return redirect()->to('conciliaciones/dashboard');
             default:
                 return redirect()->to('/');
         }
