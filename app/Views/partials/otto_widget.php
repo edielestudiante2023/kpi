@@ -1,10 +1,10 @@
 <?php
 /**
  * Widget flotante OTTO — Asesor Financiero IA
- * Se incluye desde partials/nav.php (visible solo a roles 1/2/3).
+ * Se incluye desde partials/nav.php pero solo se renderiza en
+ * vistas del módulo Conciliaciones (asesor financiero en su dominio).
  */
-$rolId = (int) (session()->get('rol_id') ?? 0);
-if (! in_array($rolId, [1, 2, 3], true)) return;
+if (! str_starts_with(uri_string(), 'conciliaciones')) return;
 ?>
 <style>
 :root {

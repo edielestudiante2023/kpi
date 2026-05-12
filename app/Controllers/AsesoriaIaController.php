@@ -16,7 +16,6 @@ class AsesoriaIaController extends BaseController
     protected $convModel;
     protected $msgModel;
     protected $snapModel;
-    protected $rolesPermitidos = [1, 2, 3]; // superadmin, admin, jefatura
 
     /** Identidad base de OTTO — se prepende a todos los system prompts */
     private const OTTO_IDENTITY = "Eres **OTTO**, el asesor financiero IA de **Cycloid Talent** (empresa colombiana de servicios SST y reclutamiento RPS). Hablas en español Colombia con tono ejecutivo, claro y directo. Te refieres a montos en pesos colombianos con separador de miles (\$1.234.567). Tienes acceso a los datos reales del sistema vía herramientas que debes usar antes de responder con números. NUNCA inventes cifras: si no podés obtenerlas con tus tools, dilo explícitamente. Sé conciso pero accionable.\n\n";
@@ -77,26 +76,10 @@ class AsesoriaIaController extends BaseController
     }
 
     /**
-     * Verifica que el usuario tenga rol permitido.
-     * Retorna response de redirect si no, null si sí.
-     */
-    private function checkRol()
-    {
-        $rolId = (int) (session()->get('rol_id') ?? 0);
-        if (! in_array($rolId, $this->rolesPermitidos, true)) {
-            return redirect()->to('/conciliaciones/dashboard')
-                ->with('errors', ['No tienes permisos para acceder al módulo de Asesoría IA. Solicita acceso a un administrador.']);
-        }
-        return null;
-    }
-
-    /**
      * Vista principal: presets + historial + consumo del mes
      */
     public function index()
     {
-        if ($r = $this->checkRol()) return $r;
-
         $data['presets']     = self::PRESETS;
         $data['historial']   = $this->convModel
             ->orderBy('created_at', 'DESC')
@@ -120,8 +103,6 @@ class AsesoriaIaController extends BaseController
      */
     public function analizar()
     {
-        if ($r = $this->checkRol()) return $r;
-
         $preset = $this->request->getPost('preset');
         if (! isset(self::PRESETS[$preset])) {
             return redirect()->back()->with('errors', ['Preset inválido.']);
@@ -217,8 +198,6 @@ class AsesoriaIaController extends BaseController
      */
     public function ver($id)
     {
-        if ($r = $this->checkRol()) return $r;
-
         $idConv = (int) $id;
         $data['conversacion'] = $this->convModel->find($idConv);
         if (! $data['conversacion']) {
@@ -238,7 +217,6 @@ class AsesoriaIaController extends BaseController
      */
     public function eliminar($id)
     {
-        if ($r = $this->checkRol()) return $r;
         $this->convModel->delete((int) $id); // borra mensajes por FK CASCADE
         return redirect()->to('/conciliaciones/asesoria-ia')
             ->with('success', 'Conversación eliminada.');
@@ -253,8 +231,6 @@ class AsesoriaIaController extends BaseController
      */
     public function widgetIniciar()
     {
-        if (! $this->checkRolJson()) return $this->response->setJSON(['ok' => false, 'error' => 'Sin permisos']);
-
         $preset = $this->request->getPost('preset');
         if (! isset(self::PRESETS[$preset])) {
             return $this->response->setJSON(['ok' => false, 'error' => 'Preset inválido']);
@@ -282,8 +258,6 @@ class AsesoriaIaController extends BaseController
      */
     public function widgetEnviar()
     {
-        if (! $this->checkRolJson()) return $this->response->setJSON(['ok' => false, 'error' => 'Sin permisos']);
-
         $mensaje = trim((string) $this->request->getPost('mensaje'));
         $idConv  = (int) ($this->request->getPost('id_conversacion') ?? 0);
 
@@ -328,8 +302,6 @@ class AsesoriaIaController extends BaseController
      */
     public function widgetMensajes($id)
     {
-        if (! $this->checkRolJson()) return $this->response->setJSON(['ok' => false, 'error' => 'Sin permisos']);
-
         $conv = $this->convModel->find((int) $id);
         if (! $conv) return $this->response->setJSON(['ok' => false, 'error' => 'Conversación no encontrada']);
 
@@ -411,12 +383,6 @@ class AsesoriaIaController extends BaseController
             'costo_mes'       => round($this->msgModel->costoMesActual(), 4),
             'budget_mes'      => (float) env('IA_BUDGET_MES_USD', 5.0),
         ]);
-    }
-
-    private function checkRolJson(): bool
-    {
-        $rolId = (int) (session()->get('rol_id') ?? 0);
-        return in_array($rolId, $this->rolesPermitidos, true);
     }
 
     private function dentroDelBudget(): bool
