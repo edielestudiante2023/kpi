@@ -98,7 +98,7 @@ class DashboardPortafolioController extends BaseController
             }
             $colorPrimario = match($portafolioParam) {
                 'SST'     => '#dc3545',
-                'RPS'     => '#198754',
+                'RPS'     => '#0dcaf0',
                 'HUNTING' => '#fd7e14',
                 default   => '#0d6efd',
             };
