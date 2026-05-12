@@ -80,6 +80,121 @@ class FinancialToolsService
                     'properties' => [],
                 ],
             ],
+            // ─── TOOLS DE CONSULTA AVANZADA ───
+            [
+                'name' => 'buscar_cliente',
+                'description' => 'Busca clientes por NIT o por nombre (búsqueda parcial, case insensitive). Retorna lista con vista 360: total de facturas, facturas pagadas, saldo pendiente, fecha primera/última factura y último pago. Útil para identificar al cliente antes de consultar su historial detallado.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'q' => [
+                            'type' => 'string',
+                            'description' => 'Texto a buscar: NIT (numérico) o parte del nombre (ej: "lucerna", "900624804", "conjunto").',
+                        ],
+                        'limite' => [
+                            'type' => 'integer',
+                            'description' => 'Máximo de resultados (default 10).',
+                        ],
+                    ],
+                    'required' => ['q'],
+                ],
+            ],
+            [
+                'name' => 'obtener_actividad_cliente',
+                'description' => 'Historial completo de un cliente identificado por NIT. Retorna todas sus facturas (pagadas y pendientes) con comprobante, fechas, montos, estado calculado, días de mora, días para cobrar. Incluye también resumen 360.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'nit' => [
+                            'type' => 'string',
+                            'description' => 'NIT o identificación del cliente (sin puntos ni guiones).',
+                        ],
+                        'limite' => [
+                            'type' => 'integer',
+                            'description' => 'Máximo de facturas a retornar (default 50, máx 200).',
+                        ],
+                    ],
+                    'required' => ['nit'],
+                ],
+            ],
+            [
+                'name' => 'obtener_facturas_pagadas',
+                'description' => 'Lista las últimas facturas pagadas (ordenadas por fecha_pago DESC). Filtros opcionales por portafolio, año y mes. Útil para responder "qué clientes me pagaron en X mes" o "últimos pagos recibidos".',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'portafolio' => ['type' => 'string', 'enum' => ['SST','RPS','HUNTING'], 'description' => 'Filtrar por portafolio'],
+                        'anio' => ['type' => 'integer', 'description' => 'Año del pago'],
+                        'mes' => ['type' => 'integer', 'description' => 'Mes del pago (1-12)'],
+                        'limite' => ['type' => 'integer', 'description' => 'Default 30, máx 100'],
+                    ],
+                    'required' => [],
+                ],
+            ],
+            [
+                'name' => 'consultar_factura',
+                'description' => 'Devuelve el detalle completo de UNA factura específica buscada por su comprobante (ej. "FV-2-2107") o número de factura. Incluye datos del cliente, fechas, montos, estado actual, días de mora/cobro y portafolio.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'comprobante' => ['type' => 'string', 'description' => 'Comprobante (ej. FV-2-2107) o número de factura. Búsqueda exacta o parcial.'],
+                    ],
+                    'required' => ['comprobante'],
+                ],
+            ],
+            [
+                'name' => 'buscar_movimiento_bancario',
+                'description' => 'Búsqueda libre en movimientos bancarios cargados. Busca el texto en descripción, transacción, oficina de recaudo, referencias y llave_item. Útil para encontrar un pago por referencia, por concepto, por banco origen, etc.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'texto' => ['type' => 'string', 'description' => 'Texto a buscar (ej: "lucerna", "TRX-12345", "DIAN")'],
+                        'desde' => ['type' => 'string', 'format' => 'date', 'description' => 'Fecha desde YYYY-MM-DD'],
+                        'hasta' => ['type' => 'string', 'format' => 'date', 'description' => 'Fecha hasta YYYY-MM-DD'],
+                        'limite' => ['type' => 'integer', 'description' => 'Default 30, máx 100'],
+                    ],
+                    'required' => ['texto'],
+                ],
+            ],
+            [
+                'name' => 'obtener_top_clientes',
+                'description' => 'Ranking de clientes por facturado o por cartera pendiente. Útil para identificar clientes estratégicos, clientes con mayor exposición de cartera, top deudores, etc.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'portafolio' => ['type' => 'string', 'enum' => ['SST','RPS','HUNTING'], 'description' => 'Filtrar por portafolio'],
+                        'criterio' => ['type' => 'string', 'enum' => ['facturado','cartera_pendiente'], 'description' => 'Ordenamiento. Default: facturado.'],
+                        'limite' => ['type' => 'integer', 'description' => 'Default 10, máx 50'],
+                    ],
+                    'required' => [],
+                ],
+            ],
+            [
+                'name' => 'obtener_actividad_mes',
+                'description' => 'Resumen de actividad de un mes específico: número de facturas emitidas, facturas pagadas, total facturado, total recaudado bancario (INGRESOS) y top 5 ingresos / top 5 egresos del mes. Útil para análisis mensual rápido.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'anio' => ['type' => 'integer', 'description' => 'Año (ej. 2026). Requerido.'],
+                        'mes' => ['type' => 'integer', 'description' => 'Mes 1-12. Requerido.'],
+                        'portafolio' => ['type' => 'string', 'enum' => ['SST','RPS','HUNTING'], 'description' => 'Filtrar por portafolio'],
+                    ],
+                    'required' => ['anio','mes'],
+                ],
+            ],
+            [
+                'name' => 'obtener_cuentas_cobro',
+                'description' => 'Lista cuentas de cobro de contratistas externos (Cuentas de Cobro = pagos a personas naturales). Filtros por estado (pendiente/pagada) y centro de costo. Útil para ver obligaciones operativas a terceros.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'estado' => ['type' => 'string', 'enum' => ['pendiente','pagada','castigada'], 'description' => 'Estado de la cuenta'],
+                        'centro_costo' => ['type' => 'string', 'description' => 'Nombre del centro de costo (SST, RPS, etc.)'],
+                        'limite' => ['type' => 'integer', 'description' => 'Default 20, máx 100'],
+                    ],
+                    'required' => [],
+                ],
+            ],
         ];
     }
 
@@ -354,6 +469,242 @@ class FinancialToolsService
             'total_saldo_actual'  => $total,
             'deudas'              => $deudas,
             'al_dia_de_hoy'       => $hoy,
+        ];
+    }
+
+    // ──────────────────── TOOLS DE CONSULTA AVANZADA ────────────────────
+
+    private function tool_buscar_cliente(array $input): array
+    {
+        $q = trim((string) ($input['q'] ?? ''));
+        $limite = min(50, max(1, (int) ($input['limite'] ?? 10)));
+        if ($q === '') return ['error' => 'Parámetro q vacío'];
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('vw_cliente_360')
+            ->orderBy('total_facturado_bruto', 'DESC')
+            ->limit($limite);
+
+        if (ctype_digit($q)) {
+            $builder->like('nit', $q);
+        } else {
+            $builder->like('nombre_cliente', $q);
+        }
+        $rows = $builder->get()->getResultArray();
+
+        return [
+            'query'      => $q,
+            'resultados' => $rows,
+            'total'      => count($rows),
+            'nota'       => count($rows) === 0 ? 'Sin coincidencias. Probá con otra parte del nombre o el NIT exacto.' : null,
+        ];
+    }
+
+    private function tool_obtener_actividad_cliente(array $input): array
+    {
+        $nit = preg_replace('/[^0-9]/', '', (string) ($input['nit'] ?? ''));
+        $limite = min(200, max(1, (int) ($input['limite'] ?? 50)));
+        if ($nit === '') return ['error' => 'NIT requerido'];
+        $db = \Config\Database::connect();
+
+        // Resumen 360 (puede haber múltiples portafolios)
+        $resumen = $db->table('vw_cliente_360')->where('nit', $nit)->get()->getResultArray();
+        if (empty($resumen)) return ['error' => "Cliente con NIT {$nit} no encontrado en facturación"];
+
+        // Facturas
+        $facturas = $db->table('vw_factura_detalle')
+            ->select('comprobante, numero_factura, fecha_elaboracion, fecha_pago, base_gravada, valor_pagado, anticipo, saldo_actual, estado_calculado, dias_mora, dias_para_cobrar, portafolio')
+            ->where('nit_cliente', $nit)
+            ->orderBy('fecha_elaboracion', 'DESC')
+            ->limit($limite)
+            ->get()->getResultArray();
+
+        return [
+            'nit'      => $nit,
+            'cliente'  => $resumen[0]['nombre_cliente'] ?? null,
+            'resumen_por_portafolio' => $resumen,
+            'facturas' => $facturas,
+            'total_facturas_retornadas' => count($facturas),
+        ];
+    }
+
+    private function tool_obtener_facturas_pagadas(array $input): array
+    {
+        $portafolio = isset($input['portafolio']) ? strtoupper((string) $input['portafolio']) : null;
+        $anio = isset($input['anio']) ? (int) $input['anio'] : null;
+        $mes  = isset($input['mes']) ? (int) $input['mes'] : null;
+        $limite = min(100, max(1, (int) ($input['limite'] ?? 30)));
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('vw_factura_detalle')
+            ->select('comprobante, fecha_elaboracion, fecha_pago, nit_cliente, cliente, portafolio, base_gravada, valor_pagado, dias_para_cobrar, estado_calculado')
+            ->where('pagado', 1)
+            ->orderBy('fecha_pago', 'DESC')
+            ->limit($limite);
+        if ($portafolio) $builder->where('portafolio', $portafolio);
+        if ($anio) $builder->where('YEAR(fecha_pago)', $anio);
+        if ($mes) $builder->where('MONTH(fecha_pago)', $mes);
+
+        $rows = $builder->get()->getResultArray();
+        return [
+            'filtros' => compact('portafolio','anio','mes','limite'),
+            'total'   => count($rows),
+            'facturas' => $rows,
+        ];
+    }
+
+    private function tool_consultar_factura(array $input): array
+    {
+        $comp = trim((string) ($input['comprobante'] ?? ''));
+        if ($comp === '') return ['error' => 'Comprobante requerido'];
+        $db = \Config\Database::connect();
+
+        $rows = $db->table('vw_factura_detalle')
+            ->groupStart()
+                ->like('comprobante', $comp)
+                ->orWhere('numero_factura', is_numeric($comp) ? (int)$comp : 0)
+            ->groupEnd()
+            ->orderBy('fecha_elaboracion', 'DESC')
+            ->limit(10)
+            ->get()->getResultArray();
+
+        if (empty($rows)) return ['error' => "No se encontró factura con '{$comp}'"];
+        return ['total' => count($rows), 'facturas' => $rows];
+    }
+
+    private function tool_buscar_movimiento_bancario(array $input): array
+    {
+        $texto = trim((string) ($input['texto'] ?? ''));
+        $desde = $input['desde'] ?? null;
+        $hasta = $input['hasta'] ?? null;
+        $limite = min(100, max(1, (int) ($input['limite'] ?? 30)));
+        if ($texto === '') return ['error' => 'Texto requerido'];
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('vw_recaudo_detalle')
+            ->select('id_conciliacion, fecha_sistema, nombre_cuenta, centro_costo, deb_cred, valor, llave_item, descripcion_motivo, transaccion, oficina_recaudo, referencia_1, referencia_2, item_cliente')
+            ->groupStart()
+                ->like('descripcion_motivo', $texto)
+                ->orLike('transaccion', $texto)
+                ->orLike('oficina_recaudo', $texto)
+                ->orLike('referencia_1', $texto)
+                ->orLike('referencia_2', $texto)
+                ->orLike('llave_item', $texto)
+                ->orLike('item_cliente', $texto)
+            ->groupEnd()
+            ->orderBy('fecha_sistema', 'DESC')
+            ->limit($limite);
+        if ($desde) $builder->where('fecha_sistema >=', $desde);
+        if ($hasta) $builder->where('fecha_sistema <=', $hasta);
+
+        $rows = $builder->get()->getResultArray();
+        return ['query' => $texto, 'total' => count($rows), 'movimientos' => $rows];
+    }
+
+    private function tool_obtener_top_clientes(array $input): array
+    {
+        $portafolio = isset($input['portafolio']) ? strtoupper((string) $input['portafolio']) : null;
+        $criterio = $input['criterio'] ?? 'facturado';
+        $limite = min(50, max(1, (int) ($input['limite'] ?? 10)));
+        $db = \Config\Database::connect();
+
+        $orderField = $criterio === 'cartera_pendiente' ? 'saldo_pendiente' : 'total_facturado_bruto';
+
+        $builder = $db->table('vw_cliente_360')
+            ->orderBy($orderField, 'DESC')
+            ->limit($limite);
+        if ($portafolio) $builder->where('portafolio', $portafolio);
+
+        $rows = $builder->get()->getResultArray();
+        return [
+            'criterio'   => $criterio,
+            'portafolio' => $portafolio,
+            'total'      => count($rows),
+            'clientes'   => $rows,
+        ];
+    }
+
+    private function tool_obtener_actividad_mes(array $input): array
+    {
+        $anio = (int) ($input['anio'] ?? 0);
+        $mes  = (int) ($input['mes'] ?? 0);
+        $portafolio = isset($input['portafolio']) ? strtoupper((string) $input['portafolio']) : null;
+        if (! $anio || ! $mes) return ['error' => 'anio y mes son requeridos'];
+        $db = \Config\Database::connect();
+
+        // Facturación del mes
+        $fBuilder = $db->table('vw_factura_detalle')
+            ->select('COUNT(*) as emitidas, SUM(CASE WHEN pagado=1 THEN 1 ELSE 0 END) as ya_pagadas, SUM(base_gravada) as total_facturado')
+            ->where('anio', $anio)->where('mes', $mes);
+        if ($portafolio) $fBuilder->where('portafolio', $portafolio);
+        $fact = $fBuilder->get()->getRow();
+
+        // Pagos recibidos del mes (fecha_pago)
+        $pBuilder = $db->table('vw_factura_detalle')
+            ->select('COUNT(*) as pagos_recibidos, SUM(valor_pagado) as total_recaudado_facturas')
+            ->where('YEAR(fecha_pago)', $anio)->where('MONTH(fecha_pago)', $mes);
+        if ($portafolio) $pBuilder->where('portafolio', $portafolio);
+        $pagos = $pBuilder->get()->getRow();
+
+        // Top 5 ingresos bancarios del mes
+        $rBuilder = $db->table('vw_recaudo_detalle')
+            ->select('fecha_sistema, valor, item_cliente, descripcion_motivo, nombre_cuenta, centro_costo')
+            ->where('anio', $anio)->where('mes', $mes)
+            ->where('deb_cred', 'INGRESO')
+            ->orderBy('valor', 'DESC')->limit(5);
+        if ($portafolio) $rBuilder->where('centro_costo', $portafolio);
+        $topIngresos = $rBuilder->get()->getResultArray();
+
+        // Top 5 egresos bancarios del mes
+        $eBuilder = $db->table('vw_recaudo_detalle')
+            ->select('fecha_sistema, valor, item_cliente, descripcion_motivo, nombre_cuenta, centro_costo')
+            ->where('anio', $anio)->where('mes', $mes)
+            ->where('deb_cred', 'EGRESO')
+            ->orderBy('valor', 'ASC')->limit(5);
+        if ($portafolio) $eBuilder->where('centro_costo', $portafolio);
+        $topEgresos = $eBuilder->get()->getResultArray();
+
+        return [
+            'periodo' => sprintf('%04d-%02d', $anio, $mes),
+            'portafolio' => $portafolio,
+            'facturacion' => [
+                'facturas_emitidas' => (int) ($fact->emitidas ?? 0),
+                'facturas_ya_pagadas' => (int) ($fact->ya_pagadas ?? 0),
+                'total_facturado_base_gravada' => (float) ($fact->total_facturado ?? 0),
+            ],
+            'pagos_recibidos_en_mes' => [
+                'cantidad' => (int) ($pagos->pagos_recibidos ?? 0),
+                'total_recaudado' => (float) ($pagos->total_recaudado_facturas ?? 0),
+            ],
+            'top_5_ingresos_bancarios' => $topIngresos,
+            'top_5_egresos_bancarios'  => $topEgresos,
+        ];
+    }
+
+    private function tool_obtener_cuentas_cobro(array $input): array
+    {
+        $estado = $input['estado'] ?? null;
+        $centroCosto = isset($input['centro_costo']) ? strtoupper((string) $input['centro_costo']) : null;
+        $limite = min(100, max(1, (int) ($input['limite'] ?? 20)));
+        $db = \Config\Database::connect();
+
+        $builder = $db->table('tbl_cuenta_cobro cc')
+            ->select('cc.id_cuenta_cobro, cc.tipo_documento, cc.documento, cc.nombre_cobrador, cc.fecha_gasto, cc.descripcion_servicio, ce.centro_costo, cc.valor_bruto, cc.total_retenciones, cc.valor_neto_a_pagar, cc.estado, cc.fecha_pago, cc.forma_pago')
+            ->join('tbl_centros_costo ce', 'ce.id_centro_costo = cc.id_centro_costo', 'left')
+            ->orderBy('cc.fecha_gasto', 'DESC')
+            ->limit($limite);
+        if ($estado) $builder->where('cc.estado', $estado);
+        if ($centroCosto) $builder->where('ce.centro_costo', $centroCosto);
+
+        $rows = $builder->get()->getResultArray();
+        $total = 0;
+        foreach ($rows as $r) $total += (float) $r['valor_neto_a_pagar'];
+
+        return [
+            'filtros' => ['estado' => $estado, 'centro_costo' => $centroCosto],
+            'total_cuentas' => count($rows),
+            'total_neto_a_pagar' => $total,
+            'cuentas' => $rows,
         ];
     }
 
