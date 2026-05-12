@@ -39,10 +39,17 @@ class DashboardPortafolioController extends BaseController
         $anioFiltro      = ($anioParam === null || $anioParam === '' || $anioParam === 'todos')
             ? 'todos'
             : (int) $anioParam;
-        $mesesParam      = $this->request->getGet('meses');
-        $meses           = is_array($mesesParam) && !empty($mesesParam)
-            ? array_map('intval', $mesesParam)
-            : range(1, 12);
+        $mesesParam        = $this->request->getGet('meses');
+        $filtrosAplicados  = (bool) $this->request->getGet('filtros_aplicados');
+        if ($filtrosAplicados) {
+            // El usuario interactuó: respetar exactamente lo que llegó (puede ser vacío)
+            $meses = is_array($mesesParam) ? array_map('intval', $mesesParam) : [];
+        } else {
+            // Primera carga: default a todos los meses
+            $meses = is_array($mesesParam) && !empty($mesesParam)
+                ? array_map('intval', $mesesParam)
+                : range(1, 12);
+        }
 
         // Lista de portafolios disponibles + framework (consolidado)
         $todosPortafolios = $this->portafolioModel->orderBy('portafolio', 'ASC')->findAll();

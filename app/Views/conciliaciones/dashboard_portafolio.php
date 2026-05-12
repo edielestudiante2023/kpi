@@ -28,6 +28,7 @@
 <div class="container-fluid py-3">
     <!-- Header con segmentadores -->
     <form method="get" class="card mb-3 shadow-sm">
+        <input type="hidden" name="filtros_aplicados" value="1">
         <div class="card-body py-2">
             <div class="d-flex flex-wrap align-items-center gap-3">
                 <div>
