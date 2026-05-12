@@ -388,12 +388,12 @@ class CuentaCobroController extends BaseController
     {
         if ($val === null || $val === '') return 0.0;
         $str = preg_replace('/[\$\s]/', '', (string) $val);
-        // Formato colombiano: 1.234.567,89 o solo 1234567
+        // Formato colombiano: punto siempre es separador de miles; coma es decimal.
         if (strpos($str, ',') !== false) {
             $str = str_replace('.', '', $str);
             $str = str_replace(',', '.', $str);
-        } elseif (substr_count($str, '.') > 1) {
-            $str = str_replace('.', '', $str); // miles
+        } else {
+            $str = str_replace('.', '', $str);
         }
         return is_numeric($str) ? (float) $str : 0.0;
     }

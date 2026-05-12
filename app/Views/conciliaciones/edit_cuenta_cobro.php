@@ -203,7 +203,7 @@ $(function () {
         width: '100%',
     });
 });
-function parseMonto(str) { if (!str) return 0; let s = String(str).replace(/[\$\s]/g,''); if (s.indexOf(',') !== -1) s = s.replace(/\./g,'').replace(',','.'); else if ((s.match(/\./g)||[]).length > 1) s = s.replace(/\./g,''); return parseFloat(s) || 0; }
+function parseMonto(str) { if (!str) return 0; let s = String(str).replace(/[\$\s]/g,''); if (s.indexOf(',') !== -1) s = s.replace(/\./g,'').replace(',','.'); else s = s.replace(/\./g,''); return parseFloat(s) || 0; }
 function fmtMonto(n) { return '$' + new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(n); }
 const ids = ['valor_bruto','ret_fuente','ret_iva','ret_ica','otras_ded'];
 function recalc() {

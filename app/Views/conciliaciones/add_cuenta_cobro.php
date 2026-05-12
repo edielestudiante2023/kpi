@@ -226,9 +226,10 @@ $(function () {
 function parseMonto(str) {
     if (!str) return 0;
     let s = String(str).replace(/[\$\s]/g, '');
+    // Formato colombiano: punto siempre es separador de miles; coma es decimal.
     if (s.indexOf(',') !== -1) {
         s = s.replace(/\./g, '').replace(',', '.');
-    } else if ((s.match(/\./g) || []).length > 1) {
+    } else {
         s = s.replace(/\./g, '');
     }
     return parseFloat(s) || 0;
