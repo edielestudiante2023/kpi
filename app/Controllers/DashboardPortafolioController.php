@@ -39,10 +39,17 @@ class DashboardPortafolioController extends BaseController
         $anioFiltro      = ($anioParam === null || $anioParam === '' || $anioParam === 'todos')
             ? 'todos'
             : (int) $anioParam;
-        $mesesParam      = $this->request->getGet('meses');
-        $meses           = is_array($mesesParam) && !empty($mesesParam)
-            ? array_map('intval', $mesesParam)
-            : range(1, 12);
+        $mesesParam        = $this->request->getGet('meses');
+        $filtrosAplicados  = (bool) $this->request->getGet('filtros_aplicados');
+        if ($filtrosAplicados) {
+            // El usuario interactuó: respetar exactamente lo que llegó (puede ser vacío)
+            $meses = is_array($mesesParam) ? array_map('intval', $mesesParam) : [];
+        } else {
+            // Primera carga: default a todos los meses
+            $meses = is_array($mesesParam) && !empty($mesesParam)
+                ? array_map('intval', $mesesParam)
+                : range(1, 12);
+        }
 
         // Lista de portafolios disponibles + framework (consolidado)
         $todosPortafolios = $this->portafolioModel->orderBy('portafolio', 'ASC')->findAll();
@@ -91,7 +98,7 @@ class DashboardPortafolioController extends BaseController
             }
             $colorPrimario = match($portafolioParam) {
                 'SST'     => '#dc3545',
-                'RPS'     => '#198754',
+                'RPS'     => '#0dcaf0',
                 'HUNTING' => '#fd7e14',
                 default   => '#0d6efd',
             };
@@ -99,7 +106,7 @@ class DashboardPortafolioController extends BaseController
         $data['titulo']        = $titulo ?: 'PORTAFOLIO';
         $data['colorPrimario'] = $colorPrimario;
 
-        if (empty($portafoliosFiltro)) {
+        if (empty($portafoliosFiltro) || empty($meses)) {
             $data['presupuestoTotal'] = 0;
             $data['facturadoTotal']   = 0;
             $data['recaudoTotal']     = 0;

@@ -28,6 +28,7 @@
 <div class="container-fluid py-3">
     <!-- Header con segmentadores -->
     <form method="get" class="card mb-3 shadow-sm">
+        <input type="hidden" name="filtros_aplicados" value="1">
         <div class="card-body py-2">
             <div class="d-flex flex-wrap align-items-center gap-3">
                 <div>
@@ -83,8 +84,11 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="marcarTodos(false)">Ninguno</button>
                 </div>
 
-                <div class="ms-auto">
-                    <a href="<?= base_url('conciliaciones/presupuestos') ?>" class="btn btn-sm btn-outline-primary">
+                <div class="ms-auto d-flex gap-2">
+                    <a href="<?= base_url('conciliaciones/dashboard-portafolio') ?>" class="btn btn-sm btn-outline-secondary" title="Limpiar todos los filtros">
+                        <i class="bi bi-eraser"></i> Limpiar filtros
+                    </a>
+                    <a href="<?= base_url('conciliaciones/presupuestos' . ($anio !== 'todos' ? '?anio=' . (int)$anio : '')) ?>" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-pencil-square"></i> Editar presupuestos
                     </a>
                 </div>
@@ -172,16 +176,20 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">FACTURADO <?= esc($titulo) ?> BASE GRAVABLE — por mes (<?= $anio ?>)</small>
-                    <canvas id="chartFact" height="180"></canvas>
+                    <small class="text-muted d-block mb-2">FACTURADO <?= esc($titulo) ?> BASE GRAVABLE — por mes (<?= $anio === 'todos' ? 'todos los años' : $anio ?>)</small>
+                    <div style="position:relative; height:300px;">
+                        <canvas id="chartFact"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">RECAUDO <?= esc($titulo) ?> — por mes (<?= $anio ?>)</small>
-                    <canvas id="chartRec" height="180"></canvas>
+                    <small class="text-muted d-block mb-2">RECAUDO <?= esc($titulo) ?> — por mes (<?= $anio === 'todos' ? 'todos los años' : $anio ?>)</small>
+                    <div style="position:relative; height:300px;">
+                        <canvas id="chartRec"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -243,7 +251,13 @@ const lineOpts = {
         }
     },
     scales: {
+        x: {
+            ticks: { autoSkip: true, maxRotation: 45, minRotation: 0 }
+        },
         y: {
+            beginAtZero: true,
+            min: 0,
+            grace: '10%',
             ticks: { callback: v => formatCOP(v) }
         }
     }
