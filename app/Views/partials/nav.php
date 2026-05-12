@@ -213,6 +213,12 @@ $dashboardUrl = $dashboardUrls[$rolId] ?? 'login';
                         <li><a class="dropdown-item fw-bold" href="<?= base_url('conciliaciones/dashboard') ?>">
                             <i class="bi bi-speedometer2 me-2"></i>Dashboard Financiero
                         </a></li>
+                        <li><a class="dropdown-item fw-bold" href="<?= base_url('conciliaciones/dashboard-portafolio') ?>">
+                            <i class="bi bi-bar-chart-line me-2"></i>Dashboard Portafolio
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/presupuestos') ?>">
+                            <i class="bi bi-cash-stack me-2"></i>Presupuestos Portafolio
+                        </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Operativo (CSV)</li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cruda/facturacion') ?>">
