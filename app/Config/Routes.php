@@ -431,6 +431,12 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers'], function($r
     $routes->post('presupuestos/actualizar', 'PresupuestoPortafolioController::actualizarMes');
     $routes->post('presupuestos/aplicar-todos', 'PresupuestoPortafolioController::aplicarATodos');
     $routes->get('presupuestos/eliminar/(:num)/(:num)', 'PresupuestoPortafolioController::eliminarAnio/$1/$2');
+
+    // Balance / Estado de la Empresa
+    $routes->get('balance', 'BalanceController::index');
+    $routes->post('balance/cerrar', 'BalanceController::cerrarMes');
+    $routes->get('balance/historico', 'BalanceController::historico');
+    $routes->get('balance/eliminar-snapshot/(:num)', 'BalanceController::eliminarSnapshot/$1');
 });
 
 // ====================================
