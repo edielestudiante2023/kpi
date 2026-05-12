@@ -83,8 +83,11 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="marcarTodos(false)">Ninguno</button>
                 </div>
 
-                <div class="ms-auto">
-                    <a href="<?= base_url('conciliaciones/presupuestos') ?>" class="btn btn-sm btn-outline-primary">
+                <div class="ms-auto d-flex gap-2">
+                    <a href="<?= base_url('conciliaciones/dashboard-portafolio') ?>" class="btn btn-sm btn-outline-secondary" title="Limpiar todos los filtros">
+                        <i class="bi bi-eraser"></i> Limpiar filtros
+                    </a>
+                    <a href="<?= base_url('conciliaciones/presupuestos' . ($anio !== 'todos' ? '?anio=' . (int)$anio : '')) ?>" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-pencil-square"></i> Editar presupuestos
                     </a>
                 </div>
