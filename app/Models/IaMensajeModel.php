@@ -14,9 +14,10 @@ class IaMensajeModel extends Model
     ];
 
     protected $returnType    = 'array';
-    protected $useTimestamps = true;
-    protected $createdField  = 'created_at';
-    protected $updatedField  = null; // no updated_at en esta tabla
+    // No usamos useTimestamps porque tbl_ia_mensaje solo tiene created_at
+    // (con DEFAULT CURRENT_TIMESTAMP), no updated_at. CI4 con $updatedField=null
+    // genera SQL malformado, asi que el timestamp lo pone MySQL.
+    protected $useTimestamps = false;
 
     /**
      * Costo acumulado del mes corriente (USD)
