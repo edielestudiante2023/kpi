@@ -129,6 +129,49 @@ class BitacoraActividadModel extends Model
     }
 
     /**
+     * Resumen de TODOS los usuarios habilitados en un rango (vista equipo por quincena)
+     */
+    public function getResumenEquipoRango(string $desde, string $hasta): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                u.id_users,
+                u.nombre_completo,
+                COALESCE(SUM(CASE WHEN ba.estado = 'finalizada' THEN ba.duracion_minutos ELSE 0 END), 0) AS total_minutos,
+                COUNT(DISTINCT ba.fecha) AS dias_registrados,
+                COUNT(ba.id_bitacora) AS num_actividades
+            FROM users u
+            LEFT JOIN bitacora_actividades ba ON ba.id_usuario = u.id_users
+                AND ba.hora_inicio >= ? AND ba.hora_inicio <= ?
+            WHERE u.bitacora_habilitada = 1
+            GROUP BY u.id_users, u.nombre_completo
+            ORDER BY total_minutos DESC
+        ", [$desde, $hasta])->getResultArray();
+    }
+
+    /**
+     * Resumen diario de un usuario especifico en un rango (vista detalle por quincena)
+     */
+    public function getResumenUsuarioRango(int $idUsuario, string $desde, string $hasta): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                fecha,
+                SUM(CASE WHEN estado = 'finalizada' THEN duracion_minutos ELSE 0 END) AS total_minutos,
+                COUNT(*) AS num_actividades,
+                MIN(hora_inicio) AS primera_entrada,
+                MAX(COALESCE(hora_fin, hora_inicio)) AS ultima_salida
+            FROM bitacora_actividades
+            WHERE id_usuario = ?
+              AND hora_inicio >= ? AND hora_inicio <= ?
+            GROUP BY fecha
+            ORDER BY fecha DESC
+        ", [$idUsuario, $desde, $hasta])->getResultArray();
+    }
+
+    /**
      * Dataset granular por (fecha, cc, descripcion) con week_num — para segmentadores JS
      * $userId = null → todos los usuarios (admin)
      */

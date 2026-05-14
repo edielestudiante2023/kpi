@@ -234,7 +234,7 @@ class BitacoraController extends BaseController
     /**
      * Vista equipo — resumen mensual de todos los usuarios (jefe/superadmin)
      */
-    public function equipo($anio = null, $mes = null)
+    public function equipo($idQuincena = null)
     {
         if (!$this->verificarAcceso()) {
             return redirect()->to('/login')->with('error', 'No tienes acceso al módulo de bitácora.');
@@ -245,14 +245,21 @@ class BitacoraController extends BaseController
             return redirect()->to('bitacora');
         }
 
-        $anio = $anio ? (int)$anio : (int)date('Y');
-        $mes  = $mes ? (int)$mes : (int)date('n');
+        $quincenas = $this->getQuincenas();
+        $idx       = $this->resolverIndiceQuincena($quincenas, $idQuincena);
+        $periodo   = $quincenas[$idx];
+
+        // Progreso vs meta: quincena cerrada usa los valores liquidados; la vigente se calcula
+        $progreso = $periodo['cerrada']
+            ? $this->getProgresoQuincenaCerrada((int) $periodo['id'])
+            : $this->getProgresoQuincenaEquipo();
 
         $data = [
-            'anio'     => $anio,
-            'mes'      => $mes,
-            'equipo'   => $this->bitacoraModel->getResumenEquipoMensual($anio, $mes),
-            'quincena' => $this->getProgresoQuincenaEquipo(),
+            'equipo'   => $this->bitacoraModel->getResumenEquipoRango($periodo['fecha_inicio'], $periodo['fecha_fin']),
+            'progreso' => $progreso,
+            'periodo'  => $periodo,
+            'prev'     => $quincenas[$idx - 1] ?? null,
+            'next'     => $quincenas[$idx + 1] ?? null,
             'tab'      => 'equipo',
         ];
 
@@ -260,9 +267,9 @@ class BitacoraController extends BaseController
     }
 
     /**
-     * Detalle mensual de un usuario especifico (vista jefe)
+     * Detalle de un usuario especifico para una quincena (vista jefe)
      */
-    public function equipoDetalle($idUsuario, $anio = null, $mes = null)
+    public function equipoDetalle($idUsuario, $idQuincena = null)
     {
         if (!$this->verificarAcceso()) {
             return redirect()->to('/login')->with('error', 'No tienes acceso al módulo de bitácora.');
@@ -273,18 +280,20 @@ class BitacoraController extends BaseController
             return redirect()->to('bitacora');
         }
 
-        $anio = $anio ? (int)$anio : (int)date('Y');
-        $mes  = $mes ? (int)$mes : (int)date('n');
+        $quincenas = $this->getQuincenas();
+        $idx       = $this->resolverIndiceQuincena($quincenas, $idQuincena);
+        $periodo   = $quincenas[$idx];
 
         $userModel = new UserModel();
         $usuario = $userModel->find($idUsuario);
 
         $data = [
-            'anio'          => $anio,
-            'mes'           => $mes,
             'idUsuario'     => $idUsuario,
             'nombreUsuario' => $usuario ? $usuario['nombre_completo'] : 'Usuario',
-            'resumen'       => $this->bitacoraModel->getResumenMensual((int)$idUsuario, $anio, $mes),
+            'resumen'       => $this->bitacoraModel->getResumenUsuarioRango((int)$idUsuario, $periodo['fecha_inicio'], $periodo['fecha_fin']),
+            'periodo'       => $periodo,
+            'prev'          => $quincenas[$idx - 1] ?? null,
+            'next'          => $quincenas[$idx + 1] ?? null,
             'tab'           => 'equipo',
         ];
 
@@ -294,6 +303,98 @@ class BitacoraController extends BaseController
     // ====================================
     // HELPERS INTERNOS
     // ====================================
+
+    /**
+     * Lista cronológica (asc) de quincenas para navegar en la vista de equipo.
+     * Cada quincena cerrada = una liquidación; la última = quincena vigente (abierta).
+     * Formato por item: id, fecha_inicio, fecha_fin, cerrada, label.
+     */
+    private function getQuincenas(): array
+    {
+        $liquidacionModel = new \App\Models\LiquidacionModel();
+        $historial = $liquidacionModel->getHistorial(); // viene DESC
+
+        $quincenas = [];
+        // Quincenas cerradas (de más antigua a más reciente)
+        foreach (array_reverse($historial) as $liq) {
+            $quincenas[] = [
+                'id'           => (int) $liq['id_liquidacion'],
+                'fecha_inicio' => $liq['fecha_inicio'],
+                'fecha_fin'    => $liq['fecha_corte'],
+                'cerrada'      => true,
+                'label'        => $this->formatLabelQuincena($liq['fecha_inicio'], $liq['fecha_corte'], true),
+            ];
+        }
+
+        // Quincena vigente (abierta): desde la última liquidación o el .env
+        $ultima = $liquidacionModel->getUltimaLiquidacion();
+        $inicioVigente = $ultima
+            ? date('Y-m-d 00:00:00', strtotime($ultima['fecha_corte'] . ' +1 day'))
+            : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
+        $finVigente = date('Y-m-d H:i:s');
+
+        $quincenas[] = [
+            'id'           => 'actual',
+            'fecha_inicio' => $inicioVigente,
+            'fecha_fin'    => $finVigente,
+            'cerrada'      => false,
+            'label'        => $this->formatLabelQuincena($inicioVigente, $finVigente, false),
+        ];
+
+        return $quincenas;
+    }
+
+    /**
+     * Devuelve el índice de la quincena seleccionada dentro de la lista.
+     * Sin id → la vigente (última). Id inválido → también la vigente.
+     */
+    private function resolverIndiceQuincena(array $quincenas, $idQuincena): int
+    {
+        if ($idQuincena !== null) {
+            foreach ($quincenas as $i => $q) {
+                if ((string) $q['id'] === (string) $idQuincena) {
+                    return $i;
+                }
+            }
+        }
+        return count($quincenas) - 1;
+    }
+
+    /**
+     * Etiqueta legible de una quincena: "01 Mar 2026 – 15 Mar 2026" / "16 Abr 2026 – hoy".
+     */
+    private function formatLabelQuincena(string $inicio, string $fin, bool $cerrada): string
+    {
+        $meses = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        $ti = strtotime($inicio);
+        $iniTxt = date('d', $ti) . ' ' . $meses[(int) date('n', $ti)] . ' ' . date('Y', $ti);
+        if (!$cerrada) {
+            return $iniTxt . ' – hoy';
+        }
+        $tf = strtotime($fin);
+        $finTxt = date('d', $tf) . ' ' . $meses[(int) date('n', $tf)] . ' ' . date('Y', $tf);
+        return $iniTxt . ' – ' . $finTxt;
+    }
+
+    /**
+     * Progreso de una quincena ya liquidada: lee los valores definitivos
+     * guardados en detalle_liquidacion. Mapa id_users => [horas_trabajadas, horas_meta, porcentaje].
+     */
+    private function getProgresoQuincenaCerrada(int $idLiquidacion): array
+    {
+        $liquidacionModel = new \App\Models\LiquidacionModel();
+        $detalle = $liquidacionModel->getDetalle($idLiquidacion);
+
+        $mapa = [];
+        foreach ($detalle as $d) {
+            $mapa[(int) $d['id_usuario']] = [
+                'horas_trabajadas' => (float) $d['horas_trabajadas'],
+                'horas_meta'       => (float) $d['horas_meta'],
+                'porcentaje'       => (float) $d['porcentaje_cumplimiento'],
+            ];
+        }
+        return $mapa;
+    }
 
     /**
      * Progreso de la quincena vigente por usuario (horas trabajadas vs meta).
