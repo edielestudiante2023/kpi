@@ -1509,20 +1509,10 @@ PROMPT;
             return $this->response->setJSON(['error' => 'Todos los campos son requeridos'])->setStatusCode(400);
         }
 
-        // Validar saldo disponible (acumulado - consumido)
-        $tiempoModel  = new \App\Models\TiempoAdicionalModel();
+        // El consumo se permite aunque la persona no tenga saldo suficiente:
+        // el saldo queda en negativo y la deuda se arrastra al siguiente periodo
+        // (el saldo es un cálculo corrido: acumulado - consumido, sin caducidad).
         $novedadModel = new \App\Models\NovedadIndividualModel();
-        $disponible = round(
-            $tiempoModel->getAcumuladoUsuario($idUsuario) - $novedadModel->getHorasConsumidasUsuario($idUsuario),
-            2
-        );
-
-        if ($horas > $disponible) {
-            return $this->response->setJSON([
-                'error' => "Saldo insuficiente. Disponible: {$disponible}h, solicitado: {$horas}h",
-            ])->setStatusCode(400);
-        }
-
         $novedadModel->insert([
             'id_usuario'      => $idUsuario,
             'fecha'           => $fecha,

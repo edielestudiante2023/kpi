@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 
-<h6 class="mb-3"><i class="bi bi-hourglass-split me-1"></i> Liquidador de Tiempo Adicional</h6>
+<h6 class="mb-3"><i class="bi bi-hourglass-split me-1"></i> Consumir tiempo adicional</h6>
 <p class="text-muted small mb-3">
     Saldo a favor de cada persona: horas trabajadas por encima de la meta, acumuladas
     quincena a quincena. Consumir tiempo crea una novedad individual que reduce la meta de esa fecha.
@@ -41,7 +41,8 @@
             </div>
         </div>
         <div class="text-muted mt-1" style="font-size:0.7rem;">
-            El sistema bloquea el registro si la persona no tiene saldo disponible suficiente.
+            Si la persona no tiene saldo suficiente, igual se registra: el saldo queda en
+            negativo y la deuda se arrastra al siguiente periodo.
         </div>
     </div>
 </div>
@@ -143,6 +144,8 @@
     var BASE = '<?= base_url() ?>';
     var CSRF_NAME = '<?= csrf_token() ?>';
     var CSRF_HASH = '<?= csrf_hash() ?>';
+    // Saldo disponible por usuario, para avisar si el consumo lo deja en negativo
+    var SALDOS = <?= json_encode(array_column($resumen, 'disponible', 'id_users')) ?>;
 
     $('#selectUsuario').select2({
         theme: 'bootstrap-5',
@@ -169,6 +172,16 @@
             if (!usuario || !fecha || !horas || parseFloat(horas) <= 0 || !motivo) {
                 alert('Todos los campos son requeridos');
                 return;
+            }
+
+            // Avisar si el consumo deja el saldo en negativo
+            var disp = SALDOS[usuario];
+            if (typeof disp !== 'undefined' && parseFloat(horas) > disp) {
+                var nuevoSaldo = (disp - parseFloat(horas)).toFixed(2);
+                if (!confirm('La persona no tiene saldo suficiente. Esto dejará su saldo en '
+                    + nuevoSaldo + 'h y la deuda se arrastra al siguiente periodo. ¿Continuar?')) {
+                    return;
+                }
             }
 
             btnRegistrar.disabled = true;

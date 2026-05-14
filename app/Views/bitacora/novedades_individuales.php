@@ -82,7 +82,7 @@
 <!-- Navegación -->
 <div class="mt-3 d-flex flex-column gap-2">
     <a href="<?= base_url('bitacora/tiempo-adicional') ?>" class="btn btn-outline-warning btn-sm w-100">
-        <i class="bi bi-hourglass-split me-1"></i> Liquidador de Tiempo Adicional
+        <i class="bi bi-hourglass-split me-1"></i> Consumir tiempo adicional
     </a>
     <a href="<?= base_url('bitacora/novedades-colectivas') ?>" class="btn btn-outline-info btn-sm w-100">
         <i class="bi bi-calendar2-check me-1"></i> Novedades Colectivas (Fechas Especiales)
