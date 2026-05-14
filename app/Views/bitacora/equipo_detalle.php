@@ -3,17 +3,56 @@
 <?= $this->section('content') ?>
 
 <?php
-$meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 $dias = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+
+// URL de una quincena para este usuario
+$urlQuincena = function ($p) use ($idUsuario) {
+    return $p['id'] === 'actual'
+        ? base_url("bitacora/equipo/detalle/{$idUsuario}")
+        : base_url("bitacora/equipo/detalle/{$idUsuario}/" . $p['id']);
+};
+// Volver a la lista de equipo en la misma quincena
+$urlVolver = $periodo['id'] === 'actual'
+    ? base_url('bitacora/equipo')
+    : base_url('bitacora/equipo/' . $periodo['id']);
 ?>
 
 <h6 class="text-muted mb-2">
-    <a href="<?= base_url("bitacora/equipo/{$anio}/{$mes}") ?>" class="text-decoration-none text-muted">
+    <a href="<?= $urlVolver ?>" class="text-decoration-none text-muted">
         <i class="bi bi-arrow-left me-1"></i>
     </a>
     <i class="bi bi-person me-1"></i> <?= esc($nombreUsuario) ?>
 </h6>
-<div class="text-muted small mb-3"><?= $meses[$mes] ?> <?= $anio ?></div>
+
+<!-- Selector de quincena -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center justify-content-between">
+            <?php if ($prev): ?>
+                <a href="<?= $urlQuincena($prev) ?>" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            <?php else: ?>
+                <span class="btn btn-sm btn-outline-secondary disabled"><i class="bi bi-chevron-left"></i></span>
+            <?php endif; ?>
+
+            <div class="text-center">
+                <span class="fw-bold small"><?= esc($periodo['label']) ?></span>
+                <?php if (!$periodo['cerrada']): ?>
+                    <span class="badge bg-success ms-1">Vigente</span>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($next): ?>
+                <a href="<?= $urlQuincena($next) ?>" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            <?php else: ?>
+                <span class="btn btn-sm btn-outline-secondary disabled"><i class="bi bi-chevron-right"></i></span>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
 
 <!-- Totales -->
 <?php

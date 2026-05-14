@@ -306,8 +306,9 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->get('analisis', 'BitacoraController::analisis');
     $routes->get('analisis/(:num)/(:num)', 'BitacoraController::analisis/$1/$2');
     $routes->get('equipo', 'BitacoraController::equipo');
-    $routes->get('equipo/(:num)/(:num)', 'BitacoraController::equipo/$1/$2');
-    $routes->get('equipo/detalle/(:num)/(:num)/(:num)', 'BitacoraController::equipoDetalle/$1/$2/$3');
+    $routes->get('equipo/detalle/(:num)', 'BitacoraController::equipoDetalle/$1');
+    $routes->get('equipo/detalle/(:num)/(:num)', 'BitacoraController::equipoDetalle/$1/$2');
+    $routes->get('equipo/(:num)', 'BitacoraController::equipo/$1');
     $routes->get('centros-costo', 'BitacoraController::centrosCosto');
     $routes->post('centros-costo/guardar', 'BitacoraController::guardarCentroCosto');
     $routes->post('centros-costo/eliminar/(:num)', 'BitacoraController::eliminarCentroCosto/$1');
