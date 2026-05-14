@@ -249,10 +249,11 @@ class BitacoraController extends BaseController
         $mes  = $mes ? (int)$mes : (int)date('n');
 
         $data = [
-            'anio'   => $anio,
-            'mes'    => $mes,
-            'equipo' => $this->bitacoraModel->getResumenEquipoMensual($anio, $mes),
-            'tab'    => 'equipo',
+            'anio'     => $anio,
+            'mes'      => $mes,
+            'equipo'   => $this->bitacoraModel->getResumenEquipoMensual($anio, $mes),
+            'quincena' => $this->getProgresoQuincenaEquipo(),
+            'tab'      => 'equipo',
         ];
 
         return view('bitacora/equipo', $data);
@@ -293,6 +294,56 @@ class BitacoraController extends BaseController
     // ====================================
     // HELPERS INTERNOS
     // ====================================
+
+    /**
+     * Progreso de la quincena vigente por usuario (horas trabajadas vs meta).
+     * Misma lógica que liquidacion() y el email diario. Devuelve un mapa
+     * id_users => ['horas_trabajadas','horas_meta','porcentaje'].
+     */
+    private function getProgresoQuincenaEquipo(): array
+    {
+        $liquidacionModel = new \App\Models\LiquidacionModel();
+        $festivoModel     = new \App\Models\DiaFestivoModel();
+        $userModel        = new UserModel();
+        $novedadColModel  = new \App\Models\NovedadColectivaModel();
+        $novedadIndModel  = new \App\Models\NovedadIndividualModel();
+
+        // Inicio del periodo: desde la última liquidación o el primer periodo del .env
+        $ultima = $liquidacionModel->getUltimaLiquidacion();
+        $fechaInicio = $ultima
+            ? date('Y-m-d 00:00:00', strtotime($ultima['fecha_corte'] . ' +1 day'))
+            : env('BITACORA_PRIMERA_QUINCENA', '2026-03-01 00:00:00');
+        $fechaHoy = date('Y-m-d H:i:s');
+
+        // Fin real de la quincena (día 15 o último día del mes)
+        $inicioSolo = substr($fechaInicio, 0, 10);
+        $diaInicio  = (int) date('j', strtotime($inicioSolo));
+        $fechaFinQuincena = $diaInicio <= 15
+            ? date('Y-m-15', strtotime($inicioSolo))
+            : date('Y-m-t', strtotime($inicioSolo));
+
+        $diasHabiles     = $festivoModel->contarDiasHabiles($fechaInicio, $fechaFinQuincena);
+        $horasColectivas = $novedadColModel->getHorasColectivasRango($fechaInicio, $fechaFinQuincena);
+
+        $usuarios = $userModel->where('activo', 1)->where('bitacora_habilitada', 1)->findAll();
+        $mapa = [];
+        foreach ($usuarios as $u) {
+            $minutos = $this->bitacoraModel->getTotalMinutosRango((int) $u['id_users'], $fechaInicio, $fechaHoy);
+            $horasTrabajadas = round($minutos / 60, 2);
+
+            $jornada = $u['jornada'] ?? 'completa';
+            $horasIndividuales = $novedadIndModel->getHorasIndividualesRango((int) $u['id_users'], $fechaInicio, $fechaFinQuincena);
+            $horasMeta = calcularMetaHoras($diasHabiles, $jornada, $horasColectivas, $horasIndividuales);
+
+            $mapa[(int) $u['id_users']] = [
+                'horas_trabajadas' => $horasTrabajadas,
+                'horas_meta'       => $horasMeta,
+                'porcentaje'       => $horasMeta > 0 ? round(($horasTrabajadas / $horasMeta) * 100, 1) : 0,
+            ];
+        }
+
+        return $mapa;
+    }
 
     /**
      * Limpia y trunca el valor de cliente. Default 'FRAMEWORK' si viene vacío.

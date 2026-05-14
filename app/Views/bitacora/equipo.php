@@ -47,15 +47,19 @@ $esMesActual = ($anio == date('Y') && $mes == date('n'));
     <?php foreach ($equipo as $u):
         $minutos = (float)$u['total_minutos'];
         $horasDecimal = $minutos / 60;
-        $diasLaborales = (int)date('t', mktime(0, 0, 0, $mes, 1, $anio));
-        // Estimado burdo de dias laborales (22 aprox)
-        $diasLab = min(22, $diasLaborales);
-        $porcentaje = $diasLab > 0 ? min(100, round(((int)$u['dias_registrados'] / $diasLab) * 100)) : 0;
         // Color segun promedio diario
         $promDiario = (int)$u['dias_registrados'] > 0 ? $horasDecimal / (int)$u['dias_registrados'] : 0;
         $colorBorder = '#dc3545';
         if ($promDiario >= 8) $colorBorder = '#198754';
         elseif ($promDiario >= 6) $colorBorder = '#ffc107';
+
+        // Progreso de la quincena vigente (horas trabajadas vs meta) — mismo dato del email
+        $q = $quincena[(int)$u['id_users']] ?? null;
+        $porcentaje = $q ? min(100, round($q['porcentaje'])) : 0;
+        // Color de la barra segun cumplimiento de la meta quincenal
+        $colorBarra = '#dc3545';
+        if ($q && $q['porcentaje'] >= 100) $colorBarra = '#198754';
+        elseif ($q && $q['porcentaje'] >= 80) $colorBarra = '#ffc107';
     ?>
         <a href="<?= base_url("bitacora/equipo/detalle/{$u['id_users']}/{$anio}/{$mes}") ?>" class="text-decoration-none">
             <div class="actividad-card mb-2" style="border-left: 4px solid <?= $colorBorder ?>;">
@@ -69,11 +73,18 @@ $esMesActual = ($anio == date('Y') && $mes == date('n'));
                             <span class="me-2"><i class="bi bi-calendar-check me-1"></i><?= $u['dias_registrados'] ?> dias</span>
                             <span><i class="bi bi-list-check me-1"></i><?= $u['num_actividades'] ?> act.</span>
                         </div>
-                        <!-- Barra de progreso: dias registrados vs dias laborales -->
-                        <div class="progress mt-1" style="height: 4px;">
-                            <div class="progress-bar" role="progressbar" style="width: <?= $porcentaje ?>%;"
-                                 aria-valuenow="<?= $porcentaje ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+                        <!-- Barra de progreso: horas trabajadas vs meta de la quincena vigente -->
+                        <?php if ($q): ?>
+                            <div class="progress mt-1" style="height: 4px;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: <?= $porcentaje ?>%; background-color: <?= $colorBarra ?>;"
+                                     aria-valuenow="<?= $porcentaje ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="text-muted" style="font-size:0.7rem;">
+                                Quincena: <?= $q['horas_trabajadas'] ?>h / <?= $q['horas_meta'] ?>h meta
+                                (<?= $q['porcentaje'] ?>%)
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <i class="bi bi-chevron-right text-muted"></i>
                 </div>
