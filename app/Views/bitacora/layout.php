@@ -266,7 +266,7 @@
         </a>
         <a href="<?= base_url('bitacora/tiempo-adicional') ?>" class="<?= ($tab ?? '') === 'tiempo-adicional' ? 'active' : '' ?>">
             <i class="bi bi-hourglass-split"></i>
-            Adicional
+            Consumir
         </a>
         <?php endif; ?>
         <a href="<?= base_url('bitacora/centros-costo') ?>" class="<?= ($tab ?? '') === 'centros' ? 'active' : '' ?>">
