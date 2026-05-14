@@ -338,6 +338,10 @@ $routes->group('bitacora', ['namespace' => 'App\Controllers', 'filter' => 'auth'
     $routes->get('novedades-individuales', 'BitacoraController::novedadesIndividuales');
     $routes->post('novedades-individuales/guardar', 'BitacoraController::guardarNovedadIndividual');
     $routes->post('novedades-individuales/eliminar/(:num)', 'BitacoraController::eliminarNovedadIndividual/$1');
+    // Liquidador de Tiempo Adicional
+    $routes->get('tiempo-adicional', 'BitacoraController::tiempoAdicional');
+    $routes->post('tiempo-adicional/registrar', 'BitacoraController::registrarConsumoTiempo');
+    $routes->post('tiempo-adicional/eliminar/(:num)', 'BitacoraController::eliminarConsumoTiempo/$1');
     // Correcciones (autenticado)
     $routes->post('correccion/solicitar', 'BitacoraController::solicitarCorreccion');
 });
