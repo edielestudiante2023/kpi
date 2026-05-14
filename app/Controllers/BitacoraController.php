@@ -1039,6 +1039,7 @@ PROMPT;
         // 4. Novedades de tiempo
         $novedadColModel = new \App\Models\NovedadColectivaModel();
         $novedadIndModel = new \App\Models\NovedadIndividualModel();
+        $tiempoAdicionalModel = new \App\Models\TiempoAdicionalModel();
         $horasColectivas = $novedadColModel->getHorasColectivasRango($fechaInicio, $fechaFinQuincena);
 
         // 5. Calcular por usuario
@@ -1064,6 +1065,15 @@ PROMPT;
                 'horas_trabajadas'      => $horasTrabajadas,
                 'porcentaje_cumplimiento' => $porcentaje,
             ]);
+
+            // Tiempo adicional: si trabajó más que la meta, acumular el excedente como saldo a favor
+            if ($horasTrabajadas > $horasMeta) {
+                $tiempoAdicionalModel->insert([
+                    'id_usuario'        => $u['id_users'],
+                    'id_liquidacion'    => $idLiquidacion,
+                    'horas_adicionales' => round($horasTrabajadas - $horasMeta, 2),
+                ]);
+            }
 
             $detalles[] = [
                 'usuario'   => $u,
@@ -1433,6 +1443,115 @@ PROMPT;
 
         $model = new \App\Models\NovedadIndividualModel();
         $model->delete($id);
+        return $this->response->setJSON(['ok' => true]);
+    }
+
+    // ========================================
+    // LIQUIDADOR DE TIEMPO ADICIONAL
+    // ========================================
+
+    /**
+     * Vista del liquidador de tiempo adicional: saldo por usuario + detalle.
+     */
+    public function tiempoAdicional()
+    {
+        if (!$this->verificarAcceso()) return redirect()->to('/login');
+        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
+
+        $userModel    = new \App\Models\UserModel();
+        $tiempoModel  = new \App\Models\TiempoAdicionalModel();
+        $novedadModel = new \App\Models\NovedadIndividualModel();
+
+        $usuarios  = $userModel->where('activo', 1)->where('bitacora_habilitada', 1)
+                               ->orderBy('nombre_completo')->findAll();
+        $acumulado = $tiempoModel->getAcumuladoTodos();
+        $consumido = $novedadModel->getConsumidoTodos();
+
+        $resumen = [];
+        foreach ($usuarios as $u) {
+            $id = (int) $u['id_users'];
+            $ac = $acumulado[$id] ?? 0;
+            $co = $consumido[$id] ?? 0;
+            $resumen[] = [
+                'id_users'        => $id,
+                'nombre_completo' => $u['nombre_completo'],
+                'acumulado'       => round($ac, 2),
+                'consumido'       => round($co, 2),
+                'disponible'      => round($ac - $co, 2),
+                'acumulaciones'   => $tiempoModel->getAcumulacionesUsuario($id),
+                'consumos'        => $novedadModel->getConsumosUsuario($id),
+            ];
+        }
+
+        return view('bitacora/tiempo_adicional', [
+            'tab'      => 'tiempo-adicional',
+            'usuarios' => $usuarios,
+            'resumen'  => $resumen,
+        ]);
+    }
+
+    /**
+     * Registrar consumo de tiempo adicional — POST AJAX.
+     * Valida saldo disponible y crea una novedad individual tipo 'uso_tiempo_adicional'.
+     */
+    public function registrarConsumoTiempo()
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $idUsuario = (int) $this->request->getPost('id_usuario');
+        $fecha     = $this->request->getPost('fecha');
+        $horas     = (float) $this->request->getPost('horas');
+        $motivo    = trim((string) $this->request->getPost('motivo'));
+
+        if (!$idUsuario || !$fecha || $horas <= 0 || $motivo === '') {
+            return $this->response->setJSON(['error' => 'Todos los campos son requeridos'])->setStatusCode(400);
+        }
+
+        // Validar saldo disponible (acumulado - consumido)
+        $tiempoModel  = new \App\Models\TiempoAdicionalModel();
+        $novedadModel = new \App\Models\NovedadIndividualModel();
+        $disponible = round(
+            $tiempoModel->getAcumuladoUsuario($idUsuario) - $novedadModel->getHorasConsumidasUsuario($idUsuario),
+            2
+        );
+
+        if ($horas > $disponible) {
+            return $this->response->setJSON([
+                'error' => "Saldo insuficiente. Disponible: {$disponible}h, solicitado: {$horas}h",
+            ])->setStatusCode(400);
+        }
+
+        $novedadModel->insert([
+            'id_usuario'      => $idUsuario,
+            'fecha'           => $fecha,
+            'horas_reduccion' => $horas,
+            'motivo'          => $motivo,
+            'tipo'            => 'uso_tiempo_adicional',
+            'created_by'      => (int) session()->get('id_users'),
+        ]);
+
+        return $this->response->setJSON(['ok' => true, 'id' => $novedadModel->getInsertID()]);
+    }
+
+    /**
+     * Eliminar un consumo de tiempo adicional — POST AJAX.
+     * Solo elimina novedades de tipo 'uso_tiempo_adicional'; el saldo se "devuelve" solo.
+     */
+    public function eliminarConsumoTiempo($id)
+    {
+        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+            return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
+        }
+
+        $novedadModel = new \App\Models\NovedadIndividualModel();
+        $nov = $novedadModel->find($id);
+        if (!$nov || ($nov['tipo'] ?? 'reduccion') !== 'uso_tiempo_adicional') {
+            return $this->response->setJSON(['error' => 'Registro no válido'])->setStatusCode(404);
+        }
+
+        $novedadModel->delete($id);
         return $this->response->setJSON(['ok' => true]);
     }
 

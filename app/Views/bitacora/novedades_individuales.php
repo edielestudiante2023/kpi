@@ -47,11 +47,20 @@
         <p class="mt-2 small">No hay novedades individuales registradas</p>
     </div>
     <?php else: ?>
-    <?php foreach ($novedades as $n): ?>
+    <?php foreach ($novedades as $n):
+        $esTiempoAdicional = ($n['tipo'] ?? 'reduccion') === 'uso_tiempo_adicional';
+    ?>
     <div class="card shadow-sm mb-2" id="nov-<?= $n['id_novedad_individual'] ?>">
         <div class="card-body p-2 d-flex justify-content-between align-items-center">
             <div>
-                <div class="fw-bold small"><?= esc($n['nombre_completo']) ?></div>
+                <div class="fw-bold small">
+                    <?= esc($n['nombre_completo']) ?>
+                    <?php if ($esTiempoAdicional): ?>
+                        <span class="badge bg-warning text-dark" style="font-size:0.6rem;">
+                            <i class="bi bi-hourglass-split"></i> Tiempo adicional
+                        </span>
+                    <?php endif; ?>
+                </div>
                 <div class="text-muted" style="font-size: 0.7rem;">
                     <i class="bi bi-calendar3 me-1"></i>
                     <?= date('d/m/Y', strtotime($n['fecha'])) ?>
@@ -72,6 +81,9 @@
 
 <!-- Navegación -->
 <div class="mt-3 d-flex flex-column gap-2">
+    <a href="<?= base_url('bitacora/tiempo-adicional') ?>" class="btn btn-outline-warning btn-sm w-100">
+        <i class="bi bi-hourglass-split me-1"></i> Liquidador de Tiempo Adicional
+    </a>
     <a href="<?= base_url('bitacora/novedades-colectivas') ?>" class="btn btn-outline-info btn-sm w-100">
         <i class="bi bi-calendar2-check me-1"></i> Novedades Colectivas (Fechas Especiales)
     </a>
