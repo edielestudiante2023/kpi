@@ -504,6 +504,8 @@ $routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], fu
 
     // Dashboard
     $routes->get('dashboard', 'CrmController::dashboard');
+    // Manual de usuario
+    $routes->get('ayuda', 'CrmController::ayuda');
 
     // Interacciones (timeline)
     $routes->post('interacciones/agregar', 'CrmInteraccionController::agregarAjax');
