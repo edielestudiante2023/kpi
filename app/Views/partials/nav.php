@@ -236,6 +236,9 @@ $esContador = ((int) $rolId === 5);
                         <li><a class="dropdown-item" href="<?= base_url('crm/empresas') ?>">
                             <i class="bi bi-building me-2"></i>Empresas
                         </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/snapshots') ?>">
+                            <i class="bi bi-camera me-2"></i>Snapshots <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <?php if ($crmAdm || $rolId == 1): ?>
                             <li><hr class="dropdown-divider"></li>
                             <li class="dropdown-header">Configuración</li>
