@@ -8,6 +8,7 @@ class CuentaCobroModel extends Model
     protected $primaryKey = 'id_cuenta_cobro';
 
     protected $allowedFields = [
+        'id_tercero',
         'tipo_documento', 'documento', 'nombre_cobrador',
         'email_cobrador', 'telefono_cobrador',
         'id_centro_costo', 'id_clasificacion',

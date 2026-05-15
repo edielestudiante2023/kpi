@@ -247,13 +247,19 @@ $esContador = ((int) $rolId === 5);
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/bancaria') ?>">
                             <i class="bi bi-bank me-2"></i>Conciliación Bancaria
                         </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/extractos-bancarios') ?>">
+                            <i class="bi bi-file-earmark-pdf me-2"></i>Extractos Bancarios <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Obligaciones</li>
+                        <li><a class="dropdown-item" href="<?= base_url('conciliaciones/terceros') ?>">
+                            <i class="bi bi-people me-2"></i>Terceros <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/deudas') ?>">
                             <i class="bi bi-cash-stack me-2"></i>Deudas
                         </a></li>
                         <li><a class="dropdown-item" href="<?= base_url('conciliaciones/cuentas-cobro') ?>">
-                            <i class="bi bi-file-earmark-pdf me-2"></i>Cuentas de Cobro <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                            <i class="bi bi-file-earmark-pdf me-2"></i>Cuentas de Cobro
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li class="dropdown-header">Maestras</li>
