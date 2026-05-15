@@ -27,14 +27,18 @@ if (!function_exists('crm_es_admin')) {
 
 if (!function_exists('crm_tiene_acceso')) {
     /**
-     * ¿El usuario actual tiene acceso al módulo CRM (cualquier nivel)?
+     * ¿El usuario actual tiene acceso al módulo CRM?
+     *
+     * Política actual: TODOS los usuarios logueados, excepto el contador (rol 5).
+     * Los flags `crm_habilitado` / `crm_admin` siguen existiendo pero solo regulan
+     * el nivel de visibilidad (crm_es_admin → ve todo; vendedor → ve solo lo suyo).
      */
     function crm_tiene_acceso(): bool
     {
         $s = session();
-        if (!$s) return false;
+        if (!$s || !$s->get('id_users')) return false;
         if ((int) $s->get('id_roles') === 5) return false; // contador externo, no
-        return crm_es_admin() || (int) $s->get('crm_habilitado') === 1;
+        return true;
     }
 }
 

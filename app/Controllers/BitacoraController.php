@@ -1452,11 +1452,11 @@ PROMPT;
 
     /**
      * Vista del liquidador de tiempo adicional: saldo por usuario + detalle.
+     * Acceso abierto a todos los usuarios con bitacora habilitada.
      */
     public function tiempoAdicional()
     {
         if (!$this->verificarAcceso()) return redirect()->to('/login');
-        if (!$this->esAdminBitacora()) return redirect()->to('bitacora');
 
         $userModel    = new \App\Models\UserModel();
         $tiempoModel  = new \App\Models\TiempoAdicionalModel();
@@ -1492,11 +1492,12 @@ PROMPT;
 
     /**
      * Registrar consumo de tiempo adicional — POST AJAX.
-     * Valida saldo disponible y crea una novedad individual tipo 'uso_tiempo_adicional'.
+     * Crea una novedad individual tipo 'uso_tiempo_adicional'. Acceso abierto
+     * a cualquier usuario con bitacora habilitada (saldo puede quedar negativo).
      */
     public function registrarConsumoTiempo()
     {
-        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+        if (!$this->verificarAcceso()) {
             return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
         }
 
@@ -1528,10 +1529,11 @@ PROMPT;
     /**
      * Eliminar un consumo de tiempo adicional — POST AJAX.
      * Solo elimina novedades de tipo 'uso_tiempo_adicional'; el saldo se "devuelve" solo.
+     * Acceso abierto a cualquier usuario con bitacora habilitada.
      */
     public function eliminarConsumoTiempo($id)
     {
-        if (!$this->verificarAcceso() || !$this->esAdminBitacora()) {
+        if (!$this->verificarAcceso()) {
             return $this->response->setJSON(['error' => 'Sin acceso'])->setStatusCode(403);
         }
 
