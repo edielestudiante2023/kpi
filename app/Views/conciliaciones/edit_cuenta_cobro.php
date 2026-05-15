@@ -45,6 +45,36 @@
         <?= csrf_field() ?>
         <div class="row g-3">
             <div class="col-md-8">
+                <!-- Tercero -->
+                <div class="card shadow-sm mb-3 border-info">
+                    <div class="card-header bg-info text-white"><i class="bi bi-person-vcard me-1"></i>Tercero</div>
+                    <div class="card-body">
+                        <label class="form-label small">Tercero asociado (opcional)</label>
+                        <select name="id_tercero" id="sel_tercero" class="form-select form-select-sm select2-cc">
+                            <option value="">— Capturar manualmente —</option>
+                            <?php foreach ($terceros as $t): ?>
+                                <option value="<?= $t['id_tercero'] ?>"
+                                        <?= ((int) ($cc['id_tercero'] ?? 0) === (int) $t['id_tercero']) ? 'selected' : '' ?>
+                                        data-tipo_documento="<?= esc($t['tipo_documento'], 'attr') ?>"
+                                        data-documento="<?= esc($t['documento'], 'attr') ?>"
+                                        data-nombre="<?= esc($t['nombre'], 'attr') ?>"
+                                        data-email="<?= esc($t['email'] ?? '', 'attr') ?>"
+                                        data-telefono="<?= esc($t['telefono'] ?? '', 'attr') ?>"
+                                        data-banco="<?= esc($t['banco'] ?? '', 'attr') ?>"
+                                        data-tipo_cuenta="<?= esc($t['tipo_cuenta'] ?? '', 'attr') ?>"
+                                        data-numero_cuenta="<?= esc($t['numero_cuenta'] ?? '', 'attr') ?>"
+                                        data-titular_cuenta="<?= esc($t['titular_cuenta'] ?? '', 'attr') ?>">
+                                    <?= esc($t['nombre']) ?> — <?= esc($t['documento']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="text-muted small mt-1">
+                            Si el tercero no existe, créalo primero en
+                            <a href="<?= base_url('conciliaciones/terceros') ?>" target="_blank">Terceros</a>.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white"><i class="bi bi-person me-1"></i>Datos del cobrador</div>
                     <div class="card-body">
@@ -201,6 +231,26 @@ $(function () {
         placeholder: 'Buscar...',
         allowClear: true,
         width: '100%',
+    });
+
+    // Autocompletar al cambiar de tercero
+    $('#sel_tercero').on('change', function () {
+        const opt = this.options[this.selectedIndex];
+        if (!opt || !opt.value) return;
+        const f = document.getElementById('formCCedit');
+        function setIfEmpty(name, val) {
+            const el = f.querySelector('[name=' + name + ']');
+            if (el) el.value = val || '';
+        }
+        setIfEmpty('tipo_documento',        opt.dataset.tipo_documento);
+        setIfEmpty('documento',             opt.dataset.documento);
+        setIfEmpty('nombre_cobrador',       opt.dataset.nombre);
+        setIfEmpty('email_cobrador',        opt.dataset.email);
+        setIfEmpty('telefono_cobrador',     opt.dataset.telefono);
+        setIfEmpty('banco_destino',         opt.dataset.banco);
+        setIfEmpty('tipo_cuenta_destino',   opt.dataset.tipo_cuenta);
+        setIfEmpty('numero_cuenta_destino', opt.dataset.numero_cuenta);
+        setIfEmpty('titular_cuenta',        opt.dataset.titular_cuenta);
     });
 });
 function parseMonto(str) { if (!str) return 0; let s = String(str).replace(/[\$\s]/g,''); if (s.indexOf(',') !== -1) s = s.replace(/\./g,'').replace(',','.'); else s = s.replace(/\./g,''); return parseFloat(s) || 0; }

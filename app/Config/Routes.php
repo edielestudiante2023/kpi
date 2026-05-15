@@ -464,6 +464,23 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers', 'filter' => 
     $routes->get('cuentas-cobro/eliminar/(:num)', 'CuentaCobroController::eliminar/$1');
     $routes->get('cuentas-cobro/pdf/(:num)', 'CuentaCobroController::visualizarPdf/$1');
     $routes->get('cuentas-cobro/descargar/(:num)', 'CuentaCobroController::descargarPdf/$1');
+
+    // Terceros (maestro de proveedores con RUT/cédula/cert. bancaria)
+    $routes->get('terceros', 'TerceroController::index');
+    $routes->post('terceros/guardar', 'TerceroController::guardar');
+    $routes->post('terceros/eliminar/(:num)', 'TerceroController::eliminar/$1');
+    $routes->post('terceros/documento/subir/(:num)', 'TerceroController::subirDocumento/$1');
+    $routes->post('terceros/documento/eliminar/(:num)', 'TerceroController::eliminarDocumento/$1');
+    $routes->get('terceros/documento/ver/(:num)', 'TerceroController::verDocumento/$1');
+    $routes->get('terceros/buscar', 'TerceroController::buscar');
+    $routes->get('terceros/(:num)', 'TerceroController::obtener/$1');
+
+    // Extractos bancarios (PDFs para revisión de la contadora)
+    $routes->get('extractos-bancarios', 'ExtractoBancarioController::index');
+    $routes->post('extractos-bancarios/subir', 'ExtractoBancarioController::subir');
+    $routes->get('extractos-bancarios/eliminar/(:num)', 'ExtractoBancarioController::eliminar/$1');
+    $routes->get('extractos-bancarios/ver/(:num)', 'ExtractoBancarioController::ver/$1');
+    $routes->get('extractos-bancarios/descargar/(:num)', 'ExtractoBancarioController::descargar/$1');
 });
 
 // ====================================

@@ -92,6 +92,11 @@ class CuentaCobroController extends BaseController
         $data['clasificaciones'] = $db->table('tbl_clasificacion_costos')
             ->orderBy('categoria', 'ASC')->orderBy('llave_item','ASC')
             ->get()->getResultArray();
+        $data['terceros'] = $db->table('tbl_terceros')
+            ->select('id_tercero, tipo_documento, documento, nombre, email, telefono, banco, tipo_cuenta, numero_cuenta, titular_cuenta')
+            ->where('activo', 1)
+            ->orderBy('nombre', 'ASC')
+            ->get()->getResultArray();
         return view('conciliaciones/add_cuenta_cobro', $data);
     }
 
@@ -171,6 +176,11 @@ class CuentaCobroController extends BaseController
         $db = \Config\Database::connect();
         $data['clasificaciones'] = $db->table('tbl_clasificacion_costos')
             ->orderBy('categoria','ASC')->orderBy('llave_item','ASC')->get()->getResultArray();
+        $data['terceros'] = $db->table('tbl_terceros')
+            ->select('id_tercero, tipo_documento, documento, nombre, email, telefono, banco, tipo_cuenta, numero_cuenta, titular_cuenta')
+            ->where('activo', 1)
+            ->orderBy('nombre', 'ASC')
+            ->get()->getResultArray();
         return view('conciliaciones/edit_cuenta_cobro', $data);
     }
 
@@ -286,6 +296,7 @@ class CuentaCobroController extends BaseController
     {
         $req = $this->request;
         return [
+            'id_tercero'           => (int) $req->getPost('id_tercero') ?: null,
             'tipo_documento'       => $req->getPost('tipo_documento') ?: 'CC',
             'documento'            => trim((string) $req->getPost('documento')),
             'nombre_cobrador'      => trim((string) $req->getPost('nombre_cobrador')),
