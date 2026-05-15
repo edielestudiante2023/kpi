@@ -250,6 +250,10 @@ $esContador = ((int) $rolId === 5);
                                 <i class="bi bi-x-circle me-2"></i>Motivos de pérdida
                             </a></li>
                         <?php endif; ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/ayuda') ?>">
+                            <i class="bi bi-book me-2"></i>Manual de usuario
+                        </a></li>
                     </ul>
                 </li>
                 <?php endif; ?>

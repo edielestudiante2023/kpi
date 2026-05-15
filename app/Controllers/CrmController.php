@@ -54,4 +54,15 @@ class CrmController extends BaseController
             'esAdmin'          => $esAdmin,
         ]);
     }
+
+    /**
+     * Manual de usuario del módulo CRM (vista estática con paso a paso).
+     */
+    public function ayuda()
+    {
+        if (!crm_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo CRM.');
+        }
+        return view('crm/ayuda', ['esAdmin' => crm_es_admin()]);
+    }
 }
