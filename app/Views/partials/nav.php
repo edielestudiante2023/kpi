@@ -211,10 +211,9 @@ $esContador = ((int) $rolId === 5);
                 <?php endif; // fin !$esContador ?>
 
                 <?php
-                $crmHab = (int) $session->get('crm_habilitado') === 1;
                 $crmAdm = (int) $session->get('crm_admin') === 1;
                 ?>
-                <?php if (! $esContador && ($crmHab || $crmAdm || in_array($rolId, [1, 2]))): ?>
+                <?php if (! $esContador): ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?= strpos($currentUrl, '/crm') !== false ? 'active fw-bold' : '' ?>"
                        href="#" data-bs-toggle="dropdown">
