@@ -28,6 +28,8 @@ class UserModel extends Model
         'bitacora_habilitada',
         'jornada',
         'admin_bitacora',
+        'crm_habilitado',
+        'crm_admin',
     ];
 
 
@@ -54,6 +56,8 @@ class UserModel extends Model
         'bitacora_habilitada' => 'permit_empty|in_list[0,1]',
         'jornada'             => 'permit_empty|in_list[completa,media]',
         'admin_bitacora'      => 'permit_empty|in_list[0,1]',
+        'crm_habilitado'      => 'permit_empty|in_list[0,1]',
+        'crm_admin'           => 'permit_empty|in_list[0,1]',
     ];
 
     /**

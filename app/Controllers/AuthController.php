@@ -90,6 +90,8 @@ class AuthController extends BaseController
             'id_perfil_cargo'     => $usuario['id_perfil_cargo'],
             'bitacora_habilitada' => $usuario['bitacora_habilitada'] ?? 0,
             'admin_bitacora'      => $usuario['admin_bitacora'] ?? 0,
+            'crm_habilitado'      => $usuario['crm_habilitado'] ?? 0,
+            'crm_admin'           => $usuario['crm_admin'] ?? 0,
             'logged_in'           => true,
             'isLoggedIn'          => true
         ];

@@ -484,6 +484,62 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers', 'filter' => 
 });
 
 // ====================================
+// MÓDULO CRM (Pipeline comercial)
+// ====================================
+$routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function($routes) {
+    // Empresas
+    $routes->get('empresas', 'CrmEmpresaController::index');
+    $routes->get('empresas/nueva', 'CrmEmpresaController::crear');
+    $routes->post('empresas/nueva', 'CrmEmpresaController::crearPost');
+    $routes->get('empresas/ver/(:num)', 'CrmEmpresaController::ver/$1');
+    $routes->get('empresas/editar/(:num)', 'CrmEmpresaController::editar/$1');
+    $routes->post('empresas/editar/(:num)', 'CrmEmpresaController::editarPost/$1');
+    $routes->get('empresas/eliminar/(:num)', 'CrmEmpresaController::eliminar/$1');
+    $routes->get('empresas/buscar', 'CrmEmpresaController::buscarAjax');
+
+    // Contactos (AJAX desde ficha de empresa)
+    $routes->post('contactos/guardar', 'CrmContactoController::guardar');
+    $routes->post('contactos/eliminar/(:num)', 'CrmContactoController::eliminar/$1');
+    $routes->get('contactos/buscar', 'CrmContactoController::buscarAjax');
+
+    // Dashboard
+    $routes->get('dashboard', 'CrmController::dashboard');
+
+    // Interacciones (timeline)
+    $routes->post('interacciones/agregar', 'CrmInteraccionController::agregarAjax');
+    $routes->post('interacciones/completar/(:num)', 'CrmInteraccionController::completarAjax/$1');
+    $routes->post('interacciones/eliminar/(:num)', 'CrmInteraccionController::eliminarAjax/$1');
+    $routes->get('interacciones/oportunidad/(:num)', 'CrmInteraccionController::listarPorOportunidadAjax/$1');
+
+    // Configuración (solo crm_admin) — etapas, fuentes, motivos
+    $routes->get('config/etapas', 'CrmConfigController::etapas');
+    $routes->post('config/etapas/guardar', 'CrmConfigController::guardarEtapa');
+    $routes->post('config/etapas/eliminar/(:num)', 'CrmConfigController::eliminarEtapa/$1');
+    $routes->post('config/etapas/reordenar', 'CrmConfigController::reordenarEtapas');
+    $routes->get('config/fuentes', 'CrmConfigController::fuentes');
+    $routes->post('config/fuentes/guardar', 'CrmConfigController::guardarFuente');
+    $routes->post('config/fuentes/eliminar/(:num)', 'CrmConfigController::eliminarFuente/$1');
+    $routes->get('config/motivos', 'CrmConfigController::motivos');
+    $routes->post('config/motivos/guardar', 'CrmConfigController::guardarMotivo');
+    $routes->post('config/motivos/eliminar/(:num)', 'CrmConfigController::eliminarMotivo/$1');
+
+    // Oportunidades (Kanban + CRUD)
+    $routes->get('/', 'CrmOportunidadController::kanban');
+    $routes->get('oportunidades', 'CrmOportunidadController::kanban');
+    $routes->get('oportunidades/kanban', 'CrmOportunidadController::kanban');
+    $routes->get('oportunidades/lista', 'CrmOportunidadController::lista');
+    $routes->get('oportunidades/nueva', 'CrmOportunidadController::crear');
+    $routes->post('oportunidades/nueva', 'CrmOportunidadController::crearPost');
+    $routes->get('oportunidades/ver/(:num)', 'CrmOportunidadController::ver/$1');
+    $routes->get('oportunidades/editar/(:num)', 'CrmOportunidadController::editar/$1');
+    $routes->post('oportunidades/editar/(:num)', 'CrmOportunidadController::editarPost/$1');
+    $routes->get('oportunidades/eliminar/(:num)', 'CrmOportunidadController::eliminar/$1');
+    $routes->post('oportunidades/cambiar-etapa', 'CrmOportunidadController::cambiarEtapaAjax');
+    $routes->post('oportunidades/marcar-ganada/(:num)', 'CrmOportunidadController::marcarGanada/$1');
+    $routes->post('oportunidades/marcar-perdida/(:num)', 'CrmOportunidadController::marcarPerdida/$1');
+});
+
+// ====================================
 // RUTINAS DE TRABAJO
 // ====================================
 $routes->group('rutinas', ['namespace' => 'App\Controllers'], function($routes) {
