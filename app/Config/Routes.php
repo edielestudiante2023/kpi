@@ -484,6 +484,26 @@ $routes->group('conciliaciones', ['namespace' => 'App\Controllers', 'filter' => 
 });
 
 // ====================================
+// MÓDULO CRM (Pipeline comercial)
+// ====================================
+$routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function($routes) {
+    // Empresas
+    $routes->get('empresas', 'CrmEmpresaController::index');
+    $routes->get('empresas/nueva', 'CrmEmpresaController::crear');
+    $routes->post('empresas/nueva', 'CrmEmpresaController::crearPost');
+    $routes->get('empresas/ver/(:num)', 'CrmEmpresaController::ver/$1');
+    $routes->get('empresas/editar/(:num)', 'CrmEmpresaController::editar/$1');
+    $routes->post('empresas/editar/(:num)', 'CrmEmpresaController::editarPost/$1');
+    $routes->get('empresas/eliminar/(:num)', 'CrmEmpresaController::eliminar/$1');
+    $routes->get('empresas/buscar', 'CrmEmpresaController::buscarAjax');
+
+    // Contactos (AJAX desde ficha de empresa)
+    $routes->post('contactos/guardar', 'CrmContactoController::guardar');
+    $routes->post('contactos/eliminar/(:num)', 'CrmContactoController::eliminar/$1');
+    $routes->get('contactos/buscar', 'CrmContactoController::buscarAjax');
+});
+
+// ====================================
 // RUTINAS DE TRABAJO
 // ====================================
 $routes->group('rutinas', ['namespace' => 'App\Controllers'], function($routes) {
