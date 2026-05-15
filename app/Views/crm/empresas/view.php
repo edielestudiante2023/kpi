@@ -118,7 +118,12 @@
 
             <!-- Interacciones -->
             <div class="card shadow-sm mb-3">
-                <div class="card-header bg-white"><i class="bi bi-chat-dots me-1"></i>Interacciones recientes</div>
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-chat-dots me-1"></i>Interacciones recientes</span>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalInteraccion">
+                        <i class="bi bi-plus-lg"></i> Agregar
+                    </button>
+                </div>
                 <div class="card-body">
                     <?php if (empty($interacciones)): ?>
                         <div class="text-center text-muted py-3 small">Sin interacciones registradas todavía.</div>
@@ -291,6 +296,13 @@ function eliminarContacto(id) {
             } else alert(resp.error || 'Error');
         });
 }
+
+// Contexto para el modal de interacción (referenciado por _modal_interaccion.php)
+function crmInteraccionContext() {
+    return { id_oportunidad: null, id_empresa: <?= (int) $empresa['id_empresa'] ?> };
+}
 </script>
+
+<?= view('crm/_modal_interaccion', ['contactos' => $contactos]) ?>
 </body>
 </html>

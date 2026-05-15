@@ -8,6 +8,7 @@ use App\Models\CrmContactoModel;
 use App\Models\CrmEtapaModel;
 use App\Models\CrmMotivoPerdidaModel;
 use App\Models\CrmOportunidadHistorialModel;
+use App\Models\CrmInteraccionModel;
 use App\Models\UserModel;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -21,6 +22,7 @@ class CrmOportunidadController extends BaseController
     protected $etapaModel;
     protected $motivoModel;
     protected $historialModel;
+    protected $interaccionModel;
 
     public function initController(
         RequestInterface $request,
@@ -35,6 +37,7 @@ class CrmOportunidadController extends BaseController
         $this->etapaModel       = new CrmEtapaModel();
         $this->motivoModel      = new CrmMotivoPerdidaModel();
         $this->historialModel   = new CrmOportunidadHistorialModel();
+        $this->interaccionModel = new CrmInteraccionModel();
     }
 
     private function chequearAcceso()
@@ -153,10 +156,11 @@ class CrmOportunidadController extends BaseController
         }
 
         return view('crm/oportunidades/view', [
-            'oportunidad' => $op,
-            'historial'   => $this->historialModel->getDeOportunidad($id),
-            'contactos'   => $this->contactoModel->getDeEmpresa((int) $op['id_empresa'], false),
-            'motivos'     => $this->motivoModel->getActivos(),
+            'oportunidad'   => $op,
+            'historial'     => $this->historialModel->getDeOportunidad($id),
+            'contactos'     => $this->contactoModel->getDeEmpresa((int) $op['id_empresa'], false),
+            'motivos'       => $this->motivoModel->getActivos(),
+            'interacciones' => $this->interaccionModel->getTimeline($id),
         ]);
     }
 

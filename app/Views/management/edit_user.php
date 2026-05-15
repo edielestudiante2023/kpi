@@ -173,6 +173,35 @@
                         </select>
                     </div>
 
+                    <hr class="my-3">
+                    <h6 class="text-muted mb-2"><i class="bi bi-shield-check me-1"></i>Acceso a módulos</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <input type="hidden" name="crm_habilitado" value="0">
+                            <div class="form-check">
+                                <input type="checkbox" id="crm_habilitado" name="crm_habilitado" value="1"
+                                       class="form-check-input"
+                                       <?= (int) ($user['crm_habilitado'] ?? 0) === 1 ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="crm_habilitado">
+                                    <strong>CRM habilitado</strong>
+                                    <div class="small text-muted">Puede usar el módulo CRM y ver sus propias oportunidades.</div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="hidden" name="crm_admin" value="0">
+                            <div class="form-check">
+                                <input type="checkbox" id="crm_admin" name="crm_admin" value="1"
+                                       class="form-check-input"
+                                       <?= (int) ($user['crm_admin'] ?? 0) === 1 ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="crm_admin">
+                                    <strong>Admin CRM</strong>
+                                    <div class="small text-muted">Ve todas las oportunidades y puede configurar etapas, fuentes, motivos.</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end mt-4">
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-save me-1"></i> Guardar cambios

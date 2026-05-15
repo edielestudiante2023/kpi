@@ -210,6 +210,50 @@ $esContador = ((int) $rolId === 5);
 
                 <?php endif; // fin !$esContador ?>
 
+                <?php
+                $crmHab = (int) $session->get('crm_habilitado') === 1;
+                $crmAdm = (int) $session->get('crm_admin') === 1;
+                ?>
+                <?php if (! $esContador && ($crmHab || $crmAdm || in_array($rolId, [1, 2]))): ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= strpos($currentUrl, '/crm') !== false ? 'active fw-bold' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-briefcase me-1"></i>CRM
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item fw-bold" href="<?= base_url('crm/dashboard') ?>">
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/oportunidades/kanban') ?>">
+                            <i class="bi bi-kanban me-2"></i>Pipeline (Kanban)
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/oportunidades/lista') ?>">
+                            <i class="bi bi-list-ul me-2"></i>Oportunidades (lista)
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/oportunidades/nueva') ?>">
+                            <i class="bi bi-plus-lg me-2"></i>Nueva oportunidad
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/empresas') ?>">
+                            <i class="bi bi-building me-2"></i>Empresas
+                        </a></li>
+                        <?php if ($crmAdm || $rolId == 1): ?>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header">Configuración</li>
+                            <li><a class="dropdown-item" href="<?= base_url('crm/config/etapas') ?>">
+                                <i class="bi bi-diagram-3 me-2"></i>Etapas
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('crm/config/fuentes') ?>">
+                                <i class="bi bi-funnel me-2"></i>Fuentes
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= base_url('crm/config/motivos') ?>">
+                                <i class="bi bi-x-circle me-2"></i>Motivos de pérdida
+                            </a></li>
+                        <?php endif; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
+
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?= strpos($currentUrl, 'conciliaciones') !== false ? 'active fw-bold' : '' ?>"
                        href="#" data-bs-toggle="dropdown">

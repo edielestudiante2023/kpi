@@ -102,16 +102,63 @@ $puedeCerrar = $tipo === 'abierta';
                 </div>
             </div>
 
-            <!-- Placeholder de interacciones (se llena en chunk 4) -->
+            <!-- Interacciones (timeline) -->
             <div class="card shadow-sm mb-3">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-chat-dots me-1"></i>Interacciones</span>
-                    <button class="btn btn-sm btn-outline-primary" disabled title="Disponible en próxima entrega">
+                    <span><i class="bi bi-chat-dots me-1"></i>Interacciones <span class="badge bg-secondary"><?= count($interacciones) ?></span></span>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalInteraccion">
                         <i class="bi bi-plus-lg"></i> Agregar
                     </button>
                 </div>
-                <div class="card-body text-center text-muted small py-4">
-                    El timeline de interacciones (llamadas, reuniones, tareas) se habilita en la próxima entrega.
+                <div class="card-body">
+                    <?php if (empty($interacciones)): ?>
+                        <div class="text-center text-muted small py-3">
+                            Sin interacciones todavía. Registra la primera llamada/reunión/tarea.
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($interacciones as $i):
+                            $tipoLabel = ['llamada'=>'Llamada','reunion'=>'Reunión','correo'=>'Correo','nota'=>'Nota','tarea'=>'Tarea','propuesta_enviada'=>'Propuesta','whatsapp'=>'WhatsApp'][$i['tipo']] ?? $i['tipo'];
+                            $colorTipo = ['llamada'=>'#0d6efd','reunion'=>'#198754','correo'=>'#ffc107','nota'=>'#6c757d','tarea'=>'#fd7e14','propuesta_enviada'=>'#6f42c1','whatsapp'=>'#25d366'][$i['tipo']] ?? '#6c757d';
+                            $fechaMostrar = $i['fecha_completada'] ?? $i['fecha_programada'] ?? $i['created_at'];
+                        ?>
+                        <div class="d-flex gap-2 pb-2 mb-2 border-bottom" id="inter-<?= $i['id_interaccion'] ?>">
+                            <div style="width: 8px; min-width: 8px; background: <?= $colorTipo ?>; border-radius: 4px;"></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge text-uppercase" style="background:<?= $colorTipo ?>; font-size:0.6rem;"><?= $tipoLabel ?></span>
+                                        <?php if ($i['estado'] === 'pendiente'): ?>
+                                            <span class="badge bg-warning text-dark" style="font-size:0.6rem;">PENDIENTE</span>
+                                        <?php endif; ?>
+                                        <strong class="small ms-1"><?= esc($i['asunto']) ?></strong>
+                                    </div>
+                                    <small class="text-muted"><?= date('d/m/Y H:i', strtotime($fechaMostrar)) ?></small>
+                                </div>
+                                <?php if (!empty($i['detalle'])): ?>
+                                    <div class="small text-muted mt-1"><?= nl2br(esc($i['detalle'])) ?></div>
+                                <?php endif; ?>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">
+                                        <i class="bi bi-person me-1"></i><?= esc($i['usuario_nombre'] ?? '—') ?>
+                                        <?php if (!empty($i['contacto_nombre'])): ?>
+                                            · <i class="bi bi-person-rolodex me-1"></i><?= esc($i['contacto_nombre']) ?>
+                                        <?php endif; ?>
+                                    </small>
+                                    <span>
+                                        <?php if ($i['estado'] === 'pendiente'): ?>
+                                            <button class="btn btn-sm btn-success py-0 px-1" onclick="completarInter(<?= $i['id_interaccion'] ?>)" title="Marcar completada">
+                                                <i class="bi bi-check-lg" style="font-size:0.75rem;"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarInter(<?= $i['id_interaccion'] ?>)" title="Eliminar">
+                                            <i class="bi bi-trash" style="font-size:0.7rem;"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -204,6 +251,33 @@ document.getElementById('formPerdida').addEventListener('submit', function(e) {
         .then(r => r.json())
         .then(d => { if (d.ok) location.reload(); else alert(d.error || 'Error'); });
 });
+
+// Contexto para el modal de interacción (referenciado por _modal_interaccion.php)
+function crmInteraccionContext() {
+    return { id_oportunidad: <?= (int) $oportunidad['id_oportunidad'] ?>, id_empresa: null };
+}
+
+function completarInter(id) {
+    if (!confirm('¿Marcar esta tarea como completada?')) return;
+    const fd = new FormData(); fd.append(CSRF_NAME, CSRF_HASH);
+    fetch(BASE + 'crm/interacciones/completar/' + id, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => { if (d.ok) location.reload(); else alert(d.error || 'Error'); });
+}
+function eliminarInter(id) {
+    if (!confirm('¿Eliminar esta interacción?')) return;
+    const fd = new FormData(); fd.append(CSRF_NAME, CSRF_HASH);
+    fetch(BASE + 'crm/interacciones/eliminar/' + id, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) {
+                const el = document.getElementById('inter-' + id);
+                if (el) el.remove();
+            } else alert(d.error || 'Error');
+        });
+}
 </script>
+
+<?= view('crm/_modal_interaccion', ['contactos' => $contactos]) ?>
 </body>
 </html>

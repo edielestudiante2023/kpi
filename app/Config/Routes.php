@@ -502,6 +502,27 @@ $routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], fu
     $routes->post('contactos/eliminar/(:num)', 'CrmContactoController::eliminar/$1');
     $routes->get('contactos/buscar', 'CrmContactoController::buscarAjax');
 
+    // Dashboard
+    $routes->get('dashboard', 'CrmController::dashboard');
+
+    // Interacciones (timeline)
+    $routes->post('interacciones/agregar', 'CrmInteraccionController::agregarAjax');
+    $routes->post('interacciones/completar/(:num)', 'CrmInteraccionController::completarAjax/$1');
+    $routes->post('interacciones/eliminar/(:num)', 'CrmInteraccionController::eliminarAjax/$1');
+    $routes->get('interacciones/oportunidad/(:num)', 'CrmInteraccionController::listarPorOportunidadAjax/$1');
+
+    // Configuración (solo crm_admin) — etapas, fuentes, motivos
+    $routes->get('config/etapas', 'CrmConfigController::etapas');
+    $routes->post('config/etapas/guardar', 'CrmConfigController::guardarEtapa');
+    $routes->post('config/etapas/eliminar/(:num)', 'CrmConfigController::eliminarEtapa/$1');
+    $routes->post('config/etapas/reordenar', 'CrmConfigController::reordenarEtapas');
+    $routes->get('config/fuentes', 'CrmConfigController::fuentes');
+    $routes->post('config/fuentes/guardar', 'CrmConfigController::guardarFuente');
+    $routes->post('config/fuentes/eliminar/(:num)', 'CrmConfigController::eliminarFuente/$1');
+    $routes->get('config/motivos', 'CrmConfigController::motivos');
+    $routes->post('config/motivos/guardar', 'CrmConfigController::guardarMotivo');
+    $routes->post('config/motivos/eliminar/(:num)', 'CrmConfigController::eliminarMotivo/$1');
+
     // Oportunidades (Kanban + CRUD)
     $routes->get('/', 'CrmOportunidadController::kanban');
     $routes->get('oportunidades', 'CrmOportunidadController::kanban');
