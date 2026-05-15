@@ -501,6 +501,21 @@ $routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], fu
     $routes->post('contactos/guardar', 'CrmContactoController::guardar');
     $routes->post('contactos/eliminar/(:num)', 'CrmContactoController::eliminar/$1');
     $routes->get('contactos/buscar', 'CrmContactoController::buscarAjax');
+
+    // Oportunidades (Kanban + CRUD)
+    $routes->get('/', 'CrmOportunidadController::kanban');
+    $routes->get('oportunidades', 'CrmOportunidadController::kanban');
+    $routes->get('oportunidades/kanban', 'CrmOportunidadController::kanban');
+    $routes->get('oportunidades/lista', 'CrmOportunidadController::lista');
+    $routes->get('oportunidades/nueva', 'CrmOportunidadController::crear');
+    $routes->post('oportunidades/nueva', 'CrmOportunidadController::crearPost');
+    $routes->get('oportunidades/ver/(:num)', 'CrmOportunidadController::ver/$1');
+    $routes->get('oportunidades/editar/(:num)', 'CrmOportunidadController::editar/$1');
+    $routes->post('oportunidades/editar/(:num)', 'CrmOportunidadController::editarPost/$1');
+    $routes->get('oportunidades/eliminar/(:num)', 'CrmOportunidadController::eliminar/$1');
+    $routes->post('oportunidades/cambiar-etapa', 'CrmOportunidadController::cambiarEtapaAjax');
+    $routes->post('oportunidades/marcar-ganada/(:num)', 'CrmOportunidadController::marcarGanada/$1');
+    $routes->post('oportunidades/marcar-perdida/(:num)', 'CrmOportunidadController::marcarPerdida/$1');
 });
 
 // ====================================
