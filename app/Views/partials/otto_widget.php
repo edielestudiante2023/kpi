@@ -1,10 +1,23 @@
 <?php
 /**
- * Widget flotante OTTO — Asesor Financiero IA
- * Se incluye desde partials/nav.php pero solo se renderiza en
- * vistas del módulo Conciliaciones (asesor financiero en su dominio).
+ * Widget flotante OTTO — Asistente IA con dos contextos:
+ *  - financiero (en /conciliaciones/*)  →  OTTO asesor financiero
+ *  - comercial  (en /crm/*)             →  OTTO coach comercial
+ *
+ * El contexto determina los chips, el system prompt en el backend, las tools
+ * disponibles y la clave de localStorage donde se guarda la conversación.
  */
-if (! str_starts_with(uri_string(), 'conciliaciones')) return;
+$_uri = uri_string();
+$_esCrm = str_starts_with($_uri, 'crm');
+$_esConc = str_starts_with($_uri, 'conciliaciones');
+if (!$_esCrm && !$_esConc) return;
+
+$_contexto = $_esCrm ? 'comercial' : 'financiero';
+$_subtitulo = $_esCrm ? 'Coach comercial IA · Cycloid Talent' : 'Asesor financiero IA · Cycloid Talent';
+$_storageKey = $_esCrm ? 'otto_crm_conv_id' : 'otto_conv_id';
+$_bienvenida = $_esCrm
+    ? "Hola, soy **OTTO** en modo coach comercial. Tengo acceso al pipeline en vivo y a los snapshots históricos del CRM.\n\nMis dos preguntas centrales son: **¿avanzamos?** y **¿qué hacer para crecer?** ¿En qué te ayudo?"
+    : "Hola, soy **OTTO**. Soy el asesor financiero IA de Cycloid Talent y tengo acceso a tus datos en tiempo real: cartera, recaudo, deudas, presupuestos y balance.\n\n¿En qué te ayudo hoy?";
 ?>
 <style>
 :root {
@@ -212,7 +225,7 @@ if (! str_starts_with(uri_string(), 'conciliaciones')) return;
         <img src="<?= base_url('img/otto-avatar.png') ?>" alt="OTTO">
         <div>
             <div class="otto-name">OTTO</div>
-            <div class="otto-subtitle">Asesor financiero IA · Cycloid Talent</div>
+            <div class="otto-subtitle"><?= $_subtitulo ?></div>
         </div>
         <div class="otto-actions">
             <button id="otto-new" title="Nueva conversación" type="button">
@@ -241,17 +254,27 @@ if (! str_starts_with(uri_string(), 'conciliaciones')) return;
 <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 <script>
 (function () {
+    // Endpoints comunes — el backend ya están en /conciliaciones/asesoria-ia/widget/*
+    // (un solo controller con switch por `contexto`)
     const URL_INICIAR = "<?= base_url('conciliaciones/asesoria-ia/widget/iniciar') ?>";
     const URL_ENVIAR  = "<?= base_url('conciliaciones/asesoria-ia/widget/enviar') ?>";
     const URL_MSGS    = "<?= base_url('conciliaciones/asesoria-ia/widget/mensajes/') ?>";
 
-    const PRESETS = [
+    const CONTEXTO = "<?= $_contexto ?>";
+
+    const PRESETS = CONTEXTO === 'comercial' ? [
+        { key: 'avanzamos',           label: '📈 ¿Avanzamos?' },
+        { key: 'prioridades',         label: '🎯 ¿Qué atacar primero?' },
+        { key: 'diagnostico_equipo',  label: '👥 Diagnóstico equipo' },
+        { key: 'cuellos_botella',     label: '🚧 Cuellos de botella' },
+        { key: 'plan_crecimiento',    label: '🚀 Plan de crecimiento' },
+    ] : [
         { key: 'diagnostico', label: '🩺 Diagnóstico financiero' },
         { key: 'cartera',     label: '💰 Priorización cobro' },
         { key: 'estrategia',  label: '🎯 Recomendaciones estratégicas' },
     ];
 
-    const STORAGE_KEY = 'otto_conv_id';
+    const STORAGE_KEY = "<?= $_storageKey ?>";
 
     const $launcher = document.getElementById('otto-launcher');
     const $panel    = document.getElementById('otto-panel');
@@ -290,7 +313,7 @@ if (! str_starts_with(uri_string(), 'conciliaciones')) return;
 
     function renderBienvenida() {
         $body.innerHTML = '';
-        appendMessage('assistant', 'Hola, soy **OTTO**. Soy el asesor financiero IA de Cycloid Talent y tengo acceso a tus datos en tiempo real: cartera, recaudo, deudas, presupuestos y balance.\n\n¿En qué te ayudo hoy?');
+        appendMessage('assistant', <?= json_encode($_bienvenida) ?>);
         // Chips
         const chipsDiv = document.createElement('div');
         chipsDiv.className = 'otto-chips';
@@ -369,6 +392,7 @@ if (! str_starts_with(uri_string(), 'conciliaciones')) return;
         try {
             const fd = new FormData();
             fd.append('preset', presetKey);
+            fd.append('contexto', CONTEXTO);
             const r = await fetch(URL_INICIAR, { method: 'POST', body: fd });
             const j = await r.json();
             removeTyping();
@@ -398,6 +422,7 @@ if (! str_starts_with(uri_string(), 'conciliaciones')) return;
         try {
             const fd = new FormData();
             fd.append('mensaje', texto);
+            fd.append('contexto', CONTEXTO);
             if (convId) fd.append('id_conversacion', convId);
             const r = await fetch(URL_ENVIAR, { method: 'POST', body: fd });
             const j = await r.json();

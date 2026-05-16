@@ -8,7 +8,7 @@ class IaConversacionModel extends Model
     protected $primaryKey = 'id_conversacion';
 
     protected $allowedFields = [
-        'titulo', 'tipo', 'id_snapshot_ref', 'creado_por',
+        'titulo', 'tipo', 'contexto', 'id_snapshot_ref', 'creado_por',
     ];
 
     protected $returnType    = 'array';

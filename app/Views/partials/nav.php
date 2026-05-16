@@ -223,6 +223,9 @@ $esContador = ((int) $rolId === 5);
                         <li><a class="dropdown-item fw-bold" href="<?= base_url('crm/dashboard') ?>">
                             <i class="bi bi-speedometer2 me-2"></i>Dashboard
                         </a></li>
+                        <li><a class="dropdown-item fw-bold text-primary" href="<?= base_url('crm/asesor-ia') ?>">
+                            <i class="bi bi-robot me-2"></i>OTTO Coach Comercial <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <li><a class="dropdown-item" href="<?= base_url('crm/oportunidades/kanban') ?>">
                             <i class="bi bi-kanban me-2"></i>Pipeline (Kanban)
                         </a></li>
@@ -235,6 +238,9 @@ $esContador = ((int) $rolId === 5);
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="<?= base_url('crm/empresas') ?>">
                             <i class="bi bi-building me-2"></i>Empresas
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('crm/snapshots') ?>">
+                            <i class="bi bi-camera me-2"></i>Snapshots <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
                         </a></li>
                         <?php if ($crmAdm || $rolId == 1): ?>
                             <li><hr class="dropdown-divider"></li>
