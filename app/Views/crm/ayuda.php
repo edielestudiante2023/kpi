@@ -132,7 +132,14 @@
                 <a href="#dashboard">8. Leer el dashboard</a>
                 <a href="#config">9. Configuración <span class="admin-only">ADMIN</span></a>
                 <a href="#permisos">10. Permisos y visibilidad</a>
-                <a href="#faq">11. Preguntas frecuentes</a>
+                <a href="#snapshots">11. Snapshots semanales</a>
+                <a href="#otto">12. OTTO Coach Comercial (IA)</a>
+                <ul>
+                    <li><a href="#otto-uso">12.1 Cómo usarlo</a></li>
+                    <li><a href="#otto-presets">12.2 Los 5 análisis</a></li>
+                    <li><a href="#otto-widget">12.3 Widget flotante</a></li>
+                </ul>
+                <a href="#faq">13. Preguntas frecuentes</a>
             </nav>
         </div>
 
@@ -550,9 +557,166 @@
             </p>
         </section>
 
-        <!-- 11. FAQ -->
+        <!-- 11. SNAPSHOTS -->
+        <section class="seccion" id="snapshots">
+            <h2>11. Snapshots semanales</h2>
+            <p>Un <strong>snapshot</strong> es una <strong>foto congelada del pipeline en un momento dado</strong> — los KPIs principales (oportunidades abiertas, valor pipeline, ganadas/perdidas año, conversión, ciclo promedio, estancadas) más el desglose por etapa, por responsable y motivos de pérdida.</p>
+            <p>Sirven para dos cosas:</p>
+            <ul>
+                <li><strong>Comparar avance en el tiempo:</strong> ¿cómo estamos esta semana vs la semana pasada? ¿el mes pasado?</li>
+                <li><strong>Alimentar al asistente IA (OTTO):</strong> sin snapshots no puede responder honestamente "¿avanzamos?". Con 1 snapshot solo puede describir; con 2 o más, puede medir progreso real.</li>
+            </ul>
+
+            <h3>11.1 Cómo generar un snapshot</h3>
+            <div class="paso"><span class="paso-num">1</span>
+                <h5>Entra a la pantalla</h5>
+                <p>Menú <kbd>CRM</kbd> → <kbd>Snapshots</kbd>.</p>
+            </div>
+            <div class="paso"><span class="paso-num">2</span>
+                <h5>Clic en "Generar snapshot ahora"</h5>
+                <p>Botón azul arriba a la derecha. Se abre un modal.</p>
+            </div>
+            <div class="paso"><span class="paso-num">3</span>
+                <h5>Opcional: anota un contexto</h5>
+                <p>El campo "Notas" sirve para recordar por qué generaste ese snapshot. Ejemplos:</p>
+                <ul>
+                    <li><em>"Antes de la junta del 20 de mayo"</em></li>
+                    <li><em>"Cierre de mes"</em></li>
+                    <li><em>"Snapshot semanal regular — lunes"</em></li>
+                </ul>
+            </div>
+            <div class="paso"><span class="paso-num">4</span>
+                <h5>Confirmar</h5>
+                <p>El sistema calcula todos los KPIs leyendo del estado vivo y guarda el snapshot. Te lleva al detalle automáticamente.</p>
+            </div>
+
+            <div class="tip">
+                <strong>💡 Disciplina recomendada:</strong> generar un snapshot <strong>cada lunes en la mañana</strong> (después de la reunión semanal del equipo comercial). Así OTTO puede comparar semana a semana de manera consistente.
+            </div>
+
+            <h3>11.2 Cómo leer el detalle de un snapshot</h3>
+            <p>Al entrar al detalle (<kbd>Ver</kbd> en la tabla de historial) verás:</p>
+            <ul>
+                <li><strong>KPIs principales con deltas vs snapshot anterior</strong> — flechas ▲ verdes (crece) o ▼ rojas (baja) y texto descriptivo. Si es el primer snapshot, dice "primera vez".</li>
+                <li><strong>Pipeline por etapa</strong> — tabla con cantidad y valor total por etapa abierta.</li>
+                <li><strong>Ranking por responsable</strong> — quién tiene cuánto pipeline y cuánto valor ganado en el año.</li>
+                <li><strong>Top motivos de pérdida del año</strong> — patrones recurrentes (Precio, Timing, etc.).</li>
+            </ul>
+
+            <div class="warning">
+                <strong>⚠️ Los snapshots NO se actualizan.</strong> Una vez generado, queda congelado para siempre como referencia histórica. Si te equivocaste o quieres uno fresco, genera otro — no hay límite (pero el espacio de comparación de OTTO ordena por fecha).
+            </div>
+        </section>
+
+        <!-- 12. OTTO -->
+        <section class="seccion" id="otto">
+            <h2>12. OTTO Coach Comercial (IA)</h2>
+            <p>OTTO es un <strong>asistente IA</strong> (basado en Claude Sonnet 4.6) entrenado para responder dos preguntas críticas del equipo comercial:</p>
+            <ol>
+                <li><strong>¿Avanzamos?</strong> — comparando el estado actual con snapshots anteriores y siendo honesto sobre el progreso real.</li>
+                <li><strong>¿Qué hacer para crecer?</strong> — proponiendo acciones concretas, priorizadas y accionables.</li>
+            </ol>
+            <p>Es la <strong>misma persona OTTO</strong> que ya existe en Conciliaciones, pero con un "modo coach comercial" que tiene acceso a las tablas del CRM en lugar de las financieras. Comparten presupuesto mensual ($5 USD/mes para ambos modos).</p>
+
+            <div class="tip">
+                <strong>💡 OTTO NUNCA inventa cifras.</strong> Si no puede obtener un dato con sus herramientas, lo dice claramente. Eso lo hace confiable pero también significa que su utilidad depende de que tengas datos: empresas, oportunidades, interacciones y al menos un snapshot.
+            </div>
+
+            <h3 id="otto-uso">12.1 Cómo usarlo</h3>
+            <p>Hay dos puntos de acceso:</p>
+
+            <div class="paso"><span class="paso-num">A</span>
+                <h5>Pantalla dedicada</h5>
+                <p>Menú <kbd>CRM</kbd> → <kbd>OTTO Coach Comercial</kbd>. Verás 5 tarjetas de análisis preconfigurado, una barra de consumo del mes y el historial de conversaciones recientes. Es la mejor entrada para arrancar.</p>
+            </div>
+            <div class="paso"><span class="paso-num">B</span>
+                <h5>Widget flotante</h5>
+                <p>Botón circular oscuro en la esquina inferior derecha (visible en cualquier pantalla del CRM). Lo abres con un clic y arranca con chips de inicio rápido y un campo de texto libre para preguntarle lo que quieras.</p>
+            </div>
+
+            <h3 id="otto-presets">12.2 Los 5 análisis predefinidos</h3>
+            <p>Sirven como "atajos" para preguntas comunes. Cada uno llama una secuencia específica de herramientas y entrega una respuesta estructurada:</p>
+
+            <div class="paso"><span class="paso-num">1</span>
+                <h5>📈 ¿Avanzamos esta semana?</h5>
+                <p>OTTO compara los <strong>dos snapshots más recientes</strong>, analiza cada delta y entrega:</p>
+                <ul>
+                    <li><strong>Veredicto:</strong> AVANZAMOS / ESTANCADOS / RETROCEDIMOS (una sola línea)</li>
+                    <li>Lo que mejoró (con evidencia numérica)</li>
+                    <li>Lo que empeoró o se mantiene</li>
+                    <li>2-3 acciones sugeridas para la próxima semana</li>
+                </ul>
+                <p class="text-muted small"><strong>Requisito:</strong> al menos 2 snapshots generados.</p>
+            </div>
+
+            <div class="paso"><span class="paso-num">2</span>
+                <h5>🎯 ¿Qué oportunidades atacar primero?</h5>
+                <p>Combina tres tools (top por valor ponderado, próximas a cierre, estancadas) y entrega:</p>
+                <ul>
+                    <li>Top 3 oportunidades a cerrar YA (alto valor × probabilidad × cierre cercano)</li>
+                    <li>Top 3 en riesgo de morir (alto valor + estancadas)</li>
+                    <li>Acción concreta por cada una</li>
+                </ul>
+            </div>
+
+            <div class="paso"><span class="paso-num">3</span>
+                <h5>👥 Diagnóstico del equipo</h5>
+                <p>Ranking del equipo en el mes y en el año, identifica top performer, vendedor en alza y vendedor sin movimiento. Da recomendaciones <strong>constructivas</strong> (apoyo, reasignación) — no acusatorias.</p>
+            </div>
+
+            <div class="paso"><span class="paso-num">4</span>
+                <h5>🚧 Cuellos de botella del pipeline</h5>
+                <p>Detecta en qué etapa se atascan las oportunidades y por qué se caen. Mapa del funnel + estancadas + motivos de pérdida recurrentes → 3 acciones correctivas específicas.</p>
+            </div>
+
+            <div class="paso"><span class="paso-num">5</span>
+                <h5>🚀 Plan de crecimiento del mes</h5>
+                <p>El más completo — síntesis ejecutiva con:</p>
+                <ul>
+                    <li>Resumen ejecutivo (situación + tendencia)</li>
+                    <li>Objetivos numéricos realistas del mes (basados en pipeline ponderado)</li>
+                    <li>3 acciones priorizadas con responsable, plazo, impacto en COP esperado</li>
+                    <li>Riesgos y KPIs a vigilar cada semana</li>
+                </ul>
+            </div>
+
+            <h3 id="otto-widget">12.3 Widget flotante</h3>
+            <p>El círculo oscuro en la esquina inferior derecha es el <strong>widget de OTTO</strong>. Visible en todas las pantallas del CRM.</p>
+            <div class="paso"><span class="paso-num">1</span>
+                <h5>Abrir</h5>
+                <p>Un clic en el círculo. Se despliega un panel de chat.</p>
+            </div>
+            <div class="paso"><span class="paso-num">2</span>
+                <h5>Empezar rápido con un chip</h5>
+                <p>Los 5 chips de bienvenida son atajos a los mismos análisis predefinidos. Útil cuando estás navegando y se te ocurre una pregunta concreta.</p>
+            </div>
+            <div class="paso"><span class="paso-num">3</span>
+                <h5>Pregunta libre</h5>
+                <p>En el campo de texto puedes escribir cualquier pregunta sobre el pipeline. Ejemplos:</p>
+                <ul>
+                    <li><em>"¿Cómo va Edison este mes?"</em></li>
+                    <li><em>"Cuéntame todo sobre la oportunidad OPP-20260515-0003"</em></li>
+                    <li><em>"¿Tenemos algo con la empresa ACME?"</em></li>
+                    <li><em>"¿Qué porcentaje del pipeline está en Negociación?"</em></li>
+                </ul>
+            </div>
+            <div class="paso"><span class="paso-num">4</span>
+                <h5>Continuar conversación</h5>
+                <p>La conversación se guarda en tu navegador (localStorage) y la próxima vez que abras el widget retoma donde quedaste. Si quieres empezar de cero, usa el botón circular <i class="bi bi-arrow-clockwise"></i> arriba.</p>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Límite mensual:</strong> el consumo está topado en <strong>$5 USD al mes</strong> (compartido con OTTO financiero). Si se alcanza, OTTO deja de responder hasta el próximo mes — verás el aviso. La mayoría de consultas cuestan fracciones de centavo gracias al prompt caching, así que el límite suele sobrar.
+            </div>
+
+            <div class="tip">
+                <strong>💡 Tip pro:</strong> antes de la junta semanal del equipo comercial, lanza el preset "<strong>📈 ¿Avanzamos esta semana?</strong>" — su respuesta es el resumen ideal para arrancar la reunión.
+            </div>
+        </section>
+
+        <!-- 13. FAQ -->
         <section class="seccion" id="faq">
-            <h2>11. Preguntas frecuentes</h2>
+            <h2>13. Preguntas frecuentes</h2>
 
             <h3>No me aparece el dropdown CRM en el menú superior.</h3>
             <p>No tienes el flag <em>CRM habilitado</em>. Pide a Edison o a un superadmin que te active el módulo (sección 3).
@@ -592,6 +756,37 @@
             <h3>¿Puedo importar empresas desde un Excel?</h3>
             <p>Por ahora no hay carga masiva. Está en la lista de mejoras futuras. Si tienes una base
             grande para migrar, dilo al equipo de desarrollo para evaluar un import puntual.</p>
+
+            <h3>OTTO me dice "solo hay 1 snapshot, no se puede comparar". ¿Qué hago?</h3>
+            <p>Necesitas al menos 2 snapshots para que OTTO pueda decir si avanzamos. Ve a
+            <kbd>CRM → Snapshots</kbd> y genera uno. Como el primero ya existe, este será el segundo
+            y OTTO ya podrá comparar. La disciplina sugerida es generar uno cada lunes.</p>
+
+            <h3>OTTO se quedó sin presupuesto antes de fin de mes. ¿Qué hago?</h3>
+            <p>Esperar al próximo mes (se reinicia automáticamente el día 1) o pedir al equipo de
+            desarrollo que suba el límite <code>IA_BUDGET_MES_USD</code> en el .env. Cada consulta normalmente
+            cuesta menos de $0.05, así que con $5/mes alcanza para ~100 consultas (depende de la complejidad).</p>
+
+            <h3>¿OTTO ve las oportunidades de TODOS o solo las mías?</h3>
+            <p>OTTO ve y analiza el pipeline COMPLETO de todo el equipo, sin importar quién consulta.
+            Esto es porque la utilidad del coach comercial es agregar y comparar globalmente. No filtra
+            por responsable (a diferencia del Kanban y la lista). Si necesitas analizar solo lo tuyo,
+            pregúntale específicamente "¿cómo va [tu nombre]?".</p>
+
+            <h3>¿OTTO puede crear o modificar oportunidades?</h3>
+            <p>No. Solo <strong>lee</strong>. Sus herramientas son consultas exclusivamente. Si te dice
+            "deberías mover X a Calificado", tú tienes que ir y arrastrarlo en el Kanban manualmente.
+            Es un coach, no un operador.</p>
+
+            <h3>¿Las conversaciones con OTTO quedan guardadas?</h3>
+            <p>Sí. Todas se guardan en la BD. Puedes verlas en <kbd>CRM → OTTO Coach Comercial</kbd>
+            (tabla "Conversaciones recientes" abajo). El widget flotante también las recupera vía
+            localStorage del navegador.</p>
+
+            <h3>¿Por qué a veces el widget muestra un OTTO financiero en vez del comercial?</h3>
+            <p>Porque estás navegando por una pantalla de Conciliaciones. El widget detecta la URL
+            y cambia de modo automáticamente. Si estás en <code>/crm/*</code> es comercial; si estás en
+            <code>/conciliaciones/*</code> es financiero. Las conversaciones de cada modo se guardan por separado.</p>
         </section>
 
         <div class="text-center text-muted small py-3">
