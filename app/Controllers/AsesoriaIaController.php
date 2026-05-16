@@ -7,6 +7,7 @@ use App\Models\IaMensajeModel;
 use App\Models\BalanceSnapshotModel;
 use App\Services\AnthropicService;
 use App\Services\FinancialToolsService;
+use App\Services\CrmToolsService;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -44,6 +45,75 @@ class AsesoriaIaController extends BaseController
         "- Responde en máximo 250 palabras salvo que la pregunta exija más detalle\n" .
         "- Si la pregunta es ambigua, hacé 1 sola contra-pregunta clarificadora\n" .
         "- Si la pregunta no tiene que ver con finanzas de Cycloid, redirige amablemente";
+
+    // ═══════════════════════════════════════════════════════════════
+    // OTTO modo COMERCIAL (CRM)
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Identidad de OTTO en su rol de coach comercial */
+    private const OTTO_IDENTITY_CRM = "Eres **OTTO** en su rol de **coach comercial IA** de **Cycloid Talent** (empresa colombiana de servicios SST y reclutamiento RPS). Hablas en español Colombia con tono ejecutivo, claro y directo. Te refieres a montos en pesos colombianos con separador de miles (\$1.234.567).\n\n" .
+        "**Tu misión principal** es responder dos preguntas críticas:\n" .
+        "1. **¿Avanzamos?** — comparar el estado actual del pipeline con snapshots anteriores y ser honesto sobre si realmente estamos progresando (no solo describir el estado, evaluarlo).\n" .
+        "2. **¿Qué hacer para crecer?** — proponer acciones concretas y priorizadas para mover el pipeline.\n\n" .
+        "Tienes acceso a los datos reales vía herramientas que debes usar antes de responder con números. NUNCA inventes cifras. Sé conciso pero accionable.\n\n" .
+        "HERRAMIENTAS DISPONIBLES (úsalas SIEMPRE antes de responder con números):\n" .
+        "• `obtener_snapshot_semanal(fecha?)` — recupera un snapshot histórico\n" .
+        "• `comparar_snapshots(fecha_a?, fecha_b?)` — la tool clave para '¿avanzamos?'\n" .
+        "• `obtener_pipeline_actual` — funnel vivo por etapa\n" .
+        "• `obtener_oportunidades_estancadas(dias_min?)` — sin actividad reciente\n" .
+        "• `obtener_top_oportunidades(criterio)` — ranking (valor_ponderado es lo mejor para priorizar)\n" .
+        "• `obtener_oportunidades_proximas_cierre(dias?)` — urgencia de cierre\n" .
+        "• `obtener_ranking_responsables(periodo?)` — top performers vs sin movimiento\n" .
+        "• `obtener_motivos_perdida_top(periodo?)` — patrones de pérdida\n" .
+        "• `obtener_oportunidad_detalle(codigo)` — ficha 360 con timeline (códigos OPP-YYYYMMDD-NNNN)\n" .
+        "• `obtener_empresa_actividad(id_empresa | nombre)` — historial completo con un cliente\n\n";
+
+    /** Prompt conversación libre del widget en modo comercial */
+    private const SYSTEM_LIBRE_CRM = self::OTTO_IDENTITY_CRM .
+        "Estás en modo conversacional dentro del widget, asistiendo al equipo comercial. Reglas:\n" .
+        "- Antes de dar números, llama a las tools relevantes\n" .
+        "- Si preguntan '¿avanzamos?' / '¿cómo vamos?', usa primero `comparar_snapshots`\n" .
+        "- Si mencionan un código de oportunidad (OPP-...), usa `obtener_oportunidad_detalle`\n" .
+        "- Si preguntan por una empresa/cliente, usa `obtener_empresa_actividad`\n" .
+        "- Markdown corto (negritas, listas, tablas pequeñas)\n" .
+        "- Máximo 250 palabras salvo que la pregunta exija más detalle\n" .
+        "- Cierra con 'Acciones sugeridas:' + 2-3 bullets concretos cuando aplique\n" .
+        "- Si la pregunta es ambigua, hacé 1 sola contra-pregunta clarificadora\n" .
+        "- Si no tiene que ver con ventas/pipeline, redirige amablemente";
+
+    /** Presets comerciales del CRM (chips del widget) */
+    private const PRESETS_CRM = [
+        'avanzamos' => [
+            'titulo' => '📈 ¿Avanzamos esta semana?',
+            'descripcion' => 'Compara snapshots y diagnostica progreso real',
+            'system' => self::OTTO_IDENTITY_CRM . "Tu tarea es responder honestamente '¿avanzamos?' usando los snapshots disponibles.\n\nPROCEDIMIENTO:\n1. Llama a `comparar_snapshots()` (sin fechas para comparar los dos más recientes).\n2. Si solo hay 1 snapshot, di claramente que no se puede comparar y sugiere generar el siguiente la próxima semana.\n3. Analiza cada delta: ¿positivo o negativo?, ¿significativo?\n4. Entrega (~300 palabras):\n   - **Veredicto** (1 línea: AVANZAMOS / ESTANCADOS / RETROCEDIMOS)\n   - **Lo que mejoró** (bullets con evidencia numérica)\n   - **Lo que empeoró o se mantiene** (bullets)\n   - **Acciones sugeridas** (2-3 bullets concretos para la próxima semana)",
+            'usuario_inicial' => '¿Avanzamos esta semana en el pipeline comercial? Compara los snapshots más recientes y dame un veredicto honesto con evidencia.',
+        ],
+        'prioridades' => [
+            'titulo' => '🎯 ¿Qué oportunidades atacar primero?',
+            'descripcion' => 'Prioriza por valor ponderado y urgencia de cierre',
+            'system' => self::OTTO_IDENTITY_CRM . "Tu tarea es identificar las oportunidades donde concentrar el esfuerzo comercial inmediato.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_top_oportunidades` con criterio 'valor_ponderado', límite 10.\n2. Llama a `obtener_oportunidades_proximas_cierre` con dias=30 para detectar urgencias.\n3. Llama a `obtener_oportunidades_estancadas` (dias_min 21) para detectar las que están muriendo.\n4. Entrega (~400 palabras):\n   - **Top 3 oportunidades a cerrar YA** (alto valor ponderado + cierre cercano)\n   - **Top 3 oportunidades en riesgo de morir** (alto valor + estancadas)\n   - **Acción recomendada por cada una** (qué hacer esta semana)",
+            'usuario_inicial' => '¿Qué oportunidades debería atacar primero esta semana? Prioriza por valor ponderado y urgencia de cierre, y dame acciones concretas.',
+        ],
+        'diagnostico_equipo' => [
+            'titulo' => '👥 Diagnóstico del equipo',
+            'descripcion' => 'Quién está vendiendo, quién no mueve nada',
+            'system' => self::OTTO_IDENTITY_CRM . "Tu tarea es diagnosticar el desempeño del equipo comercial.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_ranking_responsables` periodo 'mes_actual'.\n2. Llama también con periodo 'anio' para contexto largo.\n3. Identifica: top performer, en alza, sin movimiento.\n4. Entrega (~400 palabras):\n   - **Tabla ranking del mes** (ganadas, valor ganado, pipeline en curso)\n   - **Top performer** del mes y por qué destaca\n   - **Vendedor(es) sin movimiento** y posibles causas\n   - **Recomendaciones** (apoyo, reasignación, capacitación) con tono constructivo, no acusatorio",
+            'usuario_inicial' => 'Diagnostica el desempeño del equipo de ventas: ¿quién está vendiendo, quién no, qué hacer al respecto?',
+        ],
+        'cuellos_botella' => [
+            'titulo' => '🚧 Cuellos de botella del pipeline',
+            'descripcion' => 'Dónde se atascan las oportunidades y por qué se caen',
+            'system' => self::OTTO_IDENTITY_CRM . "Tu tarea es detectar dónde se atasca el pipeline y por qué.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_pipeline_actual` para ver distribución por etapa.\n2. Llama a `obtener_oportunidades_estancadas` (dias_min 30).\n3. Llama a `obtener_motivos_perdida_top` periodo 'anio' para entender por qué se cae el cierre.\n4. Entrega (~400 palabras):\n   - **Mapa del funnel** (qué etapa tiene mucho stock vs poco flujo)\n   - **Etapa con mayor estancamiento**\n   - **Motivos de pérdida recurrentes** (patrón a corregir)\n   - **3 acciones correctivas** específicas por cuello detectado",
+            'usuario_inicial' => '¿Dónde se atasca el pipeline? Identifica los cuellos de botella por etapa, las oportunidades estancadas y los motivos de pérdida más recurrentes.',
+        ],
+        'plan_crecimiento' => [
+            'titulo' => '🚀 Plan de crecimiento del mes',
+            'descripcion' => 'Síntesis ejecutiva + acciones priorizadas para el mes',
+            'system' => self::OTTO_IDENTITY_CRM . "Tu tarea es construir un plan de crecimiento del mes con foco en mover el pipeline.\n\nPROCEDIMIENTO:\n1. Llama a `comparar_snapshots` para entender tendencia reciente.\n2. Llama a `obtener_pipeline_actual` para estado vivo.\n3. Llama a `obtener_top_oportunidades` criterio 'valor_ponderado'.\n4. Llama a `obtener_oportunidades_proximas_cierre` dias=45.\n5. Llama a `obtener_ranking_responsables` periodo 'mes_actual'.\n6. Entrega (~600 palabras):\n   - **Resumen ejecutivo** (3-4 líneas con situación y tendencia)\n   - **Objetivos numéricos del mes** (cantidad y valor a cerrar — sé realista basándote en pipeline ponderado)\n   - **3 acciones priorizadas** con descripción, responsable sugerido, plazo, impacto en COP esperado\n   - **Riesgos** a vigilar\n   - **KPIs a revisar cada semana**",
+            'usuario_inicial' => 'Constrúyeme un plan de crecimiento del mes: resumen ejecutivo, objetivos numéricos realistas, 3 acciones priorizadas y KPIs a vigilar.',
+        ],
+    ];
 
     /** System prompts y modelo por preset */
     private const PRESETS = [
@@ -248,7 +318,10 @@ class AsesoriaIaController extends BaseController
     public function widgetIniciar()
     {
         $preset = $this->request->getPost('preset');
-        if (! isset(self::PRESETS[$preset])) {
+        $contexto = $this->request->getPost('contexto') === 'comercial' ? 'comercial' : 'financiero';
+        $presets = $contexto === 'comercial' ? self::PRESETS_CRM : self::PRESETS;
+
+        if (! isset($presets[$preset])) {
             return $this->response->setJSON(['ok' => false, 'error' => 'Preset inválido']);
         }
 
@@ -256,7 +329,7 @@ class AsesoriaIaController extends BaseController
             return $this->budgetExcedidoJson();
         }
 
-        $cfg = self::PRESETS[$preset];
+        $cfg = $presets[$preset];
         $userMsg = $cfg['usuario_inicial']
             ?? "Realiza el análisis '{$cfg['titulo']}' con los datos actuales del sistema.";
 
@@ -265,7 +338,8 @@ class AsesoriaIaController extends BaseController
             $cfg['system'],
             [['role' => 'user', 'content' => $userMsg]],
             $userMsg,
-            $cfg['titulo']
+            $cfg['titulo'],
+            $contexto
         );
     }
 
@@ -276,6 +350,7 @@ class AsesoriaIaController extends BaseController
     {
         $mensaje = trim((string) $this->request->getPost('mensaje'));
         $idConv  = (int) ($this->request->getPost('id_conversacion') ?? 0);
+        $contextoInput = $this->request->getPost('contexto') === 'comercial' ? 'comercial' : 'financiero';
 
         if ($mensaje === '') {
             return $this->response->setJSON(['ok' => false, 'error' => 'Mensaje vacío']);
@@ -287,9 +362,11 @@ class AsesoriaIaController extends BaseController
             return $this->budgetExcedidoJson();
         }
 
-        // Construir historial de la conversación si existe
+        // Construir historial + detectar contexto de la conversación
         $messages = [];
         $convExistente = $idConv ? $this->convModel->find($idConv) : null;
+        $contexto = $convExistente ? ($convExistente['contexto'] ?? 'financiero') : $contextoInput;
+
         if ($convExistente) {
             $previos = $this->msgModel
                 ->select('rol, contenido')
@@ -304,12 +381,16 @@ class AsesoriaIaController extends BaseController
         }
         $messages[] = ['role' => 'user', 'content' => $mensaje];
 
+        $systemPrompt = $contexto === 'comercial' ? self::SYSTEM_LIBRE_CRM : self::SYSTEM_LIBRE;
+        $titulo = ($contexto === 'comercial' ? 'CRM — ' : 'Chat libre — ') . date('d/m/Y H:i');
+
         return $this->ejecutarConsulta(
             $convExistente ? $idConv : null,
-            self::SYSTEM_LIBRE,
+            $systemPrompt,
             $messages,
             $mensaje,
-            'Chat libre — ' . date('d/m/Y H:i')
+            $titulo,
+            $contexto
         );
     }
 
@@ -339,19 +420,20 @@ class AsesoriaIaController extends BaseController
 
     /**
      * Helper compartido: ejecuta la llamada a Claude, guarda mensajes y retorna JSON.
+     * $contexto switchea entre tools financieros (default) o tools comerciales (CRM).
      */
-    private function ejecutarConsulta(?int $idConvExistente, string $systemPrompt, array $messages, string $userMsg, string $tituloPorDefecto)
+    private function ejecutarConsulta(?int $idConvExistente, string $systemPrompt, array $messages, string $userMsg, string $tituloPorDefecto, string $contexto = 'financiero')
     {
         try {
             $ant = new AnthropicService();
-            $fts = new FinancialToolsService();
-            $tools = $fts->definiciones();
+            $service = $contexto === 'comercial' ? new CrmToolsService() : new FinancialToolsService();
+            $tools = $service->definiciones();
 
             $resultado = $ant->analizar(
                 $systemPrompt,
                 $tools,
                 $messages,
-                fn(string $name, array $input) => $fts->ejecutar($name, $input),
+                fn(string $name, array $input) => $service->ejecutar($name, $input),
                 6
             );
         } catch (\Throwable $e) {
@@ -367,6 +449,7 @@ class AsesoriaIaController extends BaseController
             $idConv = $this->convModel->insert([
                 'titulo'     => $tituloPorDefecto,
                 'tipo'       => 'libre',
+                'contexto'   => $contexto,
                 'creado_por' => $usuario,
             ], true);
         }
