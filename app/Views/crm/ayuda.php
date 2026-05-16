@@ -107,7 +107,7 @@
                 <h6>Contenido</h6>
                 <a href="#intro">1. Qué es el CRM</a>
                 <a href="#acceso">2. Cómo entrar</a>
-                <a href="#habilitar">3. Habilitar usuarios <span class="admin-only">ADMIN</span></a>
+                <a href="#habilitar">3. Niveles de acceso</a>
                 <a href="#empresas">4. Empresas</a>
                 <ul>
                     <li><a href="#empresa-crear">4.1 Crear</a></li>
@@ -170,50 +170,81 @@
             <h2>2. Cómo entrar al CRM</h2>
             <ol>
                 <li>Inicia sesión en <span class="ruta-ui">kpi.cycloidtalent.com</span> como de costumbre.</li>
-                <li>En el menú superior verás un nuevo dropdown <kbd><i class="bi bi-briefcase"></i> CRM</kbd> — si no lo ves, no tienes el módulo habilitado (ver sección 3).</li>
+                <li>En el menú superior verás el dropdown <kbd><i class="bi bi-briefcase"></i> CRM</kbd>. <strong>Todos los usuarios logueados tienen acceso automáticamente</strong> (salvo el contador, que está explícitamente excluido).</li>
                 <li>Al abrir el dropdown verás:
                     <ul>
                         <li><strong>Dashboard:</strong> métricas y KPIs (página de inicio recomendada).</li>
+                        <li><strong>OTTO Coach Comercial:</strong> asistente IA que responde "¿avanzamos?" y "¿qué hacer para crecer?".</li>
                         <li><strong>Pipeline (Kanban):</strong> tablero visual con drag-drop.</li>
                         <li><strong>Oportunidades (lista):</strong> tabla con filtros.</li>
                         <li><strong>Nueva oportunidad:</strong> formulario para crear.</li>
-                        <li><strong>Empresas:</strong> CRUD de cuentas.</li>
+                        <li><strong>Empresas:</strong> CRUD de cuentas + contactos.</li>
+                        <li><strong>Snapshots:</strong> fotos del pipeline para comparar avance semana a semana.</li>
                         <li><strong>Configuración</strong> (solo admin): etapas, fuentes, motivos de pérdida.</li>
+                        <li><strong>Manual de usuario</strong> — este documento.</li>
                     </ul>
                 </li>
             </ol>
             <div class="warning">
-                <strong>⚠️ Si no ves el menú CRM:</strong> tu usuario no tiene el módulo habilitado.
-                Pide a Edison o a un superadmin que te active el flag <em>CRM habilitado</em>.
+                <strong>⚠️ Si no ves el menú CRM:</strong> probablemente eres rol Contador (5), que está
+                explícitamente excluido del módulo. Cualquier otro usuario logueado tiene acceso automático
+                a nivel <em>Usuario normal</em>; ver sección 3 para los niveles de privilegio.
             </div>
         </section>
 
         <!-- 3. HABILITAR USUARIOS -->
         <section class="seccion" id="habilitar">
-            <h2>3. Habilitar el CRM a un usuario <span class="admin-only">SOLO SUPERADMIN</span></h2>
-            <p>Cuando un vendedor o consultor nuevo debe usar el CRM:</p>
-            <div class="paso"><span class="paso-num">1</span>
-                <h5>Entra al listado de usuarios</h5>
-                <p>Menú superior → <kbd>Usuarios</kbd> → <kbd>Lista de Usuarios</kbd>.</p>
+            <h2>3. Niveles de acceso al CRM</h2>
+            <p>El CRM tiene <strong>acceso automático</strong> para cualquier usuario logueado, excepto el
+            contador (rol 5). Ya no hace falta marcar ningún flag para entrar. Pero hay <strong>dos niveles
+            de visibilidad</strong>:</p>
+
+            <div class="ejemplo">
+                <strong>Usuario normal (vendedor)</strong> — todos lo son por defecto. Ve el dropdown CRM completo,
+                crea y edita oportunidades, registra interacciones y consume todo el módulo. <strong>Pero solo ve
+                las oportunidades de las que es responsable</strong>. Es el rol natural del equipo de ventas.
             </div>
-            <div class="paso"><span class="paso-num">2</span>
-                <h5>Edita el usuario</h5>
-                <p>Busca a la persona en la tabla y haz clic en el botón <kbd>Editar</kbd>.</p>
-            </div>
-            <div class="paso"><span class="paso-num">3</span>
-                <h5>Marca el acceso al módulo</h5>
-                <p>Baja hasta la sección <strong>Acceso a módulos</strong> (al final del formulario). Ahí hay dos checkboxes:</p>
-                <ul>
-                    <li><strong>CRM habilitado:</strong> Marca este para un vendedor común. Verá solo sus propias oportunidades.</li>
-                    <li><strong>Admin CRM:</strong> Marca este SOLO para gerencia comercial (Edison) o jefes de ventas. Verán todas las oportunidades de todo el equipo y podrán configurar etapas, fuentes y motivos.</li>
+
+            <div class="warning">
+                <strong>Admin CRM</strong> — gerencia comercial / jefes de ventas. Ve TODAS las oportunidades de
+                todo el equipo, puede reasignar responsables y configurar etapas, fuentes y motivos de pérdida.
+                <br><br>Son admin CRM:
+                <ul class="mb-0 mt-1">
+                    <li>Cualquier usuario con rol 1 (Superadmin) o 2 (Admin) del sistema — <strong>automáticamente</strong>.</li>
+                    <li>Cualquier otro usuario al que un superadmin le marque el flag <code>crm_admin</code> manualmente.</li>
                 </ul>
             </div>
-            <div class="paso"><span class="paso-num">4</span>
-                <h5>Guarda y avísale</h5>
-                <p>Haz clic en <kbd>Guardar cambios</kbd>. La persona debe <strong>cerrar sesión y volver a entrar</strong> para que su sesión cargue los nuevos permisos.</p>
+
+            <h3>3.1 Dar nivel Admin CRM a un usuario <span class="admin-only">SOLO SUPERADMIN</span></h3>
+            <p>Si necesitas que un usuario que NO tiene rol Admin del sistema vea TODO el pipeline:</p>
+            <div class="paso"><span class="paso-num">1</span>
+                <h5>Edita el usuario</h5>
+                <p>Menú superior → <kbd>Usuarios</kbd> → <kbd>Lista de Usuarios</kbd> → botón <kbd>Editar</kbd>.</p>
             </div>
+            <div class="paso"><span class="paso-num">2</span>
+                <h5>Marca "Admin CRM"</h5>
+                <p>Baja hasta la sección <strong>Acceso a módulos</strong> al final del formulario. Marca la
+                casilla <strong>Admin CRM</strong>.</p>
+                <p class="text-muted small mt-1">
+                    La casilla <strong>CRM habilitado</strong> que aparece al lado ya <em>no es necesaria</em>:
+                    el acceso al módulo es automático para todos. La dejamos por si en el futuro se vuelve a
+                    necesitar restringir, pero hoy no tiene efecto práctico.
+                </p>
+            </div>
+            <div class="paso"><span class="paso-num">3</span>
+                <h5>Guarda y avísale</h5>
+                <p>Haz clic en <kbd>Guardar cambios</kbd>. La persona debe <strong>cerrar sesión y volver a entrar</strong>
+                para que su sesión cargue el nuevo nivel.</p>
+            </div>
+
             <div class="tip">
-                <strong>💡 Tip:</strong> El contador (rol 5) <strong>nunca</strong> ve el CRM, sin importar los flags. Está pensado solo para roles operativos y de ventas.
+                <strong>💡 Recomendación:</strong> mantén pocos Admin CRM (Edison + 1-2 jefes de ventas).
+                Demasiados admins quita el efecto de "ver solo lo mío" del vendedor y la responsabilidad por dueño se diluye.
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Contador (rol 5) NO entra al CRM</strong> sin importar los flags. El módulo está
+                pensado solo para roles operativos y comerciales.
             </div>
         </section>
 
@@ -537,9 +568,14 @@
         <!-- 10. PERMISOS -->
         <section class="seccion" id="permisos">
             <h2>10. Permisos y visibilidad</h2>
+            <p class="small text-muted">
+                Cualquier usuario logueado entra al CRM como <strong>Usuario normal</strong> automáticamente.
+                Se eleva a <strong>Admin CRM</strong> solo si tiene rol 1/2 del sistema o el flag
+                <code>crm_admin = 1</code>. El contador (rol 5) NUNCA ve el módulo.
+            </p>
             <table class="table table-sm table-bordered">
                 <thead class="table-dark">
-                    <tr><th>Acción</th><th>Vendedor (crm_habilitado)</th><th>Admin CRM (crm_admin)</th></tr>
+                    <tr><th>Acción</th><th>Usuario normal (acceso automático)</th><th>Admin CRM (rol 1/2 o crm_admin)</th></tr>
                 </thead>
                 <tbody>
                     <tr><td>Ver dashboard</td><td>✅ (solo sus datos)</td><td>✅ (todos)</td></tr>
@@ -548,12 +584,17 @@
                     <tr><td>Editar oportunidad</td><td>Solo las suyas</td><td>Todas</td></tr>
                     <tr><td>Eliminar oportunidad</td><td>Solo las suyas</td><td>Todas</td></tr>
                     <tr><td>Crear / editar empresas y contactos</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Registrar interacciones</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Generar / ver snapshots semanales</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Eliminar snapshots</td><td>❌</td><td>✅</td></tr>
+                    <tr><td>Usar OTTO Coach Comercial (IA)</td><td>✅</td><td>✅</td></tr>
                     <tr><td>Configurar etapas / fuentes / motivos</td><td>❌</td><td>✅</td></tr>
                 </tbody>
             </table>
             <p class="small text-muted">
-                Los superadmin (rol 1) y admin (rol 2) del sistema siempre ven todo el CRM, sin necesidad
-                del flag <em>crm_admin</em>. El contador (rol 5) NUNCA ve el módulo CRM.
+                <strong>OTTO (asistente IA) siempre lee el pipeline completo</strong> sin importar quién pregunta —
+                eso es por diseño para que pueda comparar y dar análisis agregados. Si quieres ver solo lo tuyo,
+                pregúntale a OTTO específicamente "¿cómo va [tu nombre]?".
             </p>
         </section>
 
@@ -719,8 +760,13 @@
             <h2>13. Preguntas frecuentes</h2>
 
             <h3>No me aparece el dropdown CRM en el menú superior.</h3>
-            <p>No tienes el flag <em>CRM habilitado</em>. Pide a Edison o a un superadmin que te active el módulo (sección 3).
-            Después debes cerrar sesión y volver a entrar.</p>
+            <p>Pasa una de tres cosas:</p>
+            <ul>
+                <li>Eres rol <strong>Contador (5)</strong> — está explícitamente excluido del CRM. No hay flag que lo desbloquee.</li>
+                <li>Tu sesión es vieja — <strong>cierra sesión y vuelve a entrar</strong> para que cargue los permisos actualizados.</li>
+                <li>El despliegue aún no llegó al servidor — confirma con Edison.</li>
+            </ul>
+            <p>Cualquier otro usuario logueado debería ver el dropdown CRM automáticamente.</p>
 
             <h3>Veo el CRM pero no veo las oportunidades de mis compañeros.</h3>
             <p>Es por diseño: los vendedores solo ven las suyas. Si necesitas ver todas, pide ser
