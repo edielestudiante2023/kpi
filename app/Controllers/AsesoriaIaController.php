@@ -294,8 +294,139 @@ class AsesoriaIaController extends BaseController
             ->orderBy('created_at', 'ASC')->findAll();
         $data['costoMes']  = $this->msgModel->costoMesActual();
         $data['budgetMes'] = (float) env('IA_BUDGET_MES_USD', 5.0);
+        $data['backUrl']   = '/conciliaciones/asesoria-ia';
 
         return view('conciliaciones/asesoria_ia_conversacion', $data);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // OTTO modo COMERCIAL — endpoints específicos del CRM
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Vista principal del asesor IA en modo comercial */
+    public function indexCrm()
+    {
+        helper('crm');
+        if (!crm_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo CRM.');
+        }
+
+        $data['presets']    = self::PRESETS_CRM;
+        $data['historial']  = $this->convModel
+            ->where('contexto', 'comercial')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(20);
+        $data['costoMes']   = $this->msgModel->costoMesActual();
+        $data['budgetMes']  = (float) env('IA_BUDGET_MES_USD', 5.0);
+        $data['porcentaje'] = $data['budgetMes'] > 0
+            ? min(100, round($data['costoMes'] / $data['budgetMes'] * 100, 1))
+            : 0;
+
+        return view('crm/asesor_ia', $data);
+    }
+
+    /** Dispara un preset comercial y crea la conversación */
+    public function analizarCrm()
+    {
+        helper('crm');
+        if (!crm_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo CRM.');
+        }
+
+        $preset = $this->request->getPost('preset');
+        if (!isset(self::PRESETS_CRM[$preset])) {
+            return redirect()->back()->with('errors', ['Preset inválido.']);
+        }
+
+        // Budget check
+        $costoActual = $this->msgModel->costoMesActual();
+        $budget = (float) env('IA_BUDGET_MES_USD', 5.0);
+        if ($costoActual >= $budget) {
+            return redirect()->back()->with('errors', [
+                sprintf("Límite mensual alcanzado (\$%.2f / \$%.2f USD). OTTO se reactivará el próximo mes.",
+                    $costoActual, $budget)
+            ]);
+        }
+
+        $cfg = self::PRESETS_CRM[$preset];
+        $userMessage = $cfg['usuario_inicial'];
+
+        try {
+            $ant = new AnthropicService();
+            $service = new CrmToolsService();
+            $tools = $service->definiciones();
+            $resultado = $ant->analizar(
+                $cfg['system'],
+                $tools,
+                [['role' => 'user', 'content' => $userMessage]],
+                fn(string $name, array $input) => $service->ejecutar($name, $input),
+                6
+            );
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('errors', ['Error IA: ' . $e->getMessage()]);
+        }
+
+        $usuario = session()->get('nombre_completo') ?? session()->get('email') ?? 'sistema';
+        $idConv = $this->convModel->insert([
+            'titulo'     => $cfg['titulo'] . ' — ' . date('d/m/Y H:i'),
+            'tipo'       => $preset,
+            'contexto'   => 'comercial',
+            'creado_por' => $usuario,
+        ], true);
+
+        $this->msgModel->insert([
+            'id_conversacion' => $idConv,
+            'rol'             => 'user',
+            'contenido'       => $userMessage,
+        ]);
+
+        $this->msgModel->insert([
+            'id_conversacion'    => $idConv,
+            'rol'                => 'assistant',
+            'contenido'          => $resultado['final_text'],
+            'tool_calls'         => json_encode($this->extraerToolCalls($resultado['messages_acumulados']), JSON_UNESCAPED_UNICODE),
+            'tokens_input'       => $resultado['tokens_input_total'],
+            'tokens_output'      => $resultado['tokens_output_total'],
+            'tokens_cache_read'  => $resultado['tokens_cache_read_total'],
+            'tokens_cache_write' => $resultado['tokens_cache_write_total'],
+            'modelo'             => $ant->modelo(),
+            'costo_usd'          => round($resultado['costo_total_usd'], 6),
+        ]);
+
+        return redirect()->to("/crm/asesor-ia/ver/{$idConv}");
+    }
+
+    /** Ver conversación CRM — reusa la vista pero con back-link a /crm */
+    public function verCrm($id)
+    {
+        helper('crm');
+        if (!crm_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo CRM.');
+        }
+        $idConv = (int) $id;
+        $data['conversacion'] = $this->convModel->find($idConv);
+        if (! $data['conversacion']) {
+            return redirect()->to('/crm/asesor-ia')->with('errors', ['Conversación no encontrada.']);
+        }
+        $data['mensajes'] = $this->msgModel
+            ->where('id_conversacion', $idConv)
+            ->orderBy('created_at', 'ASC')->findAll();
+        $data['costoMes']  = $this->msgModel->costoMesActual();
+        $data['budgetMes'] = (float) env('IA_BUDGET_MES_USD', 5.0);
+        $data['backUrl']   = '/crm/asesor-ia';
+
+        return view('conciliaciones/asesoria_ia_conversacion', $data);
+    }
+
+    /** Eliminar conversación CRM */
+    public function eliminarCrm($id)
+    {
+        helper('crm');
+        if (!crm_tiene_acceso()) {
+            return redirect()->to('/login');
+        }
+        $this->convModel->delete((int) $id);
+        return redirect()->to('/crm/asesor-ia')->with('success', 'Conversación eliminada.');
     }
 
     /**

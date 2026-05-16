@@ -42,7 +42,7 @@
                 · <span class="badge bg-secondary"><?= esc($conversacion['tipo']) ?></span>
             </small>
         </div>
-        <a href="<?= base_url('conciliaciones/asesoria-ia') ?>" class="btn btn-sm btn-outline-secondary">
+        <a href="<?= base_url($backUrl ?? 'conciliaciones/asesoria-ia') ?>" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver
         </a>
     </div>

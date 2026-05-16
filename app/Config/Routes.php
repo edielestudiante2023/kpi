@@ -513,6 +513,12 @@ $routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], fu
     $routes->get('snapshots/ver/(:num)', 'CrmSnapshotController::ver/$1');
     $routes->get('snapshots/eliminar/(:num)', 'CrmSnapshotController::eliminar/$1');
 
+    // OTTO modo comercial (asistente IA para CRM)
+    $routes->get('asesor-ia', 'AsesoriaIaController::indexCrm');
+    $routes->post('asesor-ia/analizar', 'AsesoriaIaController::analizarCrm');
+    $routes->get('asesor-ia/ver/(:num)', 'AsesoriaIaController::verCrm/$1');
+    $routes->get('asesor-ia/eliminar/(:num)', 'AsesoriaIaController::eliminarCrm/$1');
+
     // Interacciones (timeline)
     $routes->post('interacciones/agregar', 'CrmInteraccionController::agregarAjax');
     $routes->post('interacciones/completar/(:num)', 'CrmInteraccionController::completarAjax/$1');
