@@ -8,16 +8,27 @@
  * disponibles y la clave de localStorage donde se guarda la conversación.
  */
 $_uri = uri_string();
+$_esMkt = str_starts_with($_uri, 'marketing');
 $_esCrm = str_starts_with($_uri, 'crm');
 $_esConc = str_starts_with($_uri, 'conciliaciones');
-if (!$_esCrm && !$_esConc) return;
+if (!$_esCrm && !$_esConc && !$_esMkt) return;
 
-$_contexto = $_esCrm ? 'comercial' : 'financiero';
-$_subtitulo = $_esCrm ? 'Coach comercial IA · Cycloid Talent' : 'Asesor financiero IA · Cycloid Talent';
-$_storageKey = $_esCrm ? 'otto_crm_conv_id' : 'otto_conv_id';
-$_bienvenida = $_esCrm
-    ? "Hola, soy **OTTO** en modo coach comercial. Tengo acceso al pipeline en vivo y a los snapshots históricos del CRM.\n\nMis dos preguntas centrales son: **¿avanzamos?** y **¿qué hacer para crecer?** ¿En qué te ayudo?"
-    : "Hola, soy **OTTO**. Soy el asesor financiero IA de Cycloid Talent y tengo acceso a tus datos en tiempo real: cartera, recaudo, deudas, presupuestos y balance.\n\n¿En qué te ayudo hoy?";
+if ($_esMkt) {
+    $_contexto   = 'marketing';
+    $_subtitulo  = 'Coach de marketing IA · Cycloid Talent';
+    $_storageKey = 'otto_marketing_conv_id';
+    $_bienvenida = "Hola, soy **OTTO** en modo coach de marketing. Veo tu embudo de leads, las fuentes que están funcionando y el diario de acciones.\n\nMis dos preguntas centrales son: **¿avanzamos?** y **¿qué hacer para crecer?** ¿En qué te ayudo?";
+} elseif ($_esCrm) {
+    $_contexto   = 'comercial';
+    $_subtitulo  = 'Coach comercial IA · Cycloid Talent';
+    $_storageKey = 'otto_crm_conv_id';
+    $_bienvenida = "Hola, soy **OTTO** en modo coach comercial. Tengo acceso al pipeline en vivo y a los snapshots históricos del CRM.\n\nMis dos preguntas centrales son: **¿avanzamos?** y **¿qué hacer para crecer?** ¿En qué te ayudo?";
+} else {
+    $_contexto   = 'financiero';
+    $_subtitulo  = 'Asesor financiero IA · Cycloid Talent';
+    $_storageKey = 'otto_conv_id';
+    $_bienvenida = "Hola, soy **OTTO**. Soy el asesor financiero IA de Cycloid Talent y tengo acceso a tus datos en tiempo real: cartera, recaudo, deudas, presupuestos y balance.\n\n¿En qué te ayudo hoy?";
+}
 ?>
 <style>
 :root {
@@ -262,7 +273,13 @@ $_bienvenida = $_esCrm
 
     const CONTEXTO = "<?= $_contexto ?>";
 
-    const PRESETS = CONTEXTO === 'comercial' ? [
+    const PRESETS = CONTEXTO === 'marketing' ? [
+        { key: 'avanzamos',           label: '📈 ¿Avanzamos?' },
+        { key: 'fuentes_efectivas',   label: '🎯 ¿Qué fuente funciona?' },
+        { key: 'leads_olvidados',     label: '🥶 Leads que se enfrían' },
+        { key: 'diagnostico_acciones',label: '🔍 ¿Hago suficiente?' },
+        { key: 'plan_semana',         label: '🚀 Plan de la semana' },
+    ] : CONTEXTO === 'comercial' ? [
         { key: 'avanzamos',           label: '📈 ¿Avanzamos?' },
         { key: 'prioridades',         label: '🎯 ¿Qué atacar primero?' },
         { key: 'diagnostico_equipo',  label: '👥 Diagnóstico equipo' },

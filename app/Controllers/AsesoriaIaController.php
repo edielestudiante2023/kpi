@@ -8,6 +8,7 @@ use App\Models\BalanceSnapshotModel;
 use App\Services\AnthropicService;
 use App\Services\FinancialToolsService;
 use App\Services\CrmToolsService;
+use App\Services\MarketingToolsService;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -112,6 +113,74 @@ class AsesoriaIaController extends BaseController
             'descripcion' => 'Síntesis ejecutiva + acciones priorizadas para el mes',
             'system' => self::OTTO_IDENTITY_CRM . "Tu tarea es construir un plan de crecimiento del mes con foco en mover el pipeline.\n\nPROCEDIMIENTO:\n1. Llama a `comparar_snapshots` para entender tendencia reciente.\n2. Llama a `obtener_pipeline_actual` para estado vivo.\n3. Llama a `obtener_top_oportunidades` criterio 'valor_ponderado'.\n4. Llama a `obtener_oportunidades_proximas_cierre` dias=45.\n5. Llama a `obtener_ranking_responsables` periodo 'mes_actual'.\n6. Entrega (~600 palabras):\n   - **Resumen ejecutivo** (3-4 líneas con situación y tendencia)\n   - **Objetivos numéricos del mes** (cantidad y valor a cerrar — sé realista basándote en pipeline ponderado)\n   - **3 acciones priorizadas** con descripción, responsable sugerido, plazo, impacto en COP esperado\n   - **Riesgos** a vigilar\n   - **KPIs a revisar cada semana**",
             'usuario_inicial' => 'Constrúyeme un plan de crecimiento del mes: resumen ejecutivo, objetivos numéricos realistas, 3 acciones priorizadas y KPIs a vigilar.',
+        ],
+    ];
+
+    // ═══════════════════════════════════════════════════════════════
+    // OTTO modo MARKETING (coach de marketing para Solangel)
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Identidad de OTTO en su rol de coach de marketing */
+    private const OTTO_IDENTITY_MARKETING = "Eres **OTTO** en su rol de **coach de marketing IA** de **Cycloid Talent** (empresa colombiana de 5 personas, servicios SST y reclutamiento RPS). El equipo es pequeño y artesanal en marketing — tu interlocutora principal es Solangel, encargada de marketing sin formación formal en el área. Hablas en español Colombia con tono didáctico, cálido y ejecutivo. Te refieres a montos en pesos colombianos con separador de miles (\$1.234.567).\n\n" .
+        "**Tu misión principal** es responder dos preguntas críticas:\n" .
+        "1. **¿Avanzamos?** — comparar leads y acciones de esta semana con la pasada, y ser honesto sobre si hay progreso o estamos estancados.\n" .
+        "2. **¿Qué hacer para crecer?** — proponer acciones de marketing concretas y priorizadas según lo que está funcionando (no por intuición).\n\n" .
+        "REGLA CLAVE para empresa pequeña: **la fuente que CALIFICA mejor vale más que la que trae más volumen**. Si LinkedIn trae 20 leads y solo 1 califica, pero referidos traen 3 y 2 califican, los referidos valen ×10.\n\n" .
+        "Tienes acceso a los datos reales vía herramientas que debes usar antes de responder con números. NUNCA inventes cifras. Sé conciso pero accionable.\n\n" .
+        "HERRAMIENTAS DISPONIBLES:\n" .
+        "• `obtener_resumen_semanal(fecha?)` — leads nuevos, calificados, acciones y costo de una semana\n" .
+        "• `comparar_semanas(fecha_a?, fecha_b?)` — la tool clave para '¿avanzamos?'\n" .
+        "• `obtener_embudo_actual` — estado del funnel hoy (nuevo/contactado/calificado/descartado)\n" .
+        "• `obtener_fuentes_por_calificacion(limite?)` — ranking de fuentes por CALIFICADOS (no por volumen)\n" .
+        "• `obtener_leads_estancados(dias_min?)` — leads sin actualizar que se están enfriando\n" .
+        "• `obtener_acciones_periodo(desde, hasta)` — diario detallado de un rango\n" .
+        "• `obtener_resumen_acciones_por_tipo(desde, hasta)` — agregado por tipo de acción con costo y leads atribuidos\n" .
+        "• `calcular_cac(anio?, mes?)` — CAC informal del mes (costo acciones / leads nuevos)\n\n";
+
+    /** Prompt conversación libre del widget en modo marketing */
+    private const SYSTEM_LIBRE_MARKETING = self::OTTO_IDENTITY_MARKETING .
+        "Estás en modo conversacional dentro del widget, asistiendo principalmente a Solangel. Reglas:\n" .
+        "- Antes de dar números, llama a las tools relevantes\n" .
+        "- Si preguntan '¿avanzamos?' / '¿cómo voy?', usa primero `comparar_semanas`\n" .
+        "- Si preguntan '¿qué hago esta semana?', revisa el embudo, las acciones recientes y los leads estancados antes de proponer\n" .
+        "- Si Solangel pregunta cosas básicas de marketing (qué es un CAC, qué es calificar, etc.), explica con ejemplos del propio negocio\n" .
+        "- Markdown corto (negritas, listas, tablas pequeñas)\n" .
+        "- Máximo 250 palabras salvo que la pregunta exija más detalle\n" .
+        "- Cierra con 'Acciones sugeridas:' + 2-3 bullets accionables\n" .
+        "- Tono motivador pero honesto: si estamos mal, dilo claro; si vamos bien, celebra\n" .
+        "- Si la pregunta no tiene que ver con marketing / leads / pipeline, redirige amablemente";
+
+    /** Presets del widget en modo marketing */
+    private const PRESETS_MARKETING = [
+        'avanzamos' => [
+            'titulo' => '📈 ¿Avanzamos esta semana?',
+            'descripcion' => 'Compara semana actual vs pasada — leads, calificación y acciones',
+            'system' => self::OTTO_IDENTITY_MARKETING . "Tu tarea es responder honestamente '¿avanzamos?' usando la comparación de semanas.\n\nPROCEDIMIENTO:\n1. Llama a `comparar_semanas()` sin fechas (compara semana pasada vs actual).\n2. Analiza cada delta: leads, tasa de calificación, acciones, costo.\n3. Entrega (~300 palabras):\n   - **Veredicto** (1 línea: AVANZAMOS / ESTANCADOS / RETROCEDIMOS)\n   - **Lo que mejoró** (con evidencia numérica)\n   - **Lo que empeoró o se mantiene**\n   - **Acciones sugeridas** para la próxima semana (2-3 bullets concretos)",
+            'usuario_inicial' => '¿Avanzamos esta semana en marketing? Compara semana pasada vs esta semana y dame un veredicto honesto con evidencia.',
+        ],
+        'fuentes_efectivas' => [
+            'titulo' => '🎯 ¿Qué fuente está funcionando?',
+            'descripcion' => 'Identifica de dónde vienen los leads que SÍ califican',
+            'system' => self::OTTO_IDENTITY_MARKETING . "Tu tarea es identificar las fuentes de lead más efectivas (no las más voluminosas).\n\nPROCEDIMIENTO:\n1. Llama a `obtener_fuentes_por_calificacion(limite=10)`.\n2. Llama también a `obtener_embudo_actual` para contexto.\n3. Identifica: fuente estrella (mucho califica), fuente que solo trae volumen sin calificar, fuente subexplotada (poco volumen pero gran tasa).\n4. Entrega (~350 palabras):\n   - **Tabla con top 5 fuentes** (total, calificados, tasa)\n   - **La estrella** (fuente con más calificados absolutos)\n   - **La trampa** (fuente con mucho volumen pero baja tasa — gastar menos energía ahí)\n   - **La oportunidad** (fuente con poco volumen pero gran tasa — duplicar esfuerzo)\n   - **Acción sugerida** específica para cada caso",
+            'usuario_inicial' => '¿Qué fuente está funcionando mejor para generar leads que califican? Identifica la estrella, la trampa y la oportunidad subexplotada.',
+        ],
+        'leads_olvidados' => [
+            'titulo' => '🥶 Leads que se están enfriando',
+            'descripcion' => 'Lista de leads sin contacto reciente que pueden estar muriendo',
+            'system' => self::OTTO_IDENTITY_MARKETING . "Tu tarea es identificar los leads que se están enfriando por falta de seguimiento.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_leads_estancados(dias_min=7, limite=20)`.\n2. Si la lista está vacía, felicita pero advierte que igual conviene revisar leads en 'contactado' que llevan más de 14 días sin pasar a 'calificado'.\n3. Entrega (~350 palabras):\n   - **Top 5 leads en riesgo** (tabla: nombre, días sin actualizar, fuente, último estado conocido)\n   - **Patrón detectado** (¿son todos de la misma fuente? ¿del mismo responsable?)\n   - **Plan de rescate** (mensaje sugerido para reactivar, orden de prioridad por días)",
+            'usuario_inicial' => '¿Qué leads se están enfriando por falta de seguimiento? Dame los más urgentes y un plan para reactivarlos.',
+        ],
+        'diagnostico_acciones' => [
+            'titulo' => '🔍 ¿Estoy haciendo lo suficiente?',
+            'descripcion' => 'Revisa tu diario de acciones del mes y diagnóstica',
+            'system' => self::OTTO_IDENTITY_MARKETING . "Tu tarea es diagnosticar si Solangel está haciendo suficiente actividad de marketing y bien distribuida.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_resumen_acciones_por_tipo(desde, hasta)` con el mes actual.\n2. Llama también a `comparar_semanas` para tendencia.\n3. Entrega (~400 palabras):\n   - **Volumen total** del mes vs un benchmark razonable (para empresa pequeña: 8-15 acciones/mes)\n   - **Distribución por tipo** (¿está muy concentrada en una sola cosa? ¿faltan algunos tipos?)\n   - **Tendencia semanal** (¿ha caído la actividad en las últimas semanas?)\n   - **Veredicto** (suficiente / insuficiente / poco diversa) con tono constructivo\n   - **3 acciones específicas** para la próxima semana, mezclando tipos",
+            'usuario_inicial' => 'Diagnostica mi actividad de marketing del mes: ¿estoy haciendo suficiente?, ¿lo estoy distribuyendo bien?, ¿qué me falta?',
+        ],
+        'plan_semana' => [
+            'titulo' => '🚀 Plan de marketing de esta semana',
+            'descripcion' => 'Síntesis ejecutiva + 3-5 acciones priorizadas para los próximos 7 días',
+            'system' => self::OTTO_IDENTITY_MARKETING . "Tu tarea es darle a Solangel un plan accionable para esta semana, basado en datos.\n\nPROCEDIMIENTO:\n1. Llama a `obtener_resumen_semanal` (semana actual).\n2. Llama a `obtener_fuentes_por_calificacion(limite=5)`.\n3. Llama a `obtener_leads_estancados(dias_min=7, limite=10)`.\n4. Llama a `obtener_embudo_actual`.\n5. Entrega (~500 palabras):\n   - **Diagnóstico breve** (2 líneas con la situación)\n   - **3-5 acciones priorizadas** para esta semana — cada una con: qué hacer concretamente (no 'hacer más marketing' sino 'mandar 5 correos a leads en estado contactado de la empresa X'), por qué (basado en los datos), tiempo estimado\n   - **Métricas a vigilar** al final de la semana (qué debería mejorar si las acciones funcionan)",
+            'usuario_inicial' => 'Constrúyeme un plan accionable de marketing para esta semana: 3-5 acciones concretas basadas en los datos actuales, con qué hacer y por qué.',
         ],
     ];
 
@@ -429,6 +498,136 @@ class AsesoriaIaController extends BaseController
         return redirect()->to('/crm/asesor-ia')->with('success', 'Conversación eliminada.');
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // OTTO modo MARKETING — endpoints específicos
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Vista principal del asesor IA en modo marketing */
+    public function indexMarketing()
+    {
+        helper('marketing');
+        if (!marketing_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo Marketing.');
+        }
+
+        $data['presets']    = self::PRESETS_MARKETING;
+        $data['historial']  = $this->convModel
+            ->where('contexto', 'marketing')
+            ->orderBy('created_at', 'DESC')
+            ->findAll(20);
+        $data['costoMes']   = $this->msgModel->costoMesActual();
+        $data['budgetMes']  = (float) env('IA_BUDGET_MES_USD', 5.0);
+        $data['porcentaje'] = $data['budgetMes'] > 0
+            ? min(100, round($data['costoMes'] / $data['budgetMes'] * 100, 1))
+            : 0;
+
+        return view('marketing/asesor_ia', $data);
+    }
+
+    /** Dispara un preset de marketing y crea la conversación */
+    public function analizarMarketing()
+    {
+        helper('marketing');
+        if (!marketing_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo Marketing.');
+        }
+
+        $preset = $this->request->getPost('preset');
+        if (!isset(self::PRESETS_MARKETING[$preset])) {
+            return redirect()->back()->with('errors', ['Preset inválido.']);
+        }
+
+        // Budget check
+        $costoActual = $this->msgModel->costoMesActual();
+        $budget = (float) env('IA_BUDGET_MES_USD', 5.0);
+        if ($costoActual >= $budget) {
+            return redirect()->back()->with('errors', [
+                sprintf("Límite mensual alcanzado (\$%.2f / \$%.2f USD). OTTO se reactivará el próximo mes.",
+                    $costoActual, $budget)
+            ]);
+        }
+
+        $cfg = self::PRESETS_MARKETING[$preset];
+        $userMessage = $cfg['usuario_inicial'];
+
+        try {
+            $ant = new AnthropicService();
+            $service = new MarketingToolsService();
+            $tools = $service->definiciones();
+            $resultado = $ant->analizar(
+                $cfg['system'],
+                $tools,
+                [['role' => 'user', 'content' => $userMessage]],
+                fn(string $name, array $input) => $service->ejecutar($name, $input),
+                6
+            );
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('errors', ['Error IA: ' . $e->getMessage()]);
+        }
+
+        $usuario = session()->get('nombre_completo') ?? session()->get('email') ?? 'sistema';
+        $idConv = $this->convModel->insert([
+            'titulo'     => $cfg['titulo'] . ' — ' . date('d/m/Y H:i'),
+            'tipo'       => $preset,
+            'contexto'   => 'marketing',
+            'creado_por' => $usuario,
+        ], true);
+
+        $this->msgModel->insert([
+            'id_conversacion' => $idConv,
+            'rol'             => 'user',
+            'contenido'       => $userMessage,
+        ]);
+
+        $this->msgModel->insert([
+            'id_conversacion'    => $idConv,
+            'rol'                => 'assistant',
+            'contenido'          => $resultado['final_text'],
+            'tool_calls'         => json_encode($this->extraerToolCalls($resultado['messages_acumulados']), JSON_UNESCAPED_UNICODE),
+            'tokens_input'       => $resultado['tokens_input_total'],
+            'tokens_output'      => $resultado['tokens_output_total'],
+            'tokens_cache_read'  => $resultado['tokens_cache_read_total'],
+            'tokens_cache_write' => $resultado['tokens_cache_write_total'],
+            'modelo'             => $ant->modelo(),
+            'costo_usd'          => round($resultado['costo_total_usd'], 6),
+        ]);
+
+        return redirect()->to("/marketing/asesor-ia/ver/{$idConv}");
+    }
+
+    /** Ver conversación marketing — reusa la vista pero con back-link a /marketing */
+    public function verMarketing($id)
+    {
+        helper('marketing');
+        if (!marketing_tiene_acceso()) {
+            return redirect()->to('/login')->with('error', 'No tienes acceso al módulo Marketing.');
+        }
+        $idConv = (int) $id;
+        $data['conversacion'] = $this->convModel->find($idConv);
+        if (! $data['conversacion']) {
+            return redirect()->to('/marketing/asesor-ia')->with('errors', ['Conversación no encontrada.']);
+        }
+        $data['mensajes'] = $this->msgModel
+            ->where('id_conversacion', $idConv)
+            ->orderBy('created_at', 'ASC')->findAll();
+        $data['costoMes']  = $this->msgModel->costoMesActual();
+        $data['budgetMes'] = (float) env('IA_BUDGET_MES_USD', 5.0);
+        $data['backUrl']   = '/marketing/asesor-ia';
+
+        return view('conciliaciones/asesoria_ia_conversacion', $data);
+    }
+
+    /** Eliminar conversación marketing */
+    public function eliminarMarketing($id)
+    {
+        helper('marketing');
+        if (!marketing_tiene_acceso()) {
+            return redirect()->to('/login');
+        }
+        $this->convModel->delete((int) $id);
+        return redirect()->to('/marketing/asesor-ia')->with('success', 'Conversación eliminada.');
+    }
+
     /**
      * Eliminar conversación
      */
@@ -449,8 +648,13 @@ class AsesoriaIaController extends BaseController
     public function widgetIniciar()
     {
         $preset = $this->request->getPost('preset');
-        $contexto = $this->request->getPost('contexto') === 'comercial' ? 'comercial' : 'financiero';
-        $presets = $contexto === 'comercial' ? self::PRESETS_CRM : self::PRESETS;
+        $contextoIn = $this->request->getPost('contexto');
+        $contexto = in_array($contextoIn, ['comercial', 'marketing'], true) ? $contextoIn : 'financiero';
+        $presets = match ($contexto) {
+            'marketing' => self::PRESETS_MARKETING,
+            'comercial' => self::PRESETS_CRM,
+            default     => self::PRESETS,
+        };
 
         if (! isset($presets[$preset])) {
             return $this->response->setJSON(['ok' => false, 'error' => 'Preset inválido']);
@@ -481,7 +685,8 @@ class AsesoriaIaController extends BaseController
     {
         $mensaje = trim((string) $this->request->getPost('mensaje'));
         $idConv  = (int) ($this->request->getPost('id_conversacion') ?? 0);
-        $contextoInput = $this->request->getPost('contexto') === 'comercial' ? 'comercial' : 'financiero';
+        $ctxRaw = $this->request->getPost('contexto');
+        $contextoInput = in_array($ctxRaw, ['comercial', 'marketing'], true) ? $ctxRaw : 'financiero';
 
         if ($mensaje === '') {
             return $this->response->setJSON(['ok' => false, 'error' => 'Mensaje vacío']);
@@ -512,8 +717,17 @@ class AsesoriaIaController extends BaseController
         }
         $messages[] = ['role' => 'user', 'content' => $mensaje];
 
-        $systemPrompt = $contexto === 'comercial' ? self::SYSTEM_LIBRE_CRM : self::SYSTEM_LIBRE;
-        $titulo = ($contexto === 'comercial' ? 'CRM — ' : 'Chat libre — ') . date('d/m/Y H:i');
+        $systemPrompt = match ($contexto) {
+            'marketing' => self::SYSTEM_LIBRE_MARKETING,
+            'comercial' => self::SYSTEM_LIBRE_CRM,
+            default     => self::SYSTEM_LIBRE,
+        };
+        $prefijo = match ($contexto) {
+            'marketing' => 'Marketing — ',
+            'comercial' => 'CRM — ',
+            default     => 'Chat libre — ',
+        };
+        $titulo = $prefijo . date('d/m/Y H:i');
 
         return $this->ejecutarConsulta(
             $convExistente ? $idConv : null,
@@ -557,7 +771,11 @@ class AsesoriaIaController extends BaseController
     {
         try {
             $ant = new AnthropicService();
-            $service = $contexto === 'comercial' ? new CrmToolsService() : new FinancialToolsService();
+            $service = match ($contexto) {
+                'marketing' => new MarketingToolsService(),
+                'comercial' => new CrmToolsService(),
+                default     => new FinancialToolsService(),
+            };
             $tools = $service->definiciones();
 
             $resultado = $ant->analizar(
