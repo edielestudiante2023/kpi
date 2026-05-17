@@ -223,6 +223,9 @@ $esContador = ((int) $rolId === 5);
                         <li><a class="dropdown-item fw-bold" href="<?= base_url('marketing/dashboard') ?>">
                             <i class="bi bi-speedometer2 me-2"></i>Dashboard
                         </a></li>
+                        <li><a class="dropdown-item fw-bold text-primary" href="<?= base_url('marketing/asesor-ia') ?>">
+                            <i class="bi bi-robot me-2"></i>OTTO Coach de Marketing <span class="badge bg-primary" style="font-size:0.55rem;">NUEVO</span>
+                        </a></li>
                         <li><a class="dropdown-item" href="<?= base_url('marketing/leads') ?>">
                             <i class="bi bi-people me-2"></i>Leads
                         </a></li>

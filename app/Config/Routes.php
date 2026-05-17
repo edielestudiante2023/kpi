@@ -584,6 +584,12 @@ $routes->group('marketing', ['namespace' => 'App\Controllers', 'filter' => 'auth
     $routes->get('config/tipos-accion', 'MarketingAccionController::tipos');
     $routes->post('config/tipos-accion/guardar', 'MarketingAccionController::guardarTipo');
     $routes->post('config/tipos-accion/eliminar/(:num)', 'MarketingAccionController::eliminarTipo/$1');
+
+    // OTTO modo marketing (asistente IA para Solangel)
+    $routes->get('asesor-ia', 'AsesoriaIaController::indexMarketing');
+    $routes->post('asesor-ia/analizar', 'AsesoriaIaController::analizarMarketing');
+    $routes->get('asesor-ia/ver/(:num)', 'AsesoriaIaController::verMarketing/$1');
+    $routes->get('asesor-ia/eliminar/(:num)', 'AsesoriaIaController::eliminarMarketing/$1');
 });
 
 // ====================================
