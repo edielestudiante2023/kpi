@@ -590,6 +590,9 @@ $routes->group('marketing', ['namespace' => 'App\Controllers', 'filter' => 'auth
     $routes->post('asesor-ia/analizar', 'AsesoriaIaController::analizarMarketing');
     $routes->get('asesor-ia/ver/(:num)', 'AsesoriaIaController::verMarketing/$1');
     $routes->get('asesor-ia/eliminar/(:num)', 'AsesoriaIaController::eliminarMarketing/$1');
+
+    // Manual de usuario
+    $routes->get('ayuda', 'MarketingController::ayuda');
 });
 
 // ====================================

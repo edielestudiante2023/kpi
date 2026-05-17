@@ -246,6 +246,10 @@ $esContador = ((int) $rolId === 5);
                                 <i class="bi bi-tags me-2"></i>Tipos de acción
                             </a></li>
                         <?php endif; ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= base_url('marketing/ayuda') ?>">
+                            <i class="bi bi-book me-2"></i>Manual de usuario
+                        </a></li>
                     </ul>
                 </li>
                 <?php endif; ?>

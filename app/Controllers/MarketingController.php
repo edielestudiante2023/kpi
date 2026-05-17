@@ -120,4 +120,13 @@ class MarketingController extends BaseController
             'leadsMes'          => $leadsMes,
         ]);
     }
+
+    /**
+     * Manual de usuario del módulo Marketing (vista estática paso a paso).
+     */
+    public function ayuda()
+    {
+        if ($r = $this->chequearAcceso()) return $r;
+        return view('marketing/ayuda');
+    }
 }
