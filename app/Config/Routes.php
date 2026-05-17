@@ -554,6 +554,39 @@ $routes->group('crm', ['namespace' => 'App\Controllers', 'filter' => 'auth'], fu
 });
 
 // ====================================
+// MÓDULO MARKETING (lightweight - leads + diario de acciones)
+// ====================================
+$routes->group('marketing', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function($routes) {
+    // Entrada / Dashboard
+    $routes->get('/', 'MarketingController::dashboard');
+    $routes->get('dashboard', 'MarketingController::dashboard');
+
+    // Leads (CRUD)
+    $routes->get('leads', 'MarketingLeadController::index');
+    $routes->get('leads/nuevo', 'MarketingLeadController::crear');
+    $routes->post('leads/nuevo', 'MarketingLeadController::crearPost');
+    $routes->get('leads/ver/(:num)', 'MarketingLeadController::ver/$1');
+    $routes->get('leads/editar/(:num)', 'MarketingLeadController::editar/$1');
+    $routes->post('leads/editar/(:num)', 'MarketingLeadController::editarPost/$1');
+    $routes->get('leads/eliminar/(:num)', 'MarketingLeadController::eliminar/$1');
+    $routes->post('leads/cambiar-estado/(:num)', 'MarketingLeadController::cambiarEstadoAjax/$1');
+    $routes->post('leads/convertir/(:num)', 'MarketingLeadController::convertirAOportunidad/$1');
+
+    // Acciones (diario)
+    $routes->get('acciones', 'MarketingAccionController::index');
+    $routes->get('acciones/nueva', 'MarketingAccionController::crear');
+    $routes->post('acciones/nueva', 'MarketingAccionController::crearPost');
+    $routes->get('acciones/editar/(:num)', 'MarketingAccionController::editar/$1');
+    $routes->post('acciones/editar/(:num)', 'MarketingAccionController::editarPost/$1');
+    $routes->get('acciones/eliminar/(:num)', 'MarketingAccionController::eliminar/$1');
+
+    // Configuración (admin)
+    $routes->get('config/tipos-accion', 'MarketingAccionController::tipos');
+    $routes->post('config/tipos-accion/guardar', 'MarketingAccionController::guardarTipo');
+    $routes->post('config/tipos-accion/eliminar/(:num)', 'MarketingAccionController::eliminarTipo/$1');
+});
+
+// ====================================
 // RUTINAS DE TRABAJO
 // ====================================
 $routes->group('rutinas', ['namespace' => 'App\Controllers'], function($routes) {

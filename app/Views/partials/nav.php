@@ -215,6 +215,40 @@ $esContador = ((int) $rolId === 5);
                 ?>
                 <?php if (! $esContador): ?>
                 <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= strpos($currentUrl, '/marketing') !== false ? 'active fw-bold' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-megaphone me-1"></i>Marketing
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item fw-bold" href="<?= base_url('marketing/dashboard') ?>">
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('marketing/leads') ?>">
+                            <i class="bi bi-people me-2"></i>Leads
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('marketing/leads/nuevo') ?>">
+                            <i class="bi bi-person-plus me-2"></i>Nuevo lead
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= base_url('marketing/acciones') ?>">
+                            <i class="bi bi-journal-text me-2"></i>Diario de acciones
+                        </a></li>
+                        <li><a class="dropdown-item" href="<?= base_url('marketing/acciones/nueva') ?>">
+                            <i class="bi bi-plus-circle me-2"></i>Registrar acción
+                        </a></li>
+                        <?php if ($crmAdm || $rolId == 1): ?>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header">Configuración</li>
+                            <li><a class="dropdown-item" href="<?= base_url('marketing/config/tipos-accion') ?>">
+                                <i class="bi bi-tags me-2"></i>Tipos de acción
+                            </a></li>
+                        <?php endif; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
+
+                <?php if (! $esContador): ?>
+                <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?= strpos($currentUrl, '/crm') !== false ? 'active fw-bold' : '' ?>"
                        href="#" data-bs-toggle="dropdown">
                         <i class="bi bi-briefcase me-1"></i>CRM
