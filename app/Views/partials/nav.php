@@ -390,6 +390,10 @@ $esContador = ((int) $rolId === 5);
                         <li><a class="dropdown-item" href="<?= base_url('rutinas/asignaciones') ?>">
                             <i class="bi bi-person-plus me-2"></i>Asignaciones
                         </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= base_url('cumpleanos') ?>">
+                            <i class="bi bi-cake2 me-2"></i>Cumpleanos
+                        </a></li>
                     </ul>
                 </li>
 
