@@ -622,4 +622,10 @@ $routes->group('rutinas', ['namespace' => 'App\Controllers'], function($routes) 
 $routes->get('rutinas/checklist/(:num)/(:segment)/(:any)', 'RutinasController::checklistPublico/$1/$2/$3');
 $routes->post('rutinas/checklist/update', 'RutinasController::updateChecklistPublico');
 
+// Cumpleaños (panel con auth + silenciar tokenizado público)
+$routes->get('cumpleanos', 'CumpleanosController::index');
+$routes->post('cumpleanos/silenciar-panel/(:num)', 'CumpleanosController::silenciarPanel/$1');
+$routes->post('cumpleanos/reactivar/(:num)', 'CumpleanosController::reactivar/$1');
+$routes->get('cumpleanos/silenciar/(:num)/(:num)/(:any)', 'CumpleanosController::silenciar/$1/$2/$3');
+
 // Cron bitácora: usar CLI → php spark bitacora:resumen-diario
